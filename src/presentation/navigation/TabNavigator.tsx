@@ -3,7 +3,6 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, View, StyleSheet } from 'react-native';
 
 import DashboardScreen from '../screens/Dashboard/DashboardScreen';
-import TasksScreen from '../screens/Tasks/TasksScreen';
 import AnalyticsScreen from '../screens/Analytics/AnalyticsScreen';
 import ProfileScreen from '../screens/Profile/ProfileScreen';
 import SettingsScreen from '../screens/Settings/SettingsScreen';
@@ -38,14 +37,6 @@ const TabNavigator = () => {
         options={{
           tabBarLabel: '홈',
           tabBarIcon: (props) => <TabIcon {...props} name="홈" />,
-        }}
-      />
-      <Tab.Screen
-        name="Tasks"
-        component={TasksScreen}
-        options={{
-          tabBarLabel: '작업',
-          tabBarIcon: (props) => <TabIcon {...props} name="작업" />,
         }}
       />
       <Tab.Screen

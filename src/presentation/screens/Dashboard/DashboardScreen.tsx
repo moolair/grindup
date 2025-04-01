@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
-import { useNavigation, CommonActions } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { COLORS } from '../../../constants/colors';
 import ContributionGraph from '../../../components/organisms/ContributionGraph';
 import TaskList from '../../../components/organisms/TaskList';
@@ -34,7 +34,19 @@ const generateMockTasks = () => {
 
 const DashboardScreen = () => {
   const navigation = useNavigation();
+  const route = useRoute();
   const [tasks, setTasks] = useState(generateMockTasks());
+
+  // TasksScreen에서 전달된 새 작업이 있는지 확인하고 추가
+  useEffect(() => {
+    if (route.params?.newTask) {
+      const newTask = route.params.newTask;
+      setTasks(prevTasks => [...prevTasks, newTask]);
+
+      // 파라미터 제거 (중복 추가 방지)
+      navigation.setParams({ newTask: undefined });
+    }
+  }, [route.params?.newTask]);
 
   const handleDayPress = (date: Date, count: number) => {
     console.log(`선택한 날짜: ${date.toLocaleDateString()}, 완료한 작업: ${count}개`);
@@ -47,13 +59,10 @@ const DashboardScreen = () => {
     navigation.navigate('TaskDetail', { taskId });
   };
 
+  // 새 작업 생성 기능 - Tasks 탭으로 이동
   const handleCreateTask = () => {
-    // Tasks 탭으로 이동
-    navigation.dispatch(
-      CommonActions.navigate({
-        name: 'Tasks'
-      })
-    );
+    // @ts-ignore - 타입 문제는 나중에 해결
+    navigation.navigate('Tasks');
   };
 
   return (
