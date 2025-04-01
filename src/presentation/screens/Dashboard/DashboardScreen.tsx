@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import { COLORS } from '../../../constants/colors';
 import ContributionGraph from '../../../components/organisms/ContributionGraph';
 import TaskList from '../../../components/organisms/TaskList';
@@ -48,8 +48,12 @@ const DashboardScreen = () => {
   };
 
   const handleCreateTask = () => {
-    // @ts-ignore - 타입 문제는 나중에 해결
-    navigation.navigate('CreateTask');
+    // Tasks 탭으로 이동
+    navigation.dispatch(
+      CommonActions.navigate({
+        name: 'Tasks'
+      })
+    );
   };
 
   return (
