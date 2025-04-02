@@ -5,7 +5,7 @@ import { COLORS } from '../../../constants/colors';
 import ContributionGraph from '../../../components/organisms/ContributionGraph';
 import TaskList from '../../../components/organisms/TaskList';
 import FloatingActionButton from '../../components/FloatingActionButton';
-import { PlusIcon } from '../../components/Icons';
+import { PlusIcon, ChevronLeftIcon } from '../../components/Icons';
 
 // 임시 목업 데이터 생성 함수
 const generateMockTasks = () => {
@@ -48,6 +48,11 @@ const TasksScreen = () => {
     }
   }, [route.params?.newTask]);
 
+  // 뒤로가기 핸들러
+  const handleBackPress = () => {
+    navigation.goBack();
+  };
+
   const handleDayPress = (date: Date, count: number) => {
     console.log(`선택한 날짜: ${date.toLocaleDateString()}, 완료한 작업: ${count}개`);
     // 여기에 선택한 날짜의 상세 정보를 보여주는 기능 추가 예정
@@ -73,13 +78,20 @@ const TasksScreen = () => {
   const handleCreateTask = () => {
     const newTask = createNewTask();
 
-    // @ts-ignore - 타입 문제는 나중에 해결
-    navigation.navigate('Main', { newTask });
+    // 부모 화면으로 돌아가면서 파라미터 전달
+    navigation.navigate({
+      name: 'Main',
+      params: { newTask },
+      merge: true
+    });
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
+        <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
+          <ChevronLeftIcon color={COLORS.NEUTRAL.BLACK} size={24} />
+        </TouchableOpacity>
         <Text style={styles.title}>내 작업</Text>
       </View>
 
@@ -119,7 +131,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
     padding: 16,
+  },
+  backButton: {
+    marginRight: 16,
   },
   title: {
     fontSize: 28,
