@@ -1,3 +1,4 @@
+import Firebase
 import React
 import ReactAppDependencyProvider
 import React_RCTAppDelegate
@@ -9,6 +10,9 @@ class AppDelegate: RCTAppDelegate {
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
+    // Firebase 초기화
+    FirebaseApp.configure()
+
     self.moduleName = "GrindUp"
     self.dependencyProvider = RCTAppDependencyProvider()
 
