@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
+import { COLORS } from '../../constants/colors';
 
 const AnalyticsScreen = () => {
   return (
@@ -8,13 +9,13 @@ const AnalyticsScreen = () => {
         <View style={styles.header}>
           <Text style={styles.title}>분석</Text>
         </View>
-        
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>작업 통계</Text>
           <View style={styles.chartPlaceholder}>
             <Text style={styles.placeholderText}>작업 완료율 차트</Text>
           </View>
-          
+
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>12</Text>
@@ -30,7 +31,7 @@ const AnalyticsScreen = () => {
             </View>
           </View>
         </View>
-        
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>주간 리포트</Text>
           <View style={styles.chartPlaceholder}>
@@ -45,7 +46,7 @@ const AnalyticsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.NEUTRAL.WHITE,
   },
   header: {
     padding: 16,
@@ -53,7 +54,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#2C3E50',
+    color: COLORS.NEUTRAL.BLACK,
   },
   section: {
     padding: 16,
@@ -62,19 +63,19 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#2C3E50',
+    color: COLORS.NEUTRAL.BLACK,
     marginBottom: 16,
   },
   chartPlaceholder: {
     height: 200,
-    backgroundColor: '#F5F6FA',
+    backgroundColor: COLORS.NEUTRAL.LIGHT_GRAY,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
   },
   placeholderText: {
-    color: '#8395A7',
+    color: COLORS.NEUTRAL.DARK_GRAY,
     fontSize: 16,
   },
   statsContainer: {
@@ -88,10 +89,10 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#3366FF',
+    color: COLORS.PRIMARY[600],
   },
   statLabel: {
-    color: '#8395A7',
+    color: COLORS.NEUTRAL.DARK_GRAY,
     marginTop: 4,
   },
 });

@@ -9,7 +9,7 @@ import React, { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import SplashScreen from 'react-native-splash-screen';
-import AppNavigator from './src/presentation/navigation/AppNavigator';
+import AppNavigator from './src/navigation/AppNavigator';
 
 function App(): React.JSX.Element {
   useEffect(() => {

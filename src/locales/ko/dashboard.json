@@ -1,0 +1,78 @@
+{
+    "greeting": {
+        "morning": "좋은 아침입니다",
+        "afternoon": "좋은 오후입니다",
+        "evening": "좋은 저녁입니다",
+        "night": "안녕히 주무세요",
+        "welcome": "다시 오신 것을 환영합니다"
+    },
+    "streak": {
+        "current": "현재 연속 기록",
+        "best": "최고 연속 기록",
+        "day": "일",
+        "days": "일",
+        "maintain": "연속 기록을 유지하세요!",
+        "broken": "연속 기록이 끊겼습니다",
+        "newStreak": "오늘부터 새로운 연속 기록을 시작하세요",
+        "milestone": "새로운 연속 기록 달성!",
+        "continued": "연속 기록이 이어졌습니다!"
+    },
+    "contributionGraph": {
+        "title": "생산성 그래프",
+        "today": "오늘",
+        "thisWeek": "이번 주",
+        "thisMonth": "이번 달",
+        "thisYear": "올해",
+        "less": "적음",
+        "more": "많음",
+        "noActivity": "활동 없음"
+    },
+    "todayTasks": {
+        "title": "오늘의 할 일",
+        "completed": "완료됨",
+        "remaining": "남음",
+        "dueToday": "오늘 마감",
+        "addTask": "할 일 추가",
+        "viewAll": "모두 보기",
+        "emptyState": "오늘의 할 일이 없습니다",
+        "addNew": "새 할 일 추가"
+    },
+    "quickStats": {
+        "title": "빠른 통계",
+        "tasksCompleted": "완료한 할 일",
+        "completionRate": "완료율",
+        "weeklyAvg": "주간 평균",
+        "mostProductiveDay": "가장 생산적인 요일"
+    },
+    "dayDetail": {
+        "title": "일일 개요",
+        "tasks": "할 일",
+        "completedTasks": "완료한 할 일",
+        "completionTime": "완료 시간",
+        "noTasksCompleted": "이 날에 완료한 할 일이 없습니다",
+        "activityLevel": "활동 수준",
+        "low": "낮음",
+        "medium": "중간",
+        "high": "높음",
+        "reflection": "일일 회고",
+        "addReflection": "회고 추가",
+        "editReflection": "회고 편집",
+        "share": "이 날 공유하기"
+    },
+    "weekMonthSummary": {
+        "title": "요약",
+        "weekOf": "{{date}} 주",
+        "monthOf": "{{year}}년 {{month}}월",
+        "totalCompleted": "총 완료 수",
+        "dailyAverage": "일일 평균",
+        "goalAchievement": "목표 달성률",
+        "mostProductiveDay": "가장 생산적인 날",
+        "mostProductiveCategory": "가장 생산적인 카테고리",
+        "weeklyTrend": "주간 추이",
+        "monthlyTrend": "월간 추이",
+        "comparedToPrevious": "이전 {{period}}과 비교",
+        "improvement": "{{percentage}}% 향상",
+        "decline": "{{percentage}}% 하락",
+        "same": "이전 {{period}}과 동일"
+    }
+}

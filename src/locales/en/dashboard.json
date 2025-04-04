@@ -1,0 +1,78 @@
+{
+    "greeting": {
+        "morning": "Good morning",
+        "afternoon": "Good afternoon",
+        "evening": "Good evening",
+        "night": "Good night",
+        "welcome": "Welcome back"
+    },
+    "streak": {
+        "current": "Current Streak",
+        "best": "Best Streak",
+        "day": "day",
+        "days": "days",
+        "maintain": "Maintain your streak!",
+        "broken": "Streak broken",
+        "newStreak": "Start a new streak today",
+        "milestone": "New streak milestone!",
+        "continued": "Streak continued!"
+    },
+    "contributionGraph": {
+        "title": "Productivity Graph",
+        "today": "Today",
+        "thisWeek": "This Week",
+        "thisMonth": "This Month",
+        "thisYear": "This Year",
+        "less": "Less",
+        "more": "More",
+        "noActivity": "No activity"
+    },
+    "todayTasks": {
+        "title": "Today's Tasks",
+        "completed": "completed",
+        "remaining": "remaining",
+        "dueToday": "Due Today",
+        "addTask": "Add Task",
+        "viewAll": "View All",
+        "emptyState": "No tasks for today",
+        "addNew": "Add a new task"
+    },
+    "quickStats": {
+        "title": "Quick Stats",
+        "tasksCompleted": "Tasks Completed",
+        "completionRate": "Completion Rate",
+        "weeklyAvg": "Weekly Average",
+        "mostProductiveDay": "Most Productive Day"
+    },
+    "dayDetail": {
+        "title": "Daily Overview",
+        "tasks": "Tasks",
+        "completedTasks": "Completed Tasks",
+        "completionTime": "Completion Time",
+        "noTasksCompleted": "No tasks completed on this day",
+        "activityLevel": "Activity Level",
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "reflection": "Daily Reflection",
+        "addReflection": "Add reflection",
+        "editReflection": "Edit reflection",
+        "share": "Share this day"
+    },
+    "weekMonthSummary": {
+        "title": "Summary",
+        "weekOf": "Week of {{date}}",
+        "monthOf": "{{month}} {{year}}",
+        "totalCompleted": "Total Completed",
+        "dailyAverage": "Daily Average",
+        "goalAchievement": "Goal Achievement",
+        "mostProductiveDay": "Most Productive Day",
+        "mostProductiveCategory": "Most Productive Category",
+        "weeklyTrend": "Weekly Trend",
+        "monthlyTrend": "Monthly Trend",
+        "comparedToPrevious": "Compared to previous {{period}}",
+        "improvement": "{{percentage}}% improvement",
+        "decline": "{{percentage}}% decline",
+        "same": "Same as previous {{period}}"
+    }
+}

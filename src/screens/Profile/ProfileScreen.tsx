@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, Image, TouchableOpacity } from 'react-native';
+import { COLORS } from '../../constants/colors';
 
 const ProfileScreen = () => {
   return (
@@ -7,7 +8,7 @@ const ProfileScreen = () => {
       <View style={styles.header}>
         <Text style={styles.title}>프로필</Text>
       </View>
-      
+
       <View style={styles.profileSection}>
         <View style={styles.avatarContainer}>
           <View style={styles.avatar}>
@@ -17,7 +18,7 @@ const ProfileScreen = () => {
         <Text style={styles.name}>김준호</Text>
         <Text style={styles.email}>junho.kim@example.com</Text>
       </View>
-      
+
       <View style={styles.statsSection}>
         <View style={styles.statItem}>
           <Text style={styles.statNumber}>42</Text>
@@ -29,7 +30,7 @@ const ProfileScreen = () => {
           <Text style={styles.statLabel}>연속 달성</Text>
         </View>
       </View>
-      
+
       <View style={styles.menuSection}>
         <TouchableOpacity style={styles.menuItem}>
           <Text style={styles.menuText}>계정 설정</Text>
@@ -54,7 +55,7 @@ const ProfileScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.NEUTRAL.WHITE,
   },
   header: {
     padding: 16,
@@ -62,7 +63,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#2C3E50',
+    color: COLORS.NEUTRAL.BLACK,
   },
   profileSection: {
     alignItems: 'center',
@@ -75,23 +76,23 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#3366FF',
+    backgroundColor: COLORS.PRIMARY[600],
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarText: {
     fontSize: 36,
     fontWeight: 'bold',
-    color: '#fff',
+    color: COLORS.NEUTRAL.WHITE,
   },
   name: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#2C3E50',
+    color: COLORS.NEUTRAL.BLACK,
   },
   email: {
     fontSize: 16,
-    color: '#8395A7',
+    color: COLORS.NEUTRAL.DARK_GRAY,
     marginTop: 4,
   },
   statsSection: {
@@ -100,7 +101,7 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#F5F6FA',
+    borderColor: COLORS.NEUTRAL.LIGHT_GRAY,
   },
   statItem: {
     alignItems: 'center',
@@ -108,15 +109,15 @@ const styles = StyleSheet.create({
   },
   statDivider: {
     width: 1,
-    backgroundColor: '#F5F6FA',
+    backgroundColor: COLORS.NEUTRAL.LIGHT_GRAY,
   },
   statNumber: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#3366FF',
+    color: COLORS.PRIMARY[600],
   },
   statLabel: {
-    color: '#8395A7',
+    color: COLORS.NEUTRAL.DARK_GRAY,
     marginTop: 4,
   },
   menuSection: {
@@ -126,18 +127,18 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderBottomWidth: 1,
-    borderBottomColor: '#F5F6FA',
+    borderBottomColor: COLORS.NEUTRAL.LIGHT_GRAY,
   },
   menuText: {
     fontSize: 16,
-    color: '#2C3E50',
+    color: COLORS.NEUTRAL.BLACK,
   },
   logoutItem: {
     marginTop: 32,
   },
   logoutText: {
     fontSize: 16,
-    color: '#E74C3C',
+    color: COLORS.ERROR.BASE,
   },
 });
 

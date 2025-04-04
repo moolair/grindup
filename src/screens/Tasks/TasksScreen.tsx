@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, ScrollView, Switch } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { COLORS } from '../../../constants/colors';
+import { COLORS } from '../../constants/colors';
 import { ChevronLeftIcon } from '../../components/Icons';
 
 // 요일 선택을 위한 인터페이스

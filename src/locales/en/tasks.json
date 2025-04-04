@@ -1,0 +1,104 @@
+{
+    "taskList": {
+        "title": "My Tasks",
+        "today": "Today",
+        "upcoming": "Upcoming",
+        "completed": "Completed",
+        "all": "All",
+        "noTasks": "No tasks found",
+        "noTasksToday": "No tasks for today",
+        "noTasksUpcoming": "No upcoming tasks",
+        "noTasksCompleted": "No completed tasks",
+        "addYourFirst": "Add your first task"
+    },
+    "taskDetail": {
+        "title": "Task Details",
+        "description": "Description",
+        "noDescription": "No description",
+        "category": "Category",
+        "priority": "Priority",
+        "dueDate": "Due Date",
+        "noDueDate": "No due date",
+        "createdAt": "Created on",
+        "completedAt": "Completed on",
+        "deleteConfirm": "Are you sure you want to delete this task?",
+        "deleteSuccess": "Task deleted successfully"
+    },
+    "createTask": {
+        "title": "Create Task",
+        "titlePlaceholder": "What do you need to do?",
+        "descriptionPlaceholder": "Add description (optional)",
+        "categoryLabel": "Category",
+        "priorityLabel": "Priority",
+        "dueDateLabel": "Due Date",
+        "dueDatePlaceholder": "Set due date (optional)",
+        "createButton": "Create Task",
+        "success": "Task created successfully"
+    },
+    "editTask": {
+        "title": "Edit Task",
+        "saveButton": "Save Changes",
+        "success": "Task updated successfully"
+    },
+    "quickAdd": {
+        "placeholder": "Add a task...",
+        "addButton": "Add",
+        "moreOptions": "More Options"
+    },
+    "categories": {
+        "work": "Work",
+        "personal": "Personal",
+        "study": "Study",
+        "health": "Health",
+        "hobby": "Hobby",
+        "manage": "Manage Categories",
+        "new": "New Category",
+        "edit": "Edit Category",
+        "nameLabel": "Category Name",
+        "colorLabel": "Color",
+        "deleteConfirm": "Are you sure you want to delete this category?",
+        "deleteWarning": "All tasks in this category will be moved to Uncategorized",
+        "created": "Category created",
+        "updated": "Category updated",
+        "deleted": "Category deleted"
+    },
+    "priority": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "urgent": "Urgent"
+    },
+    "filters": {
+        "title": "Filters",
+        "categories": "Categories",
+        "priorities": "Priorities",
+        "dueDates": "Due Dates",
+        "status": "Status",
+        "overdue": "Overdue",
+        "today": "Today",
+        "tomorrow": "Tomorrow",
+        "thisWeek": "This Week",
+        "nextWeek": "Next Week",
+        "later": "Later",
+        "reset": "Reset Filters",
+        "apply": "Apply Filters"
+    },
+    "sort": {
+        "title": "Sort By",
+        "dueDate": "Due Date",
+        "priority": "Priority",
+        "name": "Name",
+        "creationDate": "Creation Date",
+        "category": "Category",
+        "ascending": "Ascending",
+        "descending": "Descending"
+    },
+    "batch": {
+        "selected": "{{count}} selected",
+        "complete": "Complete All",
+        "delete": "Delete All",
+        "moveToCategory": "Move to Category",
+        "changePriority": "Change Priority",
+        "changeDueDate": "Change Due Date"
+    }
+}

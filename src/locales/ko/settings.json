@@ -1,0 +1,144 @@
+{
+    "general": {
+        "title": "설정",
+        "personalSettings": "개인 설정",
+        "appSettings": "앱 설정",
+        "save": "변경사항 저장",
+        "saved": "변경사항이 저장되었습니다",
+        "cancel": "취소",
+        "resetToDefault": "기본값으로 초기화"
+    },
+    "profile": {
+        "title": "프로필",
+        "name": "이름",
+        "email": "이메일",
+        "phone": "전화번호",
+        "username": "사용자 이름",
+        "profilePicture": "프로필 사진",
+        "changePicture": "사진 변경",
+        "removePicture": "사진 제거",
+        "uploadPicture": "사진 업로드",
+        "takePicture": "사진 촬영"
+    },
+    "account": {
+        "title": "계정",
+        "changePassword": "비밀번호 변경",
+        "currentPassword": "현재 비밀번호",
+        "newPassword": "새 비밀번호",
+        "confirmPassword": "새 비밀번호 확인",
+        "passwordChanged": "비밀번호가 성공적으로 변경되었습니다",
+        "deleteAccount": "계정 삭제",
+        "deleteConfirmation": "정말로 계정을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
+        "permanentDelete": "내 계정 영구 삭제",
+        "linkedAccounts": "연결된 계정",
+        "syncWith": "동기화 대상",
+        "disconnectFrom": "연결 해제"
+    },
+    "notifications": {
+        "title": "알림",
+        "pushNotifications": "푸시 알림",
+        "emailNotifications": "이메일 알림",
+        "tasks": {
+            "title": "할 일",
+            "due": "할 일 마감 알림",
+            "upcoming": "예정된 할 일",
+            "completed": "할 일 완료",
+            "dueSoonTime": "할 일 마감이 임박했을 때 알림",
+            "reminderTime": "기본 알림 시간"
+        },
+        "streaks": {
+            "title": "연속 기록",
+            "dailyReminder": "일일 연속 기록 알림",
+            "streakAtRisk": "연속 기록 위험",
+            "streakBroken": "연속 기록 중단",
+            "milestones": "연속 기록 마일스톤",
+            "reminderTime": "일일 알림 시간"
+        },
+        "updates": {
+            "title": "업데이트",
+            "appUpdates": "앱 업데이트",
+            "featureUpdates": "새 기능",
+            "tips": "생산성 팁"
+        },
+        "soundsAndVibration": "소리 및 진동",
+        "sounds": "알림 소리",
+        "vibration": "진동"
+    },
+    "appearance": {
+        "title": "외관",
+        "theme": {
+            "title": "다크 모드",
+            "light": "라이트",
+            "dark": "다크",
+            "system": "시스템 기본값",
+            "auto": "자동 (시간 기반)"
+        },
+        "colorScheme": {
+            "title": "색상 테마",
+            "default": "기본",
+            "blue": "파란색",
+            "green": "초록색",
+            "purple": "보라색",
+            "pink": "분홍색",
+            "custom": "사용자 지정"
+        },
+        "fontSize": {
+            "title": "글꼴 크기",
+            "small": "작게",
+            "medium": "중간",
+            "large": "크게",
+            "extraLarge": "매우 크게"
+        },
+        "language": {
+            "title": "언어",
+            "en": "English",
+            "ko": "한국어",
+            "ja": "日本語",
+            "system": "시스템 기본값"
+        },
+        "dateFormat": {
+            "title": "날짜 형식",
+            "dmy": "DD/MM/YYYY",
+            "mdy": "MM/DD/YYYY",
+            "ymd": "YYYY/MM/DD"
+        },
+        "timeFormat": {
+            "title": "시간 형식",
+            "12h": "12시간 (오전/오후)",
+            "24h": "24시간"
+        },
+        "firstDayOfWeek": {
+            "title": "한 주의 시작일",
+            "sunday": "일요일",
+            "monday": "월요일"
+        }
+    },
+    "privacy": {
+        "title": "개인정보",
+        "dataCollection": "데이터 수집",
+        "analytics": "분석",
+        "crashReports": "충돌 보고서",
+        "personalization": "맞춤화",
+        "ads": "맞춤형 광고",
+        "dataSharing": "데이터 공유",
+        "privacyPolicy": "개인정보 처리방침",
+        "deleteData": "내 데이터 삭제",
+        "exportData": "내 데이터 내보내기"
+    },
+    "feedback": {
+        "title": "피드백 및 지원",
+        "sendFeedback": "피드백 보내기",
+        "reportIssue": "문제 보고하기",
+        "contactSupport": "고객 지원 문의",
+        "rateApp": "앱 평가하기",
+        "shareApp": "앱 공유하기"
+    },
+    "about": {
+        "title": "정보",
+        "version": "버전",
+        "termsOfService": "서비스 약관",
+        "privacyPolicy": "개인정보 처리방침",
+        "licenses": "라이선스",
+        "acknowledgements": "감사의 말"
+    }
+}

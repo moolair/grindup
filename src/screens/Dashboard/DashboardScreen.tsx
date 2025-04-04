@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { COLORS } from '../../../constants/colors';
-import ContributionGraph from '../../../components/organisms/ContributionGraph';
-import TaskList from '../../../components/organisms/TaskList';
+import { COLORS } from '../../constants/colors';
+import ContributionGraph from '../../components/organisms/ContributionGraph';
+import TaskList from '../../components/organisms/TaskList';
 import FloatingActionButton from '../../components/FloatingActionButton';
 import { PlusIcon } from '../../components/Icons';
 

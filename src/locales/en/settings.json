@@ -1,0 +1,144 @@
+{
+    "general": {
+        "title": "Settings",
+        "personalSettings": "Personal Settings",
+        "appSettings": "App Settings",
+        "save": "Save Changes",
+        "saved": "Changes saved",
+        "cancel": "Cancel",
+        "resetToDefault": "Reset to Default"
+    },
+    "profile": {
+        "title": "Profile",
+        "name": "Name",
+        "email": "Email",
+        "phone": "Phone",
+        "username": "Username",
+        "profilePicture": "Profile Picture",
+        "changePicture": "Change Picture",
+        "removePicture": "Remove Picture",
+        "uploadPicture": "Upload Picture",
+        "takePicture": "Take Picture"
+    },
+    "account": {
+        "title": "Account",
+        "changePassword": "Change Password",
+        "currentPassword": "Current Password",
+        "newPassword": "New Password",
+        "confirmPassword": "Confirm New Password",
+        "passwordChanged": "Password changed successfully",
+        "deleteAccount": "Delete Account",
+        "deleteConfirmation": "Are you sure you want to delete your account? This action cannot be undone.",
+        "permanentDelete": "Permanently Delete My Account",
+        "linkedAccounts": "Linked Accounts",
+        "syncWith": "Sync with",
+        "disconnectFrom": "Disconnect from"
+    },
+    "notifications": {
+        "title": "Notifications",
+        "pushNotifications": "Push Notifications",
+        "emailNotifications": "Email Notifications",
+        "tasks": {
+            "title": "Tasks",
+            "due": "Task Due Reminders",
+            "upcoming": "Upcoming Tasks",
+            "completed": "Task Completed",
+            "dueSoonTime": "Notify me when tasks are due soon",
+            "reminderTime": "Default Reminder Time"
+        },
+        "streaks": {
+            "title": "Streaks",
+            "dailyReminder": "Daily Streak Reminder",
+            "streakAtRisk": "Streak at Risk",
+            "streakBroken": "Streak Broken",
+            "milestones": "Streak Milestones",
+            "reminderTime": "Daily Reminder Time"
+        },
+        "updates": {
+            "title": "Updates",
+            "appUpdates": "App Updates",
+            "featureUpdates": "New Features",
+            "tips": "Productivity Tips"
+        },
+        "soundsAndVibration": "Sounds & Vibration",
+        "sounds": "Notification Sounds",
+        "vibration": "Vibration"
+    },
+    "appearance": {
+        "title": "Appearance",
+        "theme": {
+            "title": "Dark Mode",
+            "light": "Light",
+            "dark": "Dark",
+            "system": "System Default",
+            "auto": "Auto (Time Based)"
+        },
+        "colorScheme": {
+            "title": "Color Scheme",
+            "default": "Default",
+            "blue": "Blue",
+            "green": "Green",
+            "purple": "Purple",
+            "pink": "Pink",
+            "custom": "Custom"
+        },
+        "fontSize": {
+            "title": "Font Size",
+            "small": "Small",
+            "medium": "Medium",
+            "large": "Large",
+            "extraLarge": "Extra Large"
+        },
+        "language": {
+            "title": "Language",
+            "en": "English",
+            "ko": "한국어",
+            "ja": "日本語",
+            "system": "System Default"
+        },
+        "dateFormat": {
+            "title": "Date Format",
+            "dmy": "DD/MM/YYYY",
+            "mdy": "MM/DD/YYYY",
+            "ymd": "YYYY/MM/DD"
+        },
+        "timeFormat": {
+            "title": "Time Format",
+            "12h": "12-hour (AM/PM)",
+            "24h": "24-hour"
+        },
+        "firstDayOfWeek": {
+            "title": "First Day of Week",
+            "sunday": "Sunday",
+            "monday": "Monday"
+        }
+    },
+    "privacy": {
+        "title": "Privacy",
+        "dataCollection": "Data Collection",
+        "analytics": "Analytics",
+        "crashReports": "Crash Reports",
+        "personalization": "Personalization",
+        "ads": "Personalized Ads",
+        "dataSharing": "Data Sharing",
+        "privacyPolicy": "Privacy Policy",
+        "deleteData": "Delete My Data",
+        "exportData": "Export My Data"
+    },
+    "feedback": {
+        "title": "Feedback & Support",
+        "sendFeedback": "Send Feedback",
+        "reportIssue": "Report an Issue",
+        "contactSupport": "Contact Support",
+        "rateApp": "Rate the App",
+        "shareApp": "Share the App"
+    },
+    "about": {
+        "title": "About",
+        "version": "Version",
+        "termsOfService": "Terms of Service",
+        "privacyPolicy": "Privacy Policy",
+        "licenses": "Licenses",
+        "acknowledgements": "Acknowledgements"
+    }
+}

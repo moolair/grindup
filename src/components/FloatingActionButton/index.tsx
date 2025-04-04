@@ -1,6 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, StyleSheet, ViewStyle } from 'react-native';
-import { COLORS } from '../../../constants/colors';
+import { COLORS } from '../../constants/colors';
 
 interface FloatingActionButtonProps {
     onPress: () => void;
