@@ -16,7 +16,7 @@ type RootStackParamList = {
 const Stack = createStackNavigator<RootStackParamList>();
 
 // 커스텀 애니메이션: 현재 화면만 오른쪽에서 왼쪽으로 슬라이드
-const forSlideOverFromRight = ({ current, layouts }) => {
+const forSlideOverFromRight = ({ current, layouts }: any) => {
   return {
     cardStyle: {
       transform: [
@@ -25,6 +25,7 @@ const forSlideOverFromRight = ({ current, layouts }) => {
           translateX: current.progress.interpolate({
             inputRange: [0, 1], // 애니메이션 진행 상태 (0: 시작, 1: 끝)
             outputRange: [layouts.screen.width, 0], // 화면 너비(오른쪽 밖)에서 0(제자리)으로 이동
+            extrapolate: 'clamp',
           }),
         },
       ],
@@ -38,14 +39,17 @@ const AppNavigator = () => {
     <NavigationContainer>
       <Stack.Navigator
         screenOptions={{
-          headerShown: false
+          headerShown: false,
+          detachPreviousScreen: false
         }}
       >
         <Stack.Screen
           name="Main"
           component={TabNavigator}
           // Main 화면(TabNavigator)은 애니메이션 없음 (항상 아래에 고정)
-          options={{ animationEnabled: false }}
+          options={{
+            detachPreviousScreen: false
+          }}
         />
         <Stack.Screen
           name="Tasks"
@@ -55,6 +59,7 @@ const AppNavigator = () => {
             cardStyleInterpolator: forSlideOverFromRight,
             // 제스처 방향 설정 (오른쪽에서 왼쪽 스와이프로 닫기)
             gestureDirection: 'horizontal',
+            detachPreviousScreen: false
           }}
         />
         {/* 필요한 경우 추가 화면을 여기에 등록 */}
