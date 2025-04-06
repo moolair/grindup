@@ -3,10 +3,11 @@
  * Combines all design system elements into coherent themes
  */
 
-import { palette, darkPalette } from './colors';
+import { COLORS } from '../constants/colors';
 import { typography } from './typography';
 import { spacing, borderRadius, insets, gaps } from './spacing';
 import { elevation } from './elevation';
+import { palette, darkPalette } from './colors';
 
 export type ThemeType = 'light' | 'dark';
 
@@ -74,42 +75,42 @@ export const lightTheme: Theme = {
   type: 'light',
   colors: {
     background: {
-      primary: palette.neutral.white,
-      secondary: palette.neutral.lightGray,
-      tertiary: palette.primary[100],
+      primary: COLORS.NEUTRAL.WHITE,
+      secondary: COLORS.NEUTRAL.LIGHT_GRAY,
+      tertiary: COLORS.PRIMARY[100],
     },
     surface: {
-      primary: palette.neutral.white,
-      secondary: palette.neutral.lightGray,
-      elevated: palette.neutral.white,
+      primary: COLORS.NEUTRAL.WHITE,
+      secondary: COLORS.NEUTRAL.LIGHT_GRAY,
+      elevated: COLORS.NEUTRAL.WHITE,
     },
     content: {
-      primary: palette.neutral.black,
-      secondary: palette.neutral.darkGray,
-      tertiary: palette.neutral.midGray,
-      disabled: palette.neutral.midGray,
-      inverse: palette.neutral.white,
+      primary: COLORS.NEUTRAL.BLACK,
+      secondary: COLORS.NEUTRAL.DARK_GRAY,
+      tertiary: COLORS.NEUTRAL.MID_GRAY,
+      disabled: COLORS.NEUTRAL.MID_GRAY,
+      inverse: COLORS.NEUTRAL.WHITE,
     },
     ui: {
-      primary: palette.primary[600],
-      secondary: palette.secondary[600],
-      accent: palette.accent[600],
-      success: palette.success.base,
-      warning: palette.warning.base,
-      error: palette.error.base,
-      disabled: palette.neutral.midGray,
+      primary: COLORS.PRIMARY[600],
+      secondary: COLORS.SECONDARY[600],
+      accent: COLORS.ACCENT[600],
+      success: COLORS.SUCCESS.BASE,
+      warning: COLORS.WARNING.BASE,
+      error: COLORS.ERROR.BASE,
+      disabled: COLORS.NEUTRAL.MID_GRAY,
     },
     border: {
-      light: palette.neutral.lightGray,
-      medium: palette.neutral.midGray,
-      dark: palette.neutral.darkGray,
+      light: COLORS.NEUTRAL.LIGHT_GRAY,
+      medium: COLORS.NEUTRAL.MID_GRAY,
+      dark: COLORS.NEUTRAL.DARK_GRAY,
     },
     contributions: {
-      level0: palette.contributionLevels.level0,
-      level1: palette.contributionLevels.level1,
-      level2: palette.contributionLevels.level2,
-      level3: palette.contributionLevels.level3,
-      level4: palette.contributionLevels.level4,
+      level0: COLORS.CONTRIBUTION.LEVEL_0,
+      level1: COLORS.CONTRIBUTION.LEVEL_1,
+      level2: COLORS.CONTRIBUTION.LEVEL_2,
+      level3: COLORS.CONTRIBUTION.LEVEL_3,
+      level4: COLORS.CONTRIBUTION.LEVEL_4,
     },
   },
   typography,
@@ -135,19 +136,19 @@ export const darkTheme: Theme = {
       elevated: '#2C2C2C',
     },
     content: {
-      primary: darkPalette.neutral.black, // White
-      secondary: darkPalette.neutral.darkGray, // Light gray
-      tertiary: darkPalette.neutral.midGray, // Mid gray
+      primary: COLORS.NEUTRAL.WHITE,
+      secondary: COLORS.NEUTRAL.LIGHT_GRAY,
+      tertiary: COLORS.NEUTRAL.MID_GRAY,
       disabled: '#5C5C5C', // Darker gray
-      inverse: darkPalette.neutral.white, // Dark background
+      inverse: COLORS.NEUTRAL.BLACK,
     },
     ui: {
-      primary: darkPalette.primary[600], // Lighter blue in dark mode
-      secondary: darkPalette.secondary[600], // Lighter purple in dark mode
-      accent: darkPalette.accent[600], // Lighter teal in dark mode
-      success: darkPalette.success.base,
-      warning: darkPalette.warning.base,
-      error: darkPalette.error.base,
+      primary: COLORS.PRIMARY[600],
+      secondary: COLORS.SECONDARY[600],
+      accent: COLORS.ACCENT[600],
+      success: COLORS.SUCCESS.BASE,
+      warning: COLORS.WARNING.BASE,
+      error: COLORS.ERROR.BASE,
       disabled: '#5C5C5C',
     },
     border: {
@@ -156,11 +157,11 @@ export const darkTheme: Theme = {
       dark: '#5C5C5C', // Light gray
     },
     contributions: {
-      level0: darkPalette.contributionLevels.level0,
-      level1: darkPalette.contributionLevels.level1,
-      level2: darkPalette.contributionLevels.level2,
-      level3: darkPalette.contributionLevels.level3,
-      level4: darkPalette.contributionLevels.level4,
+      level0: COLORS.CONTRIBUTION.LEVEL_0,
+      level1: COLORS.CONTRIBUTION.LEVEL_1,
+      level2: COLORS.CONTRIBUTION.LEVEL_2,
+      level3: COLORS.CONTRIBUTION.LEVEL_3,
+      level4: COLORS.CONTRIBUTION.LEVEL_4,
     },
   },
   typography,

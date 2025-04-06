@@ -1,41 +1,43 @@
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
-import { COLORS } from '../../constants/colors';
+import { useTheme } from '../../theme/ThemeProvider';
 
 const AnalyticsScreen = () => {
+  const { theme } = useTheme();
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
       <ScrollView>
         <View style={styles.header}>
-          <Text style={styles.title}>분석</Text>
+          <Text style={[styles.title, { color: theme.colors.content.primary }]}>분석</Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>작업 통계</Text>
-          <View style={styles.chartPlaceholder}>
-            <Text style={styles.placeholderText}>작업 완료율 차트</Text>
+          <Text style={[styles.sectionTitle, { color: theme.colors.content.primary }]}>작업 통계</Text>
+          <View style={[styles.chartPlaceholder, { backgroundColor: theme.colors.background.secondary }]}>
+            <Text style={[styles.placeholderText, { color: theme.colors.content.secondary }]}>작업 완료율 차트</Text>
           </View>
 
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>12</Text>
-              <Text style={styles.statLabel}>총 작업</Text>
+              <Text style={[styles.statNumber, { color: theme.colors.ui.primary }]}>12</Text>
+              <Text style={[styles.statLabel, { color: theme.colors.content.secondary }]}>총 작업</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>8</Text>
-              <Text style={styles.statLabel}>완료</Text>
+              <Text style={[styles.statNumber, { color: theme.colors.ui.primary }]}>8</Text>
+              <Text style={[styles.statLabel, { color: theme.colors.content.secondary }]}>완료</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>4</Text>
-              <Text style={styles.statLabel}>진행 중</Text>
+              <Text style={[styles.statNumber, { color: theme.colors.ui.primary }]}>4</Text>
+              <Text style={[styles.statLabel, { color: theme.colors.content.secondary }]}>진행 중</Text>
             </View>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>주간 리포트</Text>
-          <View style={styles.chartPlaceholder}>
-            <Text style={styles.placeholderText}>주간 작업 차트</Text>
+          <Text style={[styles.sectionTitle, { color: theme.colors.content.primary }]}>주간 리포트</Text>
+          <View style={[styles.chartPlaceholder, { backgroundColor: theme.colors.background.secondary }]}>
+            <Text style={[styles.placeholderText, { color: theme.colors.content.secondary }]}>주간 작업 차트</Text>
           </View>
         </View>
       </ScrollView>
@@ -46,7 +48,6 @@ const AnalyticsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.NEUTRAL.WHITE,
   },
   header: {
     padding: 16,
@@ -54,7 +55,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: COLORS.NEUTRAL.BLACK,
   },
   section: {
     padding: 16,
@@ -63,19 +63,16 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: COLORS.NEUTRAL.BLACK,
     marginBottom: 16,
   },
   chartPlaceholder: {
     height: 200,
-    backgroundColor: COLORS.NEUTRAL.LIGHT_GRAY,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
   },
   placeholderText: {
-    color: COLORS.NEUTRAL.DARK_GRAY,
     fontSize: 16,
   },
   statsContainer: {
@@ -89,10 +86,8 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: COLORS.PRIMARY[600],
   },
   statLabel: {
-    color: COLORS.NEUTRAL.DARK_GRAY,
     marginTop: 4,
   },
 });

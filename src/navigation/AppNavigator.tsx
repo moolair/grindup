@@ -1,15 +1,27 @@
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import TabNavigator from './TabNavigator';
 import TasksScreen from '../screens/Tasks/TasksScreen';
+import { useTheme } from '../theme/ThemeProvider';
 
 // 필요한 경우 로그인 화면, 온보딩 화면 등을 여기에 추가
 
+// Task 타입 정의
+export interface Task {
+  id: string;
+  title: string;
+  status: 'pending' | 'completed';
+  category: string;
+}
+
 // Stack Navigator 타입 정의
 type RootStackParamList = {
-  Main: undefined;
+  Main: {
+    newTask?: Task;
+  };
   Tasks: undefined;
+  TaskDetail: { taskId: string };
   // 추가 화면을 여기에 타입 정의
 };
 
@@ -34,9 +46,28 @@ const forSlideOverFromRight = ({ current, layouts }: any) => {
   };
 };
 
+// 타입 정의 export
+export type { RootStackParamList };
+
 const AppNavigator = () => {
+  const { theme } = useTheme();
+
+  // 내비게이션 테마 설정
+  const navigationTheme = theme.type === 'dark' ? DarkTheme : DefaultTheme;
+  const customTheme = {
+    ...navigationTheme,
+    colors: {
+      ...navigationTheme.colors,
+      primary: theme.colors.ui.primary,
+      background: theme.colors.background.primary,
+      card: theme.colors.surface.primary,
+      text: theme.colors.content.primary,
+      border: theme.colors.border.light,
+    },
+  };
+
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={customTheme}>
       <Stack.Navigator
         screenOptions={{
           headerShown: false,

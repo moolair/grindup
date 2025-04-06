@@ -1,51 +1,56 @@
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, Image, TouchableOpacity } from 'react-native';
-import { COLORS } from '../../constants/colors';
+import { useTheme } from '../../theme/ThemeProvider';
 
 const ProfileScreen = () => {
+  const { theme } = useTheme();
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
       <View style={styles.header}>
-        <Text style={styles.title}>프로필</Text>
+        <Text style={[styles.title, { color: theme.colors.content.primary }]}>프로필</Text>
       </View>
 
       <View style={styles.profileSection}>
         <View style={styles.avatarContainer}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>JK</Text>
+          <View style={[styles.avatar, { backgroundColor: theme.colors.ui.primary }]}>
+            <Text style={[styles.avatarText, { color: theme.colors.content.inverse }]}>JK</Text>
           </View>
         </View>
-        <Text style={styles.name}>김준호</Text>
-        <Text style={styles.email}>junho.kim@example.com</Text>
+        <Text style={[styles.name, { color: theme.colors.content.primary }]}>김준호</Text>
+        <Text style={[styles.email, { color: theme.colors.content.secondary }]}>junho.kim@example.com</Text>
       </View>
 
-      <View style={styles.statsSection}>
+      <View style={[styles.statsSection, {
+        borderTopColor: theme.colors.border.light,
+        borderBottomColor: theme.colors.border.light
+      }]}>
         <View style={styles.statItem}>
-          <Text style={styles.statNumber}>42</Text>
-          <Text style={styles.statLabel}>완료한 작업</Text>
+          <Text style={[styles.statNumber, { color: theme.colors.ui.primary }]}>42</Text>
+          <Text style={[styles.statLabel, { color: theme.colors.content.secondary }]}>완료한 작업</Text>
         </View>
-        <View style={styles.statDivider} />
+        <View style={[styles.statDivider, { backgroundColor: theme.colors.border.light }]} />
         <View style={styles.statItem}>
-          <Text style={styles.statNumber}>28</Text>
-          <Text style={styles.statLabel}>연속 달성</Text>
+          <Text style={[styles.statNumber, { color: theme.colors.ui.primary }]}>28</Text>
+          <Text style={[styles.statLabel, { color: theme.colors.content.secondary }]}>연속 달성</Text>
         </View>
       </View>
 
       <View style={styles.menuSection}>
-        <TouchableOpacity style={styles.menuItem}>
-          <Text style={styles.menuText}>계정 설정</Text>
+        <TouchableOpacity style={[styles.menuItem, { borderBottomColor: theme.colors.border.light }]}>
+          <Text style={[styles.menuText, { color: theme.colors.content.primary }]}>계정 설정</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem}>
-          <Text style={styles.menuText}>알림 설정</Text>
+        <TouchableOpacity style={[styles.menuItem, { borderBottomColor: theme.colors.border.light }]}>
+          <Text style={[styles.menuText, { color: theme.colors.content.primary }]}>알림 설정</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem}>
-          <Text style={styles.menuText}>개인정보 보호</Text>
+        <TouchableOpacity style={[styles.menuItem, { borderBottomColor: theme.colors.border.light }]}>
+          <Text style={[styles.menuText, { color: theme.colors.content.primary }]}>개인정보 보호</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem}>
-          <Text style={styles.menuText}>도움말</Text>
+        <TouchableOpacity style={[styles.menuItem, { borderBottomColor: theme.colors.border.light }]}>
+          <Text style={[styles.menuText, { color: theme.colors.content.primary }]}>도움말</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.menuItem, styles.logoutItem]}>
-          <Text style={styles.logoutText}>로그아웃</Text>
+        <TouchableOpacity style={[styles.menuItem, styles.logoutItem, { borderBottomColor: theme.colors.border.light }]}>
+          <Text style={[styles.logoutText, { color: theme.colors.ui.error }]}>로그아웃</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -55,7 +60,6 @@ const ProfileScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.NEUTRAL.WHITE,
   },
   header: {
     padding: 16,
@@ -63,7 +67,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: COLORS.NEUTRAL.BLACK,
   },
   profileSection: {
     alignItems: 'center',
@@ -76,23 +79,19 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: COLORS.PRIMARY[600],
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarText: {
     fontSize: 36,
     fontWeight: 'bold',
-    color: COLORS.NEUTRAL.WHITE,
   },
   name: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: COLORS.NEUTRAL.BLACK,
   },
   email: {
     fontSize: 16,
-    color: COLORS.NEUTRAL.DARK_GRAY,
     marginTop: 4,
   },
   statsSection: {
@@ -101,7 +100,6 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: COLORS.NEUTRAL.LIGHT_GRAY,
   },
   statItem: {
     alignItems: 'center',
@@ -109,15 +107,12 @@ const styles = StyleSheet.create({
   },
   statDivider: {
     width: 1,
-    backgroundColor: COLORS.NEUTRAL.LIGHT_GRAY,
   },
   statNumber: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: COLORS.PRIMARY[600],
   },
   statLabel: {
-    color: COLORS.NEUTRAL.DARK_GRAY,
     marginTop: 4,
   },
   menuSection: {
@@ -127,18 +122,15 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.NEUTRAL.LIGHT_GRAY,
   },
   menuText: {
     fontSize: 16,
-    color: COLORS.NEUTRAL.BLACK,
   },
   logoutItem: {
     marginTop: 32,
   },
   logoutText: {
     fontSize: 16,
-    color: COLORS.ERROR.BASE,
   },
 });
 

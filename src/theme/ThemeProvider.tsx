@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { useColorScheme } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { lightTheme, darkTheme, Theme, ThemeType } from './themes';
 
 // Create the theme context
@@ -9,8 +10,8 @@ export const ThemeContext = createContext<{
   toggleTheme: () => void;
 }>({
   theme: lightTheme,
-  setTheme: () => {},
-  toggleTheme: () => {},
+  setTheme: () => { },
+  toggleTheme: () => { },
 });
 
 // ThemeProvider Props
@@ -32,7 +33,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
 }) => {
   // Get device color scheme
   const deviceColorScheme = useColorScheme();
-  
+
   // Initialize theme state
   const [themeType, setThemeType] = useState<ThemeType>(
     initialTheme || deviceColorScheme as ThemeType || 'light'
@@ -44,8 +45,8 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
   // Set theme function
   const setTheme = useCallback((newThemeType: ThemeType) => {
     setThemeType(newThemeType);
-    // In a real implementation, we would save to AsyncStorage here
-    // AsyncStorage.setItem(THEME_STORAGE_KEY, newThemeType);
+    // Save to AsyncStorage
+    AsyncStorage.setItem(THEME_STORAGE_KEY, newThemeType);
   }, []);
 
   // Toggle theme function
@@ -56,18 +57,17 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
 
   // Effect to load saved theme on app start
   useEffect(() => {
-    // In a real implementation, we would load from AsyncStorage here
-    // const loadTheme = async () => {
-    //   try {
-    //     const savedThemeType = await AsyncStorage.getItem(THEME_STORAGE_KEY);
-    //     if (savedThemeType && (savedThemeType === 'light' || savedThemeType === 'dark')) {
-    //       setThemeType(savedThemeType);
-    //     }
-    //   } catch (error) {
-    //     console.error('Failed to load theme preference', error);
-    //   }
-    // };
-    // loadTheme();
+    const loadTheme = async () => {
+      try {
+        const savedThemeType = await AsyncStorage.getItem(THEME_STORAGE_KEY);
+        if (savedThemeType && (savedThemeType === 'light' || savedThemeType === 'dark')) {
+          setThemeType(savedThemeType);
+        }
+      } catch (error) {
+        console.error('Failed to load theme preference', error);
+      }
+    };
+    loadTheme();
   }, []);
 
   // Effect to update theme when device theme changes
@@ -90,11 +90,11 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
  */
 export const useTheme = () => {
   const context = useContext(ThemeContext);
-  
+
   if (context === undefined) {
     throw new Error('useTheme must be used within a ThemeProvider');
   }
-  
+
   return context;
 };
 

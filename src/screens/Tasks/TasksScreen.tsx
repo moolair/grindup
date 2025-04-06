@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, ScrollView, Switch } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { COLORS } from '../../constants/colors';
+import { useTheme } from '../../theme/ThemeProvider';
 import { ChevronLeftIcon } from '../../components/Icons';
 
 // 요일 선택을 위한 인터페이스
@@ -23,6 +23,7 @@ interface Routine {
 
 const TasksScreen = () => {
   const navigation = useNavigation();
+  const { theme } = useTheme();
 
   // 초기 요일 선택 상태
   const initialDays: DayOption[] = [
@@ -95,21 +96,26 @@ const TasksScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
-          <ChevronLeftIcon color={COLORS.NEUTRAL.BLACK} size={24} />
+          <ChevronLeftIcon color={theme.colors.content.primary} size={24} />
         </TouchableOpacity>
-        <Text style={styles.title}>루틴 생성</Text>
+        <Text style={[styles.title, { color: theme.colors.content.primary }]}>루틴 생성</Text>
       </View>
 
       <ScrollView style={styles.content}>
         {/* 제목 입력 */}
         <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>제목</Text>
+          <Text style={[styles.inputLabel, { color: theme.colors.content.primary }]}>제목</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, {
+              borderColor: theme.colors.border.light,
+              color: theme.colors.content.primary,
+              backgroundColor: theme.colors.surface.primary
+            }]}
             placeholder="루틴 제목을 입력하세요"
+            placeholderTextColor={theme.colors.content.tertiary}
             value={routine.title}
             onChangeText={handleTitleChange}
           />
@@ -117,10 +123,15 @@ const TasksScreen = () => {
 
         {/* 설명 입력 */}
         <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>설명</Text>
+          <Text style={[styles.inputLabel, { color: theme.colors.content.primary }]}>설명</Text>
           <TextInput
-            style={[styles.input, styles.textArea]}
+            style={[styles.input, styles.textArea, {
+              borderColor: theme.colors.border.light,
+              color: theme.colors.content.primary,
+              backgroundColor: theme.colors.surface.primary
+            }]}
             placeholder="루틴에 대한 설명을 입력하세요"
+            placeholderTextColor={theme.colors.content.tertiary}
             value={routine.description}
             onChangeText={handleDescriptionChange}
             multiline
@@ -130,21 +141,23 @@ const TasksScreen = () => {
 
         {/* 반복 요일 선택 */}
         <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>반복 요일</Text>
+          <Text style={[styles.inputLabel, { color: theme.colors.content.primary }]}>반복 요일</Text>
           <View style={styles.daysContainer}>
             {routine.days.map(day => (
               <TouchableOpacity
                 key={day.id}
                 style={[
                   styles.dayButton,
-                  day.selected && styles.selectedDayButton
+                  { borderColor: theme.colors.border.light },
+                  day.selected && [styles.selectedDayButton, { backgroundColor: theme.colors.ui.primary, borderColor: theme.colors.ui.primary }]
                 ]}
                 onPress={() => toggleDay(day.id)}
               >
                 <Text
                   style={[
                     styles.dayButtonText,
-                    day.selected && styles.selectedDayButtonText
+                    { color: theme.colors.content.primary },
+                    day.selected && [styles.selectedDayButtonText, { color: theme.colors.content.inverse }]
                   ]}
                 >
                   {day.label}
@@ -156,21 +169,29 @@ const TasksScreen = () => {
 
         {/* 카테고리 선택 */}
         <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>카테고리</Text>
+          <Text style={[styles.inputLabel, { color: theme.colors.content.primary }]}>카테고리</Text>
           <View style={styles.categoriesContainer}>
             {categories.map(category => (
               <TouchableOpacity
                 key={category}
                 style={[
                   styles.categoryButton,
-                  selectedCategory === category && styles.selectedCategoryButton
+                  { borderColor: theme.colors.border.light },
+                  selectedCategory === category && [
+                    styles.selectedCategoryButton,
+                    { backgroundColor: theme.colors.ui.primary, borderColor: theme.colors.ui.primary }
+                  ]
                 ]}
                 onPress={() => handleCategorySelect(category)}
               >
                 <Text
                   style={[
                     styles.categoryButtonText,
-                    selectedCategory === category && styles.selectedCategoryButtonText
+                    { color: theme.colors.content.primary },
+                    selectedCategory === category && [
+                      styles.selectedCategoryButtonText,
+                      { color: theme.colors.content.inverse }
+                    ]
                   ]}
                 >
                   {category}
@@ -183,20 +204,23 @@ const TasksScreen = () => {
         {/* 알림 설정 */}
         <View style={styles.inputContainer}>
           <View style={styles.reminderContainer}>
-            <Text style={styles.inputLabel}>알림 설정</Text>
+            <Text style={[styles.inputLabel, { color: theme.colors.content.primary }]}>알림 설정</Text>
             <Switch
               value={routine.reminder}
               onValueChange={toggleReminder}
-              trackColor={{ false: '#E0E0E0', true: '#3366FF' }}
-              thumbColor={routine.reminder ? '#FFFFFF' : '#FFFFFF'}
+              trackColor={{ false: theme.colors.content.disabled, true: theme.colors.ui.primary }}
+              thumbColor={theme.colors.content.inverse}
             />
           </View>
         </View>
       </ScrollView>
 
       {/* 루틴 생성 버튼 */}
-      <TouchableOpacity style={styles.createButton} onPress={handleCreateRoutine}>
-        <Text style={styles.createButtonText}>루틴 생성</Text>
+      <TouchableOpacity
+        style={[styles.createButton, { backgroundColor: theme.colors.ui.primary }]}
+        onPress={handleCreateRoutine}
+      >
+        <Text style={[styles.createButtonText, { color: theme.colors.content.inverse }]}>루틴 생성</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -205,7 +229,6 @@ const TasksScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
@@ -218,7 +241,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#2C3E50',
   },
   content: {
     flex: 1,
@@ -230,16 +252,13 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2C3E50',
     marginBottom: 8,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#E0E0E0',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    color: '#2C3E50',
   },
   textArea: {
     height: 100,
@@ -254,17 +273,14 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
     justifyContent: 'center',
     alignItems: 'center',
   },
   selectedDayButton: {
-    backgroundColor: '#3366FF',
     borderColor: '#3366FF',
   },
   dayButtonText: {
     fontSize: 14,
-    color: '#2C3E50',
   },
   selectedDayButtonText: {
     color: '#FFFFFF',
@@ -278,17 +294,14 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
     marginRight: 8,
     marginBottom: 8,
   },
   selectedCategoryButton: {
-    backgroundColor: '#3366FF',
     borderColor: '#3366FF',
   },
   categoryButtonText: {
     fontSize: 14,
-    color: '#2C3E50',
   },
   selectedCategoryButtonText: {
     color: '#FFFFFF',
@@ -299,14 +312,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   createButton: {
-    backgroundColor: '#3366FF',
     margin: 16,
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
   },
   createButtonText: {
-    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },

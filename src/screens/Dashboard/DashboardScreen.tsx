@@ -1,41 +1,48 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import { COLORS } from '../../constants/colors';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { useTheme } from '../../theme/ThemeProvider';
 import ContributionGraph from '../../components/organisms/ContributionGraph';
 import TaskList from '../../components/organisms/TaskList';
 import FloatingActionButton from '../../components/FloatingActionButton';
 import { PlusIcon } from '../../components/Icons';
+import { RootStackParamList, Task } from '../../navigation/AppNavigator';
+
+// 타입 정의
+type DashboardScreenNavigationProp = StackNavigationProp<RootStackParamList>;
+type DashboardScreenRouteProp = RouteProp<RootStackParamList, 'Main'>;
 
 // 임시 목업 데이터 생성 함수
-const generateMockTasks = () => {
+const generateMockTasks = (): Task[] => {
   // 샘플 작업 데이터
   return [
     {
       id: '1',
       title: '매일 코딩 연습하기',
-      status: 'pending' as const,
+      status: 'pending',
       category: '개발'
     },
     {
       id: '2',
       title: '운동 30분',
-      status: 'completed' as const,
+      status: 'completed',
       category: '건강'
     },
     {
       id: '3',
       title: '일일 회고 작성',
-      status: 'pending' as const,
+      status: 'pending',
       category: '개인'
     }
   ];
 };
 
 const DashboardScreen = () => {
-  const navigation = useNavigation();
-  const route = useRoute();
-  const [tasks, setTasks] = useState(generateMockTasks());
+  const navigation = useNavigation<DashboardScreenNavigationProp>();
+  const route = useRoute<DashboardScreenRouteProp>();
+  const { theme } = useTheme();
+  const [tasks, setTasks] = useState<Task[]>(generateMockTasks());
 
   // TasksScreen에서 전달된 새 작업이 있는지 확인하고 추가
   useEffect(() => {
@@ -46,7 +53,7 @@ const DashboardScreen = () => {
       // 파라미터 제거 (중복 추가 방지)
       navigation.setParams({ newTask: undefined });
     }
-  }, [route.params?.newTask]);
+  }, [route.params?.newTask, navigation]);
 
   const handleDayPress = (date: Date, count: number) => {
     console.log(`선택한 날짜: ${date.toLocaleDateString()}, 완료한 작업: ${count}개`);
@@ -55,25 +62,23 @@ const DashboardScreen = () => {
 
   const handleTaskPress = (taskId: string) => {
     console.log('작업 선택:', taskId);
-    // @ts-ignore - 타입 문제는 나중에 해결
     navigation.navigate('TaskDetail', { taskId });
   };
 
   // 새 작업 생성 기능 - Tasks 탭으로 이동
   const handleCreateTask = () => {
-    // @ts-ignore - 타입 문제는 나중에 해결
     navigation.navigate('Tasks');
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
       <View style={styles.header}>
-        <Text style={styles.greeting}>안녕하세요!</Text>
-        <Text style={styles.date}>{new Date().toLocaleDateString()}</Text>
+        <Text style={[styles.greeting, { color: theme.colors.content.primary }]}>안녕하세요!</Text>
+        <Text style={[styles.date, { color: theme.colors.content.secondary }]}>{new Date().toLocaleDateString()}</Text>
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.title}>오늘의 현황</Text>
+        <Text style={[styles.title, { color: theme.colors.content.primary }]}>오늘의 현황</Text>
         {/* 기여도 그래프 컴포넌트 */}
         <ContributionGraph
           numWeeks={10}
@@ -81,7 +86,7 @@ const DashboardScreen = () => {
         />
 
         <View style={styles.tasksContainer}>
-          <Text style={styles.subtitle}>오늘의 작업</Text>
+          <Text style={[styles.subtitle, { color: theme.colors.content.primary }]}>오늘의 작업</Text>
           <TaskList
             tasks={tasks}
             onTaskPress={handleTaskPress}
@@ -91,7 +96,7 @@ const DashboardScreen = () => {
 
       {/* 플로팅 액션 버튼 추가 */}
       <FloatingActionButton
-        icon={<PlusIcon color={COLORS.NEUTRAL.WHITE} size={24} />}
+        icon={<PlusIcon color={theme.colors.content.inverse} size={24} />}
         onPress={handleCreateTask}
       />
     </SafeAreaView>
@@ -101,7 +106,6 @@ const DashboardScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.NEUTRAL.WHITE,
   },
   header: {
     padding: 16,
@@ -109,11 +113,9 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: COLORS.NEUTRAL.BLACK,
   },
   date: {
     fontSize: 16,
-    color: COLORS.NEUTRAL.DARK_GRAY,
     marginTop: 4,
   },
   content: {
@@ -123,13 +125,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: '600',
-    color: COLORS.NEUTRAL.BLACK,
     marginBottom: 16,
   },
   subtitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: COLORS.NEUTRAL.BLACK,
     marginBottom: 12,
     marginTop: 24,
   },

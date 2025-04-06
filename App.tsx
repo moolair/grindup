@@ -10,6 +10,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import SplashScreen from 'react-native-splash-screen';
 import AppNavigator from './src/navigation/AppNavigator';
+import ThemeProvider from './src/theme/ThemeProvider';
 
 function App(): React.JSX.Element {
   useLayoutEffect(() => {
@@ -19,9 +20,11 @@ function App(): React.JSX.Element {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <AppNavigator />
-      </SafeAreaProvider>
+      <ThemeProvider>
+        <SafeAreaProvider>
+          <AppNavigator />
+        </SafeAreaProvider>
+      </ThemeProvider>
     </GestureHandlerRootView>
   );
 }

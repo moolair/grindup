@@ -1,6 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, View, StyleSheet } from 'react-native';
+import { useTheme } from '../theme/ThemeProvider';
 
 import DashboardScreen from '../screens/Dashboard/DashboardScreen';
 import AnalyticsScreen from '../screens/Analytics/AnalyticsScreen';
@@ -9,8 +10,13 @@ import SettingsScreen from '../screens/Settings/SettingsScreen';
 
 // 아이콘 컴포넌트 (실제 아이콘 대신 임시로 사용)
 const TabIcon = ({ focused, color, name }: { focused: boolean; color: string; name: string }) => {
+  const { theme } = useTheme();
+
   return (
-    <View style={[styles.iconContainer, focused ? styles.focusedIcon : null]}>
+    <View style={[
+      styles.iconContainer,
+      focused ? { backgroundColor: theme.type === 'dark' ? 'rgba(51, 102, 255, 0.2)' : '#E6EEFF' } : null
+    ]}>
       <Text style={{ color }}>{name[0].toUpperCase()}</Text>
     </View>
   );
@@ -19,14 +25,18 @@ const TabIcon = ({ focused, color, name }: { focused: boolean; color: string; na
 const Tab = createBottomTabNavigator();
 
 const TabNavigator = () => {
+  const { theme } = useTheme();
+
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: '#3366FF',
-        tabBarInactiveTintColor: '#8395A7',
+        tabBarActiveTintColor: theme.colors.ui.primary,
+        tabBarInactiveTintColor: theme.colors.content.secondary,
         tabBarStyle: {
           height: 60,
           paddingTop: 5,
+          backgroundColor: theme.colors.background.primary,
+          borderTopColor: theme.colors.border.light,
         },
         headerShown: false,
       }}
@@ -74,9 +84,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 12,
-  },
-  focusedIcon: {
-    backgroundColor: '#E6EEFF',
   },
 });
 

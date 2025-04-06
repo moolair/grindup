@@ -2,9 +2,9 @@ import React, { useCallback } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
 import { useNavigation, NavigationProp, ParamListBase } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import useTranslation from '../../../hooks/useTranslation';
-import useTheme from '../../../hooks/useTheme';
-import { SupportedLanguage } from '../../../i18n';
+import useTranslation from '../../hooks/useTranslation';
+import { useTheme } from '../../theme/ThemeProvider';
+import { SupportedLanguage } from '../../i18n';
 
 const LanguageSettingsScreen = () => {
     const navigation = useNavigation<NavigationProp<ParamListBase>>();
@@ -19,15 +19,15 @@ const LanguageSettingsScreen = () => {
     }, [setLanguage]);
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-            <View style={[styles.header, { borderBottomColor: theme.border }]}>
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
+            <View style={[styles.header, { borderBottomColor: theme.colors.border.light }]}>
                 <TouchableOpacity
                     style={styles.backButton}
                     onPress={() => navigation.goBack()}
                 >
-                    <Icon name="arrow-back" size={24} color={theme.text} />
+                    <Icon name="arrow-back" size={24} color={theme.colors.content.primary} />
                 </TouchableOpacity>
-                <Text style={[styles.title, { color: theme.text }]}>{t('appearance.language.title')}</Text>
+                <Text style={[styles.title, { color: theme.colors.content.primary }]}>{t('appearance.language.title')}</Text>
             </View>
 
             <ScrollView>
@@ -35,23 +35,23 @@ const LanguageSettingsScreen = () => {
                     {Object.entries(supportedLanguages).map(([langCode, langInfo]) => (
                         <TouchableOpacity
                             key={langCode}
-                            style={[styles.languageItem, { borderBottomColor: theme.border }]}
+                            style={[styles.languageItem, { borderBottomColor: theme.colors.border.light }]}
                             onPress={() => handleLanguageChange(langCode)}
                         >
                             <View style={styles.languageInfo}>
-                                <Text style={[styles.languageName, { color: theme.text }]}>{langInfo.nativeName}</Text>
-                                <Text style={[styles.languageNameInEnglish, { color: theme.inactive }]}>{langInfo.name}</Text>
+                                <Text style={[styles.languageName, { color: theme.colors.content.primary }]}>{langInfo.nativeName}</Text>
+                                <Text style={[styles.languageNameInEnglish, { color: theme.colors.content.secondary }]}>{langInfo.name}</Text>
                             </View>
 
                             {currentLanguage === langCode && (
-                                <Icon name="check" size={24} color={theme.primary} />
+                                <Icon name="check" size={24} color={theme.colors.ui.primary} />
                             )}
                         </TouchableOpacity>
                     ))}
                 </View>
 
-                <View style={[styles.infoSection, { backgroundColor: theme.card }]}>
-                    <Text style={[styles.infoText, { color: theme.inactive }]}>
+                <View style={[styles.infoSection, { backgroundColor: theme.colors.surface.primary }]}>
+                    <Text style={[styles.infoText, { color: theme.colors.content.secondary }]}>
                         {t('appearance.language.system')}
                     </Text>
                 </View>
