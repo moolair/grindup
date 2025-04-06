@@ -1,5 +1,5 @@
-import { collection, query, where, getDocs, getDoc, doc, Timestamp } from 'firebase/firestore';
-import { db, auth } from './index';
+import firestore from '@react-native-firebase/firestore';
+import auth from '@react-native-firebase/auth';
 
 // 스트릭 정보 인터페이스
 export interface StreakInfo {
@@ -13,17 +13,27 @@ export interface StreakInfo {
  */
 export const getStreakInfo = async (): Promise<StreakInfo> => {
     try {
-        const user = auth.currentUser;
+        const user = auth().currentUser;
         if (!user) {
             throw new Error('User not authenticated');
         }
 
         // 사용자의 스트릭 문서 가져오기
-        const streakDocRef = doc(db, 'userStats', user.uid);
-        const streakDoc = await getDoc(streakDocRef);
+        const streakDoc = await firestore()
+            .collection('userStats')
+            .doc(user.uid)
+            .get();
 
-        if (streakDoc.exists()) {
+        if (streakDoc.exists) {
             const data = streakDoc.data();
+            if (!data) {
+                return {
+                    currentStreak: 0,
+                    longestStreak: 0,
+                    totalCompletions: 0,
+                };
+            }
+
             return {
                 currentStreak: data.currentStreak || 0,
                 longestStreak: data.longestStreak || 0,
@@ -52,7 +62,7 @@ export const getStreakInfo = async (): Promise<StreakInfo> => {
  */
 export const getContributionsForDate = async (date: Date): Promise<number> => {
     try {
-        const user = auth.currentUser;
+        const user = auth().currentUser;
         if (!user) {
             throw new Error('User not authenticated');
         }
@@ -64,16 +74,14 @@ export const getContributionsForDate = async (date: Date): Promise<number> => {
         endDate.setHours(23, 59, 59, 999);
 
         // 완료된 작업 쿼리
-        const tasksRef = collection(db, 'tasks');
-        const q = query(
-            tasksRef,
-            where('userId', '==', user.uid),
-            where('status', '==', 'completed'),
-            where('completedAt', '>=', Timestamp.fromDate(startDate)),
-            where('completedAt', '<=', Timestamp.fromDate(endDate))
-        );
+        const querySnapshot = await firestore()
+            .collection('tasks')
+            .where('userId', '==', user.uid)
+            .where('status', '==', 'completed')
+            .where('completedAt', '>=', startDate)
+            .where('completedAt', '<=', endDate)
+            .get();
 
-        const querySnapshot = await getDocs(q);
         return querySnapshot.size; // 완료된 작업 수 반환
     } catch (error) {
         console.error('Error getting contributions for date:', error);
@@ -86,7 +94,7 @@ export const getContributionsForDate = async (date: Date): Promise<number> => {
  */
 export const getWeeklyContributions = async (weeks: number = 8): Promise<{ date: string; count: number }[]> => {
     try {
-        const user = auth.currentUser;
+        const user = auth().currentUser;
         if (!user) {
             throw new Error('User not authenticated');
         }
@@ -97,15 +105,12 @@ export const getWeeklyContributions = async (weeks: number = 8): Promise<{ date:
         startDate.setHours(0, 0, 0, 0);
 
         // 완료된 작업 쿼리
-        const tasksRef = collection(db, 'tasks');
-        const q = query(
-            tasksRef,
-            where('userId', '==', user.uid),
-            where('status', '==', 'completed'),
-            where('completedAt', '>=', Timestamp.fromDate(startDate))
-        );
-
-        const querySnapshot = await getDocs(q);
+        const querySnapshot = await firestore()
+            .collection('tasks')
+            .where('userId', '==', user.uid)
+            .where('status', '==', 'completed')
+            .where('completedAt', '>=', startDate)
+            .get();
 
         // 날짜별 기여 집계
         const contributionMap = new Map<string, number>();

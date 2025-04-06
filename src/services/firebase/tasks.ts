@@ -1,5 +1,5 @@
-import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc, Timestamp } from 'firebase/firestore';
-import { db, auth } from './index';
+import firestore from '@react-native-firebase/firestore';
+import auth from '@react-native-firebase/auth';
 
 // Task 타입 정의
 export interface Task {
@@ -20,7 +20,7 @@ export interface Task {
  */
 export const getTodayTasks = async (): Promise<Task[]> => {
     try {
-        const user = auth.currentUser;
+        const user = auth().currentUser;
         if (!user) {
             throw new Error('User not authenticated');
         }
@@ -30,15 +30,13 @@ export const getTodayTasks = async (): Promise<Task[]> => {
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
 
-        const tasksRef = collection(db, 'tasks');
-        const q = query(
-            tasksRef,
-            where('userId', '==', user.uid),
-            where('dueDate', '>=', Timestamp.fromDate(today)),
-            where('dueDate', '<', Timestamp.fromDate(tomorrow))
-        );
+        const querySnapshot = await firestore()
+            .collection('tasks')
+            .where('userId', '==', user.uid)
+            .where('dueDate', '>=', today)
+            .where('dueDate', '<', tomorrow)
+            .get();
 
-        const querySnapshot = await getDocs(q);
         const tasks: Task[] = [];
 
         querySnapshot.forEach((doc) => {
@@ -69,18 +67,16 @@ export const getTodayTasks = async (): Promise<Task[]> => {
  */
 export const getAllTasks = async (): Promise<Task[]> => {
     try {
-        const user = auth.currentUser;
+        const user = auth().currentUser;
         if (!user) {
             throw new Error('User not authenticated');
         }
 
-        const tasksRef = collection(db, 'tasks');
-        const q = query(
-            tasksRef,
-            where('userId', '==', user.uid)
-        );
+        const querySnapshot = await firestore()
+            .collection('tasks')
+            .where('userId', '==', user.uid)
+            .get();
 
-        const querySnapshot = await getDocs(q);
         const tasks: Task[] = [];
 
         querySnapshot.forEach((doc) => {
@@ -111,13 +107,20 @@ export const getAllTasks = async (): Promise<Task[]> => {
  */
 export const getTaskById = async (taskId: string): Promise<Task | null> => {
     try {
-        const taskDoc = await getDoc(doc(db, 'tasks', taskId));
+        const taskDoc = await firestore()
+            .collection('tasks')
+            .doc(taskId)
+            .get();
 
-        if (!taskDoc.exists()) {
+        if (!taskDoc.exists) {
             return null;
         }
 
         const data = taskDoc.data();
+        if (!data) {
+            return null;
+        }
+
         return {
             id: taskDoc.id,
             title: data.title,

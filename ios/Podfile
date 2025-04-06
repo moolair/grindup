@@ -5,14 +5,13 @@ require Pod::Executable.execute_command('node', ['-p',
     {paths: [process.argv[1]]},
   )', __dir__]).strip
 
-platform :ios, min_ios_version_supported
+platform :ios, '15.1'
+use_modular_headers!
+install_pods_dependencies_with_modular_headers = true
 prepare_react_native_project!
 
-linkage = ENV['USE_FRAMEWORKS']
-if linkage != nil
-  Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
-  use_frameworks! :linkage => linkage.to_sym
-end
+install! 'cocoapods', :deterministic_uuids => false
+use_frameworks! :linkage => :static
 
 target 'GrindUp' do
   config = use_native_modules!
@@ -20,13 +19,28 @@ target 'GrindUp' do
   use_react_native!(
     :path => config[:reactNativePath],
     # An absolute path to your application root.
-    :app_path => "#{Pod::Config.instance.installation_root}/.."
+    :app_path => "#{Pod::Config.instance.installation_root}/..",
+    :hermes_enabled => false
   )
 
-  # Firebase 의존성 추가
+  # Firebase 의존성 업데이트
   pod 'Firebase', :modular_headers => true
   pod 'FirebaseCore', :modular_headers => true
   pod 'GoogleUtilities', :modular_headers => true
+  pod 'FirebaseCoreInternal', :modular_headers => true
+  pod 'FirebaseAppCheckInterop', :modular_headers => true
+  pod 'FirebaseAuthInterop', :modular_headers => true
+  pod 'GTMSessionFetcher', :modular_headers => true
+  
+  # Analytics 관련 의존성 제거 (충돌 방지)
+  pod 'Firebase/Auth', :modular_headers => true
+  pod 'Firebase/Firestore', :modular_headers => true
+
+  # SocketRocket 문제 해결을 위한 옵션 추가
+  pod 'SocketRocket', :modular_headers => true
+  
+  # React Native async storage 명시적 추가
+  pod 'RNCAsyncStorage', :path => '../node_modules/@react-native-async-storage/async-storage'
 
   post_install do |installer|
     # https://github.com/facebook/react-native/blob/main/packages/react-native/scripts/react_native_pods.rb#L197-L202
@@ -36,5 +50,27 @@ target 'GrindUp' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
+
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        config.build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = 'YES'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
+        
+        # 헤더 관련 경고 비활성화
+        config.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
+        config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = ''
+        config.build_settings['CLANG_WARN_DOCUMENTATION_COMMENTS'] = 'NO'
+        config.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
+        config.build_settings['GCC_WARN_UNDECLARED_SELECTOR'] = 'YES'
+        config.build_settings['VALIDATE_PRODUCT'] = 'NO'
+        
+        # Swift 모듈 관련
+        if target.respond_to?(:product_type) && target.product_type == "com.apple.product-type.bundle"
+          target.build_configurations.each do |config|
+            config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
+          end
+        end
+      end
+    end
   end
 end
