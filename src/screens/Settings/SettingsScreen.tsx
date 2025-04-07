@@ -2,9 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, Switch, TouchableOpacity, ScrollView } from 'react-native';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useNavigation, NavigationProp, ParamListBase, CommonActions } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
 import useTranslation from '../../hooks/useTranslation';
-import { PlusIcon } from '../../components/atoms/Icons';
+import { PlusIcon, ChevronRightIcon } from '../../components/Icons';
 
 const SettingsScreen = () => {
   const { theme, toggleTheme } = useTheme();
@@ -72,7 +71,7 @@ const SettingsScreen = () => {
             <Text style={[styles.settingLabel, { color: theme.colors.content.primary }]}>{t('appearance.language.title')}</Text>
             <View style={styles.valueWithArrow}>
               <Text style={[styles.settingValue, { color: theme.colors.content.secondary }]}>{currentLanguageNativeName}</Text>
-              <Icon name="chevron-right" size={24} color={theme.colors.content.secondary} />
+              <ChevronRightIcon size={24} color={theme.colors.content.secondary} />
             </View>
           </TouchableOpacity>
         </View>

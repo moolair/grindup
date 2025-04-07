@@ -1,10 +1,10 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
 import { useNavigation, NavigationProp, ParamListBase } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
 import useTranslation from '../../hooks/useTranslation';
 import { useTheme } from '../../theme/ThemeProvider';
 import { SupportedLanguage } from '../../i18n';
+import { ChevronLeftIcon, CheckIcon } from '../../components/Icons';
 
 const LanguageSettingsScreen = () => {
     const navigation = useNavigation<NavigationProp<ParamListBase>>();
@@ -30,7 +30,7 @@ const LanguageSettingsScreen = () => {
                     style={styles.backButton}
                     onPress={() => navigation.goBack()}
                 >
-                    <Icon name="arrow-back" size={24} color={theme.colors.content.primary} />
+                    <ChevronLeftIcon size={24} color={theme.colors.content.primary} />
                 </TouchableOpacity>
                 <Text style={[styles.title, { color: theme.colors.content.primary }]}>{t('appearance.language.title')}</Text>
             </View>
@@ -49,7 +49,7 @@ const LanguageSettingsScreen = () => {
                             </View>
 
                             {selectedLanguage === langCode && (
-                                <Icon name="check" size={24} color={theme.colors.ui.primary} />
+                                <CheckIcon size={24} color={theme.colors.ui.primary} />
                             )}
                         </TouchableOpacity>
                     ))}

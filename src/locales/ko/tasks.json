@@ -60,7 +60,7 @@
         "nextWeekDue": "다음 주",
         "noDue": "마감일 없음"
     },
-    "category": {
+    "categories": {
         "title": "카테고리",
         "manage": "카테고리 관리",
         "create": "카테고리 생성",
@@ -76,7 +76,11 @@
         "study": "공부",
         "health": "건강",
         "shopping": "쇼핑",
-        "none": "카테고리 없음"
+        "none": "카테고리 없음",
+        "uncategorized": "미분류",
+        "learning": "학습",
+        "hobby": "취미",
+        "selfDevelopment": "자기개발"
     },
     "priority": {
         "title": "우선순위",
@@ -149,14 +153,7 @@
         "sat": "토",
         "sun": "일"
     },
-    "categories": {
-        "uncategorized": "미분류",
-        "health": "건강",
-        "learning": "학습",
-        "work": "업무",
-        "hobby": "취미",
-        "selfDevelopment": "자기개발"
-    },
+    "category": "카테고리",
     "reminderSettings": "알림 설정",
     "createButton": "루틴 생성"
 }

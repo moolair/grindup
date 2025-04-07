@@ -18,7 +18,7 @@ import Register from '../screens/Auth/Register';
 import Onboarding from '../screens/Auth/Onboarding';
 
 // Icons
-import { HomeIcon, ChartIcon, UserIcon, SettingsIcon, ChecklistIcon } from '../components/atoms/Icons';
+import { HomeIcon, ChartIcon, UserIcon, SettingsIcon, ChecklistIcon } from '../components/Icons';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
