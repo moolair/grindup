@@ -3,6 +3,7 @@ import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/
 import { createStackNavigator } from '@react-navigation/stack';
 import TabNavigator from './TabNavigator';
 import TasksScreen from '../screens/Tasks/TasksScreen';
+import LanguageSettingsScreen from '../screens/Settings/LanguageSettingsScreen';
 import { useTheme } from '../theme/ThemeProvider';
 
 // 필요한 경우 로그인 화면, 온보딩 화면 등을 여기에 추가
@@ -22,6 +23,7 @@ type RootStackParamList = {
   };
   Tasks: undefined;
   TaskDetail: { taskId: string };
+  LanguageSettings: undefined;
   // 추가 화면을 여기에 타입 정의
 };
 
@@ -89,6 +91,15 @@ const AppNavigator = () => {
             // 커스텀 애니메이션 적용
             cardStyleInterpolator: forSlideOverFromRight,
             // 제스처 방향 설정 (오른쪽에서 왼쪽 스와이프로 닫기)
+            gestureDirection: 'horizontal',
+            detachPreviousScreen: false
+          }}
+        />
+        <Stack.Screen
+          name="LanguageSettings"
+          component={LanguageSettingsScreen}
+          options={{
+            cardStyleInterpolator: forSlideOverFromRight,
             gestureDirection: 'horizontal',
             detachPreviousScreen: false
           }}

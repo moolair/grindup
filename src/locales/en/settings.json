@@ -6,7 +6,8 @@
         "save": "Save Changes",
         "saved": "Changes saved",
         "cancel": "Cancel",
-        "resetToDefault": "Reset to Default"
+        "resetToDefault": "Reset to Default",
+        "view": "View"
     },
     "profile": {
         "title": "Profile",

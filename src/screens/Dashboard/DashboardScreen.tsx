@@ -5,8 +5,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { useTheme } from '../../theme/ThemeProvider';
 import ContributionGraph from '../../components/organisms/ContributionGraph';
 import TaskList from '../../components/organisms/TaskList';
-import FloatingActionButton from '../../components/FloatingActionButton';
-import { PlusIcon } from '../../components/Icons';
+import { FloatingActionButton } from '../../components/atoms/Buttons';
 import { RootStackParamList, Task } from '../../navigation/AppNavigator';
 
 // 타입 정의
@@ -96,7 +95,9 @@ const DashboardScreen = () => {
 
       {/* 플로팅 액션 버튼 추가 */}
       <FloatingActionButton
-        icon={<PlusIcon color={theme.colors.content.inverse} size={24} />}
+        icon="plus"
+        color={theme.colors.content.inverse}
+        backgroundColor={theme.colors.ui.primary}
         onPress={handleCreateTask}
       />
     </SafeAreaView>

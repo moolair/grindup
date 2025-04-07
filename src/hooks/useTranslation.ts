@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useTranslation as useReactI18nextTranslation } from 'react-i18next';
 import { changeLanguage, getCurrentLanguage, SUPPORTED_LANGUAGES, SupportedLanguage } from '../i18n';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type TranslationResult = {
     t: (key: string, options?: any) => string;
@@ -26,7 +27,18 @@ export const useTranslation = (namespace = 'common'): TranslationResult => {
      * @returns {Promise<string>} 변경된 언어 코드
      */
     const setLanguage = useCallback(async (language: string): Promise<string> => {
-        return await changeLanguage(language);
+        try {
+            // 언어 변경
+            const changedLanguage = await changeLanguage(language);
+
+            // 변경된 언어를 AsyncStorage에 저장
+            await AsyncStorage.setItem('user_language', changedLanguage);
+
+            return changedLanguage;
+        } catch (error) {
+            console.error('언어 변경 중 오류 발생:', error);
+            throw error;
+        }
     }, []);
 
     /**

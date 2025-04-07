@@ -1,5 +1,6 @@
 import React from 'react';
-import { TouchableOpacity, StyleSheet, View, StyleProp, ViewStyle } from 'react-native';
+import { StyleSheet, StyleProp, ViewStyle } from 'react-native';
+import { Button as PaperButton, FAB } from 'react-native-paper';
 
 interface ButtonProps {
     onPress: () => void;
@@ -7,49 +8,62 @@ interface ButtonProps {
     disabled?: boolean;
     testID?: string;
     children?: React.ReactNode;
+    mode?: 'text' | 'outlined' | 'contained' | 'elevated' | 'contained-tonal';
+    uppercase?: boolean;
+    icon?: string;
+    loading?: boolean;
 }
 
-interface FloatingActionButtonProps extends ButtonProps {
-    icon: React.ReactNode;
+interface FloatingActionButtonProps {
+    onPress: () => void;
+    icon: string;
+    style?: StyleProp<ViewStyle>;
+    disabled?: boolean;
+    testID?: string;
     position?: 'bottomRight' | 'bottomLeft' | 'topRight' | 'topLeft';
+    color?: string;
+    backgroundColor?: string;
+    label?: string;
+    loading?: boolean;
 }
 
-export const PrimaryButton: React.FC<ButtonProps> = ({
+export const Button: React.FC<ButtonProps> = ({
     onPress,
     style,
     disabled = false,
     testID,
     children,
+    mode = 'contained',
+    uppercase = false,
+    icon,
+    loading = false,
 }) => {
     return (
-        <TouchableOpacity
-            style={[styles.primaryButton, disabled && styles.disabledButton, style]}
+        <PaperButton
+            mode={mode}
             onPress={onPress}
             disabled={disabled}
             testID={testID}
+            style={[styles.button, style]}
+            uppercase={uppercase}
+            icon={icon}
+            loading={loading}
         >
             {children}
-        </TouchableOpacity>
+        </PaperButton>
     );
 };
 
-export const SecondaryButton: React.FC<ButtonProps> = ({
-    onPress,
-    style,
-    disabled = false,
-    testID,
-    children,
-}) => {
-    return (
-        <TouchableOpacity
-            style={[styles.secondaryButton, disabled && styles.disabledSecondaryButton, style]}
-            onPress={onPress}
-            disabled={disabled}
-            testID={testID}
-        >
-            {children}
-        </TouchableOpacity>
-    );
+export const PrimaryButton: React.FC<ButtonProps> = (props) => {
+    return <Button {...props} mode="contained" />;
+};
+
+export const SecondaryButton: React.FC<ButtonProps> = (props) => {
+    return <Button {...props} mode="outlined" />;
+};
+
+export const TextButton: React.FC<ButtonProps> = (props) => {
+    return <Button {...props} mode="text" />;
 };
 
 export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
@@ -59,6 +73,10 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
     disabled = false,
     position = 'bottomRight',
     testID,
+    color,
+    backgroundColor,
+    label,
+    loading = false,
 }) => {
     const positionStyle = {
         bottomRight: styles.bottomRight,
@@ -68,59 +86,33 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
     }[position];
 
     return (
-        <TouchableOpacity
-            style={[styles.fab, positionStyle, disabled && styles.disabledButton, style]}
+        <FAB
+            style={[
+                styles.fab,
+                positionStyle,
+                backgroundColor ? { backgroundColor } : null,
+                style
+            ]}
+            icon={icon}
             onPress={onPress}
             disabled={disabled}
             testID={testID}
-        >
-            {icon}
-        </TouchableOpacity>
+            color={color}
+            label={label}
+            loading={loading}
+        />
     );
 };
 
 const styles = StyleSheet.create({
-    primaryButton: {
-        backgroundColor: '#3366FF',
-        paddingVertical: 12,
-        paddingHorizontal: 24,
+    button: {
         borderRadius: 12,
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: 48,
-    },
-    secondaryButton: {
-        backgroundColor: 'transparent',
-        paddingVertical: 12,
-        paddingHorizontal: 24,
-        borderRadius: 12,
-        borderWidth: 1.5,
-        borderColor: '#3366FF',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: 48,
-    },
-    disabledButton: {
-        backgroundColor: '#ADC2FF',
-        opacity: 0.6,
-    },
-    disabledSecondaryButton: {
-        borderColor: '#ADC2FF',
-        opacity: 0.6,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
     },
     fab: {
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        backgroundColor: '#3366FF',
-        alignItems: 'center',
-        justifyContent: 'center',
         position: 'absolute',
-        elevation: 5,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.27,
-        shadowRadius: 4.65,
+        borderRadius: 30,
         zIndex: 999,
     },
     bottomRight: {
