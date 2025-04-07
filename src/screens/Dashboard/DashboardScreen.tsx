@@ -7,6 +7,7 @@ import ContributionGraph from '../../components/organisms/ContributionGraph';
 import TaskList from '../../components/organisms/TaskList';
 import { FloatingActionButton } from '../../components/atoms/Buttons';
 import { RootStackParamList, Task } from '../../navigation/AppNavigator';
+import useTranslation from '../../hooks/useTranslation';
 
 // 타입 정의
 type DashboardScreenNavigationProp = StackNavigationProp<RootStackParamList>;
@@ -42,6 +43,7 @@ const DashboardScreen = () => {
   const route = useRoute<DashboardScreenRouteProp>();
   const { theme } = useTheme();
   const [tasks, setTasks] = useState<Task[]>(generateMockTasks());
+  const { t } = useTranslation('dashboard');
 
   // TasksScreen에서 전달된 새 작업이 있는지 확인하고 추가
   useEffect(() => {
@@ -72,12 +74,12 @@ const DashboardScreen = () => {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
       <View style={styles.header}>
-        <Text style={[styles.greeting, { color: theme.colors.content.primary }]}>안녕하세요!</Text>
+        <Text style={[styles.greeting, { color: theme.colors.content.primary }]}>{t('greeting')}</Text>
         <Text style={[styles.date, { color: theme.colors.content.secondary }]}>{new Date().toLocaleDateString()}</Text>
       </View>
 
       <View style={styles.content}>
-        <Text style={[styles.title, { color: theme.colors.content.primary }]}>오늘의 현황</Text>
+        <Text style={[styles.title, { color: theme.colors.content.primary }]}>{t('todayStatus')}</Text>
         {/* 기여도 그래프 컴포넌트 */}
         <ContributionGraph
           numWeeks={10}
@@ -85,7 +87,7 @@ const DashboardScreen = () => {
         />
 
         <View style={styles.tasksContainer}>
-          <Text style={[styles.subtitle, { color: theme.colors.content.primary }]}>오늘의 작업</Text>
+          <Text style={[styles.subtitle, { color: theme.colors.content.primary }]}>{t('todayTasksHeader')}</Text>
           <TaskList
             tasks={tasks}
             onTaskPress={handleTaskPress}

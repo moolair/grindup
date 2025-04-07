@@ -60,7 +60,10 @@
         "deleteWarning": "All tasks in this category will be moved to Uncategorized",
         "created": "Category created",
         "updated": "Category updated",
-        "deleted": "Category deleted"
+        "deleted": "Category deleted",
+        "uncategorized": "Uncategorized",
+        "learning": "Learning",
+        "selfDevelopment": "Self-development"
     },
     "priority": {
         "low": "Low",
@@ -100,5 +103,22 @@
         "moveToCategory": "Move to Category",
         "changePriority": "Change Priority",
         "changeDueDate": "Change Due Date"
-    }
+    },
+    "createRoutine": "Create Routine",
+    "title": "Title",
+    "titlePlaceholder": "Enter routine title",
+    "description": "Description",
+    "descriptionPlaceholder": "Enter description for the routine",
+    "repeatDays": "Repeat Days",
+    "days": {
+        "mon": "Mon",
+        "tue": "Tue",
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat",
+        "sun": "Sun"
+    },
+    "reminderSettings": "Reminder Settings",
+    "createButton": "Create Routine"
 }

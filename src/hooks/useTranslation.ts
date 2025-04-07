@@ -34,12 +34,15 @@ export const useTranslation = (namespace = 'common'): TranslationResult => {
             // 변경된 언어를 AsyncStorage에 저장
             await AsyncStorage.setItem('user_language', changedLanguage);
 
+            // 강제로 이벤트 발생시켜서 모든 컴포넌트가 리렌더링되도록 함
+            i18n.emit('languageChanged', language);
+
             return changedLanguage;
         } catch (error) {
             console.error('언어 변경 중 오류 발생:', error);
             throw error;
         }
-    }, []);
+    }, [i18n]);
 
     /**
      * 현재 언어 코드

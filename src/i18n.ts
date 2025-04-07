@@ -8,12 +8,18 @@ import en_auth from './locales/en/auth.json';
 import en_tasks from './locales/en/tasks.json';
 import en_dashboard from './locales/en/dashboard.json';
 import en_settings from './locales/en/settings.json';
+import en_analytics from './locales/en/analytics.json';
+import en_profile from './locales/en/profile.json';
+import en_navigation from './locales/en/navigation.json';
 
 import ko_common from './locales/ko/common.json';
 import ko_auth from './locales/ko/auth.json';
 import ko_tasks from './locales/ko/tasks.json';
 import ko_dashboard from './locales/ko/dashboard.json';
 import ko_settings from './locales/ko/settings.json';
+import ko_analytics from './locales/ko/analytics.json';
+import ko_profile from './locales/ko/profile.json';
+import ko_navigation from './locales/ko/navigation.json';
 
 // 일본어 리소스 가져오기 삭제됨
 
@@ -44,6 +50,9 @@ export const NAMESPACES = [
     'tasks',
     'dashboard',
     'settings',
+    'analytics',
+    'profile',
+    'navigation',
 ];
 
 // 리소스 정의 (일본어 제거됨)
@@ -54,6 +63,9 @@ const resources = {
         tasks: en_tasks,
         dashboard: en_dashboard,
         settings: en_settings,
+        analytics: en_analytics,
+        profile: en_profile,
+        navigation: en_navigation,
     },
     ko: {
         common: ko_common,
@@ -61,6 +73,9 @@ const resources = {
         tasks: ko_tasks,
         dashboard: ko_dashboard,
         settings: ko_settings,
+        analytics: ko_analytics,
+        profile: ko_profile,
+        navigation: ko_navigation,
     },
 };
 
@@ -102,6 +117,8 @@ export const initI18n = async (language?: SupportedLanguageCode | null): Promise
             },
             react: {
                 useSuspense: false, // React.Suspense와 함께 사용하지 않음
+                bindI18n: 'languageChanged loaded', // 언어 변경 시 자동 리렌더링
+                bindI18nStore: 'added removed', // 리소스 추가/제거 시 자동 리렌더링
             },
         });
 
@@ -115,8 +132,18 @@ export const changeLanguage = async (language: string): Promise<string> => {
         language = DEFAULT_LANGUAGE;
     }
 
-    await i18next.changeLanguage(language);
-    return language;
+    try {
+        // 언어 변경
+        await i18next.changeLanguage(language);
+
+        // 강제로 언어 변경 이벤트 발생시키기 (추가)
+        i18next.emit('languageChanged', language);
+
+        return language;
+    } catch (error) {
+        console.error('Failed to change language:', error);
+        throw error;
+    }
 };
 
 // 현재 언어 가져오기

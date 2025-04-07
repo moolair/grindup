@@ -1,14 +1,16 @@
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, Image, TouchableOpacity } from 'react-native';
 import { useTheme } from '../../theme/ThemeProvider';
+import useTranslation from '../../hooks/useTranslation';
 
 const ProfileScreen = () => {
   const { theme } = useTheme();
+  const { t } = useTranslation('profile');
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.colors.content.primary }]}>프로필</Text>
+        <Text style={[styles.title, { color: theme.colors.content.primary }]}>{t('title')}</Text>
       </View>
 
       <View style={styles.profileSection}>
@@ -27,30 +29,30 @@ const ProfileScreen = () => {
       }]}>
         <View style={styles.statItem}>
           <Text style={[styles.statNumber, { color: theme.colors.ui.primary }]}>42</Text>
-          <Text style={[styles.statLabel, { color: theme.colors.content.secondary }]}>완료한 작업</Text>
+          <Text style={[styles.statLabel, { color: theme.colors.content.secondary }]}>{t('stats.completedTasks')}</Text>
         </View>
         <View style={[styles.statDivider, { backgroundColor: theme.colors.border.light }]} />
         <View style={styles.statItem}>
           <Text style={[styles.statNumber, { color: theme.colors.ui.primary }]}>28</Text>
-          <Text style={[styles.statLabel, { color: theme.colors.content.secondary }]}>연속 달성</Text>
+          <Text style={[styles.statLabel, { color: theme.colors.content.secondary }]}>{t('stats.streakDays')}</Text>
         </View>
       </View>
 
       <View style={styles.menuSection}>
         <TouchableOpacity style={[styles.menuItem, { borderBottomColor: theme.colors.border.light }]}>
-          <Text style={[styles.menuText, { color: theme.colors.content.primary }]}>계정 설정</Text>
+          <Text style={[styles.menuText, { color: theme.colors.content.primary }]}>{t('menu.accountSettings')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.menuItem, { borderBottomColor: theme.colors.border.light }]}>
-          <Text style={[styles.menuText, { color: theme.colors.content.primary }]}>알림 설정</Text>
+          <Text style={[styles.menuText, { color: theme.colors.content.primary }]}>{t('menu.notificationSettings')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.menuItem, { borderBottomColor: theme.colors.border.light }]}>
-          <Text style={[styles.menuText, { color: theme.colors.content.primary }]}>개인정보 보호</Text>
+          <Text style={[styles.menuText, { color: theme.colors.content.primary }]}>{t('menu.privacy')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.menuItem, { borderBottomColor: theme.colors.border.light }]}>
-          <Text style={[styles.menuText, { color: theme.colors.content.primary }]}>도움말</Text>
+          <Text style={[styles.menuText, { color: theme.colors.content.primary }]}>{t('menu.help')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.menuItem, styles.logoutItem, { borderBottomColor: theme.colors.border.light }]}>
-          <Text style={[styles.logoutText, { color: theme.colors.ui.error }]}>로그아웃</Text>
+          <Text style={[styles.logoutText, { color: theme.colors.ui.error }]}>{t('menu.logout')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

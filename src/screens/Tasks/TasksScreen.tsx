@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, Scro
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../theme/ThemeProvider';
 import { ChevronLeftIcon } from '../../components/Icons';
+import useTranslation from '../../hooks/useTranslation';
 
 // 요일 선택을 위한 인터페이스
 interface DayOption {
@@ -24,16 +25,17 @@ interface Routine {
 const TasksScreen = () => {
   const navigation = useNavigation();
   const { theme } = useTheme();
+  const { t } = useTranslation('tasks');
 
   // 초기 요일 선택 상태
   const initialDays: DayOption[] = [
-    { id: 'mon', label: '월', selected: false },
-    { id: 'tue', label: '화', selected: false },
-    { id: 'wed', label: '수', selected: false },
-    { id: 'thu', label: '목', selected: false },
-    { id: 'fri', label: '금', selected: false },
-    { id: 'sat', label: '토', selected: false },
-    { id: 'sun', label: '일', selected: false },
+    { id: 'mon', label: t('days.mon'), selected: false },
+    { id: 'tue', label: t('days.tue'), selected: false },
+    { id: 'wed', label: t('days.wed'), selected: false },
+    { id: 'thu', label: t('days.thu'), selected: false },
+    { id: 'fri', label: t('days.fri'), selected: false },
+    { id: 'sat', label: t('days.sat'), selected: false },
+    { id: 'sun', label: t('days.sun'), selected: false },
   ];
 
   // 루틴 상태 관리
@@ -43,12 +45,19 @@ const TasksScreen = () => {
     description: '',
     days: initialDays,
     reminder: false,
-    category: '미분류',
+    category: t('categories.uncategorized'),
   });
 
   // 카테고리 옵션들
-  const categories = ['미분류', '건강', '학습', '업무', '취미', '자기개발'];
-  const [selectedCategory, setSelectedCategory] = useState('미분류');
+  const categories = [
+    t('categories.uncategorized'),
+    t('categories.health'),
+    t('categories.learning'),
+    t('categories.work'),
+    t('categories.hobby'),
+    t('categories.selfDevelopment')
+  ];
+  const [selectedCategory, setSelectedCategory] = useState(t('categories.uncategorized'));
 
   // 뒤로가기 핸들러
   const handleBackPress = () => {
@@ -101,20 +110,20 @@ const TasksScreen = () => {
         <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
           <ChevronLeftIcon color={theme.colors.content.primary} size={24} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: theme.colors.content.primary }]}>루틴 생성</Text>
+        <Text style={[styles.title, { color: theme.colors.content.primary }]}>{t('createRoutine')}</Text>
       </View>
 
       <ScrollView style={styles.content}>
         {/* 제목 입력 */}
         <View style={styles.inputContainer}>
-          <Text style={[styles.inputLabel, { color: theme.colors.content.primary }]}>제목</Text>
+          <Text style={[styles.inputLabel, { color: theme.colors.content.primary }]}>{t('title')}</Text>
           <TextInput
             style={[styles.input, {
               borderColor: theme.colors.border.light,
               color: theme.colors.content.primary,
               backgroundColor: theme.colors.surface.primary
             }]}
-            placeholder="루틴 제목을 입력하세요"
+            placeholder={t('titlePlaceholder')}
             placeholderTextColor={theme.colors.content.tertiary}
             value={routine.title}
             onChangeText={handleTitleChange}
@@ -123,14 +132,14 @@ const TasksScreen = () => {
 
         {/* 설명 입력 */}
         <View style={styles.inputContainer}>
-          <Text style={[styles.inputLabel, { color: theme.colors.content.primary }]}>설명</Text>
+          <Text style={[styles.inputLabel, { color: theme.colors.content.primary }]}>{t('description')}</Text>
           <TextInput
             style={[styles.input, styles.textArea, {
               borderColor: theme.colors.border.light,
               color: theme.colors.content.primary,
               backgroundColor: theme.colors.surface.primary
             }]}
-            placeholder="루틴에 대한 설명을 입력하세요"
+            placeholder={t('descriptionPlaceholder')}
             placeholderTextColor={theme.colors.content.tertiary}
             value={routine.description}
             onChangeText={handleDescriptionChange}
@@ -141,7 +150,7 @@ const TasksScreen = () => {
 
         {/* 반복 요일 선택 */}
         <View style={styles.inputContainer}>
-          <Text style={[styles.inputLabel, { color: theme.colors.content.primary }]}>반복 요일</Text>
+          <Text style={[styles.inputLabel, { color: theme.colors.content.primary }]}>{t('repeatDays')}</Text>
           <View style={styles.daysContainer}>
             {routine.days.map(day => (
               <TouchableOpacity
@@ -169,7 +178,7 @@ const TasksScreen = () => {
 
         {/* 카테고리 선택 */}
         <View style={styles.inputContainer}>
-          <Text style={[styles.inputLabel, { color: theme.colors.content.primary }]}>카테고리</Text>
+          <Text style={[styles.inputLabel, { color: theme.colors.content.primary }]}>{t('category')}</Text>
           <View style={styles.categoriesContainer}>
             {categories.map(category => (
               <TouchableOpacity
@@ -204,7 +213,7 @@ const TasksScreen = () => {
         {/* 알림 설정 */}
         <View style={styles.inputContainer}>
           <View style={styles.reminderContainer}>
-            <Text style={[styles.inputLabel, { color: theme.colors.content.primary }]}>알림 설정</Text>
+            <Text style={[styles.inputLabel, { color: theme.colors.content.primary }]}>{t('reminderSettings')}</Text>
             <Switch
               value={routine.reminder}
               onValueChange={toggleReminder}
@@ -220,7 +229,7 @@ const TasksScreen = () => {
         style={[styles.createButton, { backgroundColor: theme.colors.ui.primary }]}
         onPress={handleCreateRoutine}
       >
-        <Text style={[styles.createButtonText, { color: theme.colors.content.inverse }]}>루틴 생성</Text>
+        <Text style={[styles.createButtonText, { color: theme.colors.content.inverse }]}>{t('createButton')}</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );

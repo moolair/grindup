@@ -1,0 +1,14 @@
+{
+    "title": "Profile",
+    "stats": {
+        "completedTasks": "Completed Tasks",
+        "streakDays": "Streak Days"
+    },
+    "menu": {
+        "accountSettings": "Account Settings",
+        "notificationSettings": "Notification Settings",
+        "privacy": "Privacy",
+        "help": "Help",
+        "logout": "Logout"
+    }
+}

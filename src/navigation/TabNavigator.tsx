@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, View, StyleSheet } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
+import useTranslation from '../hooks/useTranslation';
 
 import DashboardScreen from '../screens/Dashboard/DashboardScreen';
 import AnalyticsScreen from '../screens/Analytics/AnalyticsScreen';
@@ -26,6 +27,28 @@ const Tab = createBottomTabNavigator();
 
 const TabNavigator = () => {
   const { theme } = useTheme();
+  const { t, currentLanguage } = useTranslation('navigation');
+
+  // 언어가 변경될 때마다 탭 옵션을 다시 계산
+  const homeTabOptions = useMemo(() => ({
+    tabBarLabel: t('tabs.home'),
+    tabBarIcon: (props: any) => <TabIcon {...props} name={t('tabs.home')} />,
+  }), [t, currentLanguage]);
+
+  const analyticsTabOptions = useMemo(() => ({
+    tabBarLabel: t('tabs.analytics'),
+    tabBarIcon: (props: any) => <TabIcon {...props} name={t('tabs.analytics')} />,
+  }), [t, currentLanguage]);
+
+  const profileTabOptions = useMemo(() => ({
+    tabBarLabel: t('tabs.profile'),
+    tabBarIcon: (props: any) => <TabIcon {...props} name={t('tabs.profile')} />,
+  }), [t, currentLanguage]);
+
+  const settingsTabOptions = useMemo(() => ({
+    tabBarLabel: t('tabs.settings'),
+    tabBarIcon: (props: any) => <TabIcon {...props} name={t('tabs.settings')} />,
+  }), [t, currentLanguage]);
 
   return (
     <Tab.Navigator
@@ -44,34 +67,22 @@ const TabNavigator = () => {
       <Tab.Screen
         name="Dashboard"
         component={DashboardScreen}
-        options={{
-          tabBarLabel: '홈',
-          tabBarIcon: (props) => <TabIcon {...props} name="홈" />,
-        }}
+        options={homeTabOptions}
       />
       <Tab.Screen
         name="Analytics"
         component={AnalyticsScreen}
-        options={{
-          tabBarLabel: '분석',
-          tabBarIcon: (props) => <TabIcon {...props} name="분석" />,
-        }}
+        options={analyticsTabOptions}
       />
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}
-        options={{
-          tabBarLabel: '프로필',
-          tabBarIcon: (props) => <TabIcon {...props} name="프로필" />,
-        }}
+        options={profileTabOptions}
       />
       <Tab.Screen
         name="Settings"
         component={SettingsScreen}
-        options={{
-          tabBarLabel: '설정',
-          tabBarIcon: (props) => <TabIcon {...props} name="설정" />,
-        }}
+        options={settingsTabOptions}
       />
     </Tab.Navigator>
   );

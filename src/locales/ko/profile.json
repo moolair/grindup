@@ -1,0 +1,14 @@
+{
+    "title": "프로필",
+    "stats": {
+        "completedTasks": "완료한 작업",
+        "streakDays": "연속 달성"
+    },
+    "menu": {
+        "accountSettings": "계정 설정",
+        "notificationSettings": "알림 설정",
+        "privacy": "개인정보 보호",
+        "help": "도움말",
+        "logout": "로그아웃"
+    }
+}

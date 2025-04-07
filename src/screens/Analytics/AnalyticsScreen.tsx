@@ -1,43 +1,45 @@
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 import { useTheme } from '../../theme/ThemeProvider';
+import useTranslation from '../../hooks/useTranslation';
 
 const AnalyticsScreen = () => {
   const { theme } = useTheme();
+  const { t } = useTranslation('analytics');
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
       <ScrollView>
         <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.colors.content.primary }]}>분석</Text>
+          <Text style={[styles.title, { color: theme.colors.content.primary }]}>{t('title')}</Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.content.primary }]}>작업 통계</Text>
+          <Text style={[styles.sectionTitle, { color: theme.colors.content.primary }]}>{t('workStats')}</Text>
           <View style={[styles.chartPlaceholder, { backgroundColor: theme.colors.background.secondary }]}>
-            <Text style={[styles.placeholderText, { color: theme.colors.content.secondary }]}>작업 완료율 차트</Text>
+            <Text style={[styles.placeholderText, { color: theme.colors.content.secondary }]}>{t('completionRateChart')}</Text>
           </View>
 
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
               <Text style={[styles.statNumber, { color: theme.colors.ui.primary }]}>12</Text>
-              <Text style={[styles.statLabel, { color: theme.colors.content.secondary }]}>총 작업</Text>
+              <Text style={[styles.statLabel, { color: theme.colors.content.secondary }]}>{t('stats.totalTasks')}</Text>
             </View>
             <View style={styles.statItem}>
               <Text style={[styles.statNumber, { color: theme.colors.ui.primary }]}>8</Text>
-              <Text style={[styles.statLabel, { color: theme.colors.content.secondary }]}>완료</Text>
+              <Text style={[styles.statLabel, { color: theme.colors.content.secondary }]}>{t('stats.completed')}</Text>
             </View>
             <View style={styles.statItem}>
               <Text style={[styles.statNumber, { color: theme.colors.ui.primary }]}>4</Text>
-              <Text style={[styles.statLabel, { color: theme.colors.content.secondary }]}>진행 중</Text>
+              <Text style={[styles.statLabel, { color: theme.colors.content.secondary }]}>{t('stats.inProgress')}</Text>
             </View>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.content.primary }]}>주간 리포트</Text>
+          <Text style={[styles.sectionTitle, { color: theme.colors.content.primary }]}>{t('weeklyReport')}</Text>
           <View style={[styles.chartPlaceholder, { backgroundColor: theme.colors.background.secondary }]}>
-            <Text style={[styles.placeholderText, { color: theme.colors.content.secondary }]}>주간 작업 차트</Text>
+            <Text style={[styles.placeholderText, { color: theme.colors.content.secondary }]}>{t('weeklyTaskChart')}</Text>
           </View>
         </View>
       </ScrollView>

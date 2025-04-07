@@ -1,10 +1,16 @@
 {
-    "greeting": {
-        "morning": "Good morning",
-        "afternoon": "Good afternoon",
-        "evening": "Good evening",
-        "night": "Good night",
-        "welcome": "Welcome back"
+    "greeting": "Hello!",
+    "todayStatus": "Today's Status",
+    "todayTasksHeader": "Today's Tasks",
+    "todayTasks": {
+        "title": "Today's Tasks",
+        "completed": "completed",
+        "remaining": "remaining",
+        "dueToday": "Due Today",
+        "addTask": "Add Task",
+        "viewAll": "View All",
+        "emptyState": "No tasks for today",
+        "addNew": "Add a new task"
     },
     "streak": {
         "current": "Current Streak",
@@ -26,16 +32,6 @@
         "less": "Less",
         "more": "More",
         "noActivity": "No activity"
-    },
-    "todayTasks": {
-        "title": "Today's Tasks",
-        "completed": "completed",
-        "remaining": "remaining",
-        "dueToday": "Due Today",
-        "addTask": "Add Task",
-        "viewAll": "View All",
-        "emptyState": "No tasks for today",
-        "addNew": "Add a new task"
     },
     "quickStats": {
         "title": "Quick Stats",

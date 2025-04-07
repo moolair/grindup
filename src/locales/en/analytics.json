@@ -1,0 +1,12 @@
+{
+    "title": "Analytics",
+    "workStats": "Work Statistics",
+    "completionRateChart": "Task Completion Rate Chart",
+    "stats": {
+        "totalTasks": "Total Tasks",
+        "completed": "Completed",
+        "inProgress": "In Progress"
+    },
+    "weeklyReport": "Weekly Report",
+    "weeklyTaskChart": "Weekly Task Chart"
+}
