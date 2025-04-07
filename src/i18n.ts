@@ -94,54 +94,88 @@ const getSystemLanguage = (): SupportedLanguageCode => {
             }
         }
     } catch (error) {
-        console.error('Failed to detect system language:', error);
+        console.error('시스템 언어 감지 실패:', error);
     }
 
     return DEFAULT_LANGUAGE;
 };
 
-// i18next 초기화 함수
-export const initI18n = async (language?: SupportedLanguageCode | null): Promise<typeof i18next> => {
-    const lng = language || getSystemLanguage();
+// 기본 i18next 설정
+i18next
+    .use(initReactI18next)
+    .init({
+        compatibilityJSON: 'v4',
+        lng: getSystemLanguage(),
+        fallbackLng: DEFAULT_LANGUAGE,
+        defaultNS: 'auth', // 기본 네임스페이스를 auth로 변경
+        ns: NAMESPACES,
+        resources,
+        interpolation: {
+            escapeValue: false,
+        },
+        react: {
+            useSuspense: false,
+        },
+        debug: false,
+    });
 
-    await i18next
-        .use(initReactI18next)
-        .init({
-            lng,
-            fallbackLng: DEFAULT_LANGUAGE,
-            defaultNS: 'common',
-            ns: NAMESPACES,
-            resources,
-            interpolation: {
-                escapeValue: false, // React에서는 이미 XSS 방지를 처리함
-            },
-            react: {
-                useSuspense: false, // React.Suspense와 함께 사용하지 않음
-                bindI18n: 'languageChanged loaded', // 언어 변경 시 자동 리렌더링
-                bindI18nStore: 'added removed', // 리소스 추가/제거 시 자동 리렌더링
-            },
+// i18n 초기화/재초기화 함수
+export const initI18n = async (language?: SupportedLanguageCode | null): Promise<typeof i18next> => {
+    try {
+        const lng = language || getSystemLanguage();
+
+        if (i18next.isInitialized) {
+            await i18next.changeLanguage(lng);
+            console.log('언어 변경 완료:', lng);
+        } else {
+            await i18next
+                .use(initReactI18next)
+                .init({
+                    compatibilityJSON: 'v4',
+                    lng,
+                    fallbackLng: DEFAULT_LANGUAGE,
+                    defaultNS: 'auth',
+                    ns: NAMESPACES,
+                    resources,
+                    interpolation: {
+                        escapeValue: false,
+                    },
+                    react: {
+                        useSuspense: false,
+                    },
+                    debug: false,
+                });
+            console.log('i18n 새로 초기화됨');
+        }
+
+        // 초기화 상태 로깅
+        console.log('현재 i18n 상태:', {
+            초기화됨: i18next.isInitialized,
+            현재언어: i18next.language,
+            네임스페이스: i18next.options.ns,
+            기본네임스페이스: i18next.options.defaultNS,
         });
 
-    return i18next;
+        return i18next;
+    } catch (error) {
+        console.error('i18n 초기화 오류:', error);
+        throw error;
+    }
 };
 
 // 언어 변경 함수
 export const changeLanguage = async (language: string): Promise<string> => {
     if (!(language in SUPPORTED_LANGUAGES)) {
-        console.warn(`Language ${language} is not supported. Using ${DEFAULT_LANGUAGE} instead.`);
+        console.warn(`지원하지 않는 언어입니다: ${language}. 대신 ${DEFAULT_LANGUAGE}을(를) 사용합니다.`);
         language = DEFAULT_LANGUAGE;
     }
 
     try {
-        // 언어 변경
         await i18next.changeLanguage(language);
-
-        // 강제로 언어 변경 이벤트 발생시키기 (추가)
-        i18next.emit('languageChanged', language);
-
+        console.log('언어 변경됨:', language);
         return language;
     } catch (error) {
-        console.error('Failed to change language:', error);
+        console.error('언어 변경 실패:', error);
         throw error;
     }
 };
@@ -149,6 +183,13 @@ export const changeLanguage = async (language: string): Promise<string> => {
 // 현재 언어 가져오기
 export const getCurrentLanguage = (): string => {
     return i18next.language || DEFAULT_LANGUAGE;
+};
+
+// 테스트용 번역 함수
+export const testTranslation = (key: string, namespace?: string): string => {
+    const result = i18next.t(key, { ns: namespace });
+    console.log(`번역 테스트 - 키: ${key}, 결과: ${result}`);
+    return result;
 };
 
 export default i18next; 

@@ -1,15 +1,26 @@
+// Firebase v22 모듈러 API 사용
 import firebase from '@react-native-firebase/app';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import storage from '@react-native-firebase/storage';
 
-// @react-native-firebase는 네이티브 레벨에서 자동으로 초기화됩니다
-// GoogleService-Info.plist와 google-services.json 파일을 사용합니다
+// Firebase 앱 상태 확인 및 로깅
+try {
+    const apps = firebase.apps;
+    console.log(`Firebase 앱 상태: ${apps.length > 0 ? `${apps.length}개 초기화됨` : '초기화 필요'}`);
 
-// 파이어베이스 서비스 내보내기
-export { auth, firestore, storage };
+    if (apps.length > 0) {
+        const app = firebase.app();
+        console.log(`기본 앱 이름: ${app.name}`);
+    }
+} catch (error) {
+    console.error('Firebase 상태 확인 오류:', error);
+}
 
-// firebase app 인스턴스 (이미 초기화됨)
-export const app = firebase;
-
-export default { firebase, auth, firestore, storage }; 
+// 서비스 내보내기
+export {
+    auth,
+    firestore,
+    storage,
+    firebase
+}; 
