@@ -4,7 +4,11 @@ import { createStackNavigator } from '@react-navigation/stack';
 import TabNavigator from './TabNavigator';
 import TasksScreen from '../screens/Tasks/TasksScreen';
 import LanguageSettingsScreen from '../screens/Settings/LanguageSettingsScreen';
+import LoginScreen from '../screens/Auth/LoginScreen';
+import Register from '../screens/Auth/Register';
 import { useTheme } from '../theme/ThemeProvider';
+import { useAuth } from '../context/AuthContext';
+import { ActivityIndicator, View } from 'react-native';
 
 // 필요한 경우 로그인 화면, 온보딩 화면 등을 여기에 추가
 
@@ -18,12 +22,15 @@ export interface Task {
 
 // Stack Navigator 타입 정의
 type RootStackParamList = {
+  Login: undefined;
   Main: {
     newTask?: Task;
   };
   Tasks: undefined;
   TaskDetail: { taskId: string };
   LanguageSettings: undefined;
+  Register: undefined;
+  Signup: undefined;
   // 추가 화면을 여기에 타입 정의
 };
 
@@ -53,6 +60,7 @@ export type { RootStackParamList };
 
 const AppNavigator = () => {
   const { theme } = useTheme();
+  const { user, loading } = useAuth();
 
   // 내비게이션 테마 설정
   const navigationTheme = theme.type === 'dark' ? DarkTheme : DefaultTheme;
@@ -68,6 +76,15 @@ const AppNavigator = () => {
     },
   };
 
+  // 로딩 중일 때 로딩 인디케이터 표시
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background.primary }}>
+        <ActivityIndicator size="large" color={theme.colors.ui.primary} />
+      </View>
+    );
+  }
+
   return (
     <NavigationContainer theme={customTheme}>
       <Stack.Navigator
@@ -75,36 +92,56 @@ const AppNavigator = () => {
           headerShown: false,
           detachPreviousScreen: false
         }}
+        initialRouteName={user ? "Main" : "Login"}
       >
-        <Stack.Screen
-          name="Main"
-          component={TabNavigator}
-          // Main 화면(TabNavigator)은 애니메이션 없음 (항상 아래에 고정)
-          options={{
-            detachPreviousScreen: false
-          }}
-        />
-        <Stack.Screen
-          name="Tasks"
-          component={TasksScreen}
-          options={{
-            // 커스텀 애니메이션 적용
-            cardStyleInterpolator: forSlideOverFromRight,
-            // 제스처 방향 설정 (오른쪽에서 왼쪽 스와이프로 닫기)
-            gestureDirection: 'horizontal',
-            detachPreviousScreen: false
-          }}
-        />
-        <Stack.Screen
-          name="LanguageSettings"
-          component={LanguageSettingsScreen}
-          options={{
-            cardStyleInterpolator: forSlideOverFromRight,
-            gestureDirection: 'horizontal',
-            detachPreviousScreen: false
-          }}
-        />
-        {/* 필요한 경우 추가 화면을 여기에 등록 */}
+        {!user ? (
+          // 비로그인 상태일 때 보여줄 화면
+          <>
+            <Stack.Screen
+              name="Login"
+              component={LoginScreen}
+              options={{
+                detachPreviousScreen: false
+              }}
+            />
+            <Stack.Screen
+              name="Register"
+              component={Register}
+              options={{
+                detachPreviousScreen: false
+              }}
+            />
+          </>
+        ) : (
+          // 로그인 상태일 때 보여줄 화면들
+          <>
+            <Stack.Screen
+              name="Main"
+              component={TabNavigator}
+              options={{
+                detachPreviousScreen: false
+              }}
+            />
+            <Stack.Screen
+              name="Tasks"
+              component={TasksScreen}
+              options={{
+                cardStyleInterpolator: forSlideOverFromRight,
+                gestureDirection: 'horizontal',
+                detachPreviousScreen: false
+              }}
+            />
+            <Stack.Screen
+              name="LanguageSettings"
+              component={LanguageSettingsScreen}
+              options={{
+                cardStyleInterpolator: forSlideOverFromRight,
+                gestureDirection: 'horizontal',
+                detachPreviousScreen: false
+              }}
+            />
+          </>
+        )}
       </Stack.Navigator>
     </NavigationContainer>
   );

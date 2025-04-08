@@ -10,6 +10,9 @@ use_modular_headers!
 install_pods_dependencies_with_modular_headers = true
 prepare_react_native_project!
 
+# Firebase 버전을 최신 버전으로 변경
+$FirebaseSDKVersion = '11.10.0'
+
 install! 'cocoapods', :deterministic_uuids => false
 use_frameworks! :linkage => :static
 
@@ -23,19 +26,17 @@ target 'GrindUp' do
     :hermes_enabled => false
   )
 
-  # Firebase 의존성 업데이트
+  # Firebase 의존성 설정
   pod 'Firebase', :modular_headers => true
   pod 'FirebaseCore', :modular_headers => true
+  pod 'FirebaseAuth', :modular_headers => true
+  pod 'FirebaseFirestore', :modular_headers => true
+  pod 'FirebaseStorage', :modular_headers => true
+  
+  # 헤더 충돌 방지
   pod 'GoogleUtilities', :modular_headers => true
   pod 'FirebaseCoreInternal', :modular_headers => true
-  pod 'FirebaseAppCheckInterop', :modular_headers => true
-  pod 'FirebaseAuthInterop', :modular_headers => true
-  pod 'GTMSessionFetcher', :modular_headers => true
   
-  # Analytics 관련 의존성 제거 (충돌 방지)
-  pod 'Firebase/Auth', :modular_headers => true
-  pod 'Firebase/Firestore', :modular_headers => true
-
   # SocketRocket 문제 해결을 위한 옵션 추가
   pod 'SocketRocket', :modular_headers => true
   
@@ -55,6 +56,9 @@ target 'GrindUp' do
       target.build_configurations.each do |config|
         config.build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = 'YES'
         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
+        
+        # Firebase 충돌 방지 설정 추가
+        config.build_settings['SWIFT_VERSION'] = '5.0'
         
         # 헤더 관련 경고 비활성화
         config.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
