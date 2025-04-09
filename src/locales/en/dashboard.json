@@ -31,7 +31,34 @@
         "thisYear": "This Year",
         "less": "Less",
         "more": "More",
-        "noActivity": "No activity"
+        "noActivity": "No activity",
+        "activities": " activities",
+        "year": "",
+        "month": "",
+        "day": "",
+        "weekdays": {
+            "mon": "M",
+            "tue": "T",
+            "wed": "W",
+            "thu": "T",
+            "fri": "F",
+            "sat": "S",
+            "sun": "S"
+        },
+        "months": {
+            "jan": "Jan",
+            "feb": "Feb",
+            "mar": "Mar",
+            "apr": "Apr",
+            "may": "May",
+            "jun": "Jun",
+            "jul": "Jul",
+            "aug": "Aug",
+            "sep": "Sep",
+            "oct": "Oct",
+            "nov": "Nov",
+            "dec": "Dec"
+        }
     },
     "quickStats": {
         "title": "Quick Stats",
