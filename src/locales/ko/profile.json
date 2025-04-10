@@ -5,10 +5,27 @@
         "streakDays": "연속 달성"
     },
     "menu": {
-        "accountSettings": "계정 설정",
-        "notificationSettings": "알림 설정",
+        "changeName": "이름 변경",
+        "changePassword": "비밀번호 변경",
         "privacy": "개인정보 보호",
         "help": "도움말",
         "logout": "로그아웃"
-    }
+    },
+    "modal": {
+        "changeName": {
+            "title": "이름 변경",
+            "placeholder": "새 이름 입력",
+            "cancel": "취소",
+            "save": "저장"
+        },
+        "changePassword": {
+            "title": "비밀번호 변경",
+            "currentPassword": "현재 비밀번호",
+            "newPassword": "새 비밀번호",
+            "confirmPassword": "새 비밀번호 확인",
+            "cancel": "취소",
+            "save": "저장"
+        }
+    },
+    "anonymous": "익명"
 }

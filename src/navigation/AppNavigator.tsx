@@ -16,8 +16,9 @@ import { ActivityIndicator, View } from 'react-native';
 export interface Task {
   id: string;
   title: string;
+  description?: string;
   status: 'pending' | 'completed';
-  category: string;
+  category?: string;
 }
 
 // Stack Navigator 타입 정의

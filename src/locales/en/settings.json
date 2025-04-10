@@ -38,7 +38,12 @@
     "notifications": {
         "title": "Notifications",
         "pushNotifications": "Push Notifications",
-        "emailNotifications": "Email Notifications",
+        "routine": {
+            "title": "Routine Notifications",
+            "startReminder": "Daily Routine Start Reminder",
+            "endReminder": "Incomplete Routine Reminder",
+            "reminderTime": "Reminder Time"
+        },
         "tasks": {
             "title": "Tasks",
             "due": "Task Due Reminders",

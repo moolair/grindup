@@ -7,6 +7,7 @@ type AuthContextType = {
     loading: boolean;
     signOut: () => Promise<void>;
     firebaseInitialized: boolean;
+    updateDisplayName: (newName: string) => Promise<void>;
 };
 
 // 기본값 설정
@@ -15,6 +16,7 @@ const AuthContext = createContext<AuthContextType>({
     loading: true,
     signOut: async () => { },
     firebaseInitialized: false,
+    updateDisplayName: async () => { },
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -87,6 +89,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
+    // 사용자 이름 업데이트
+    const updateDisplayName = async (newName: string) => {
+        if (!auth || !user) {
+            console.error('[AuthContext] 사용자가 로그인되어 있지 않거나 Firebase Auth 서비스를 사용할 수 없습니다.');
+            return;
+        }
+
+        try {
+            console.log('[AuthContext] 사용자 이름 업데이트 시도...');
+            await user.updateProfile({
+                displayName: newName
+            });
+
+            // 현재 유저 객체를 업데이트하여 UI에 즉시 반영
+            setUser({ ...user, displayName: newName });
+
+            console.log('[AuthContext] 사용자 이름 업데이트 성공:', newName);
+        } catch (error) {
+            console.error('[AuthContext] 사용자 이름 업데이트 실패:', error);
+            throw error;
+        }
+    };
+
     return (
         <AuthContext.Provider
             value={{
@@ -94,6 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 loading,
                 signOut,
                 firebaseInitialized,
+                updateDisplayName,
             }}
         >
             {children}

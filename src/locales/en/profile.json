@@ -5,10 +5,27 @@
         "streakDays": "Streak Days"
     },
     "menu": {
-        "accountSettings": "Account Settings",
-        "notificationSettings": "Notification Settings",
+        "changeName": "Change Name",
+        "changePassword": "Change Password",
         "privacy": "Privacy",
         "help": "Help",
         "logout": "Logout"
-    }
+    },
+    "modal": {
+        "changeName": {
+            "title": "Change Name",
+            "placeholder": "Enter new name",
+            "cancel": "Cancel",
+            "save": "Save"
+        },
+        "changePassword": {
+            "title": "Change Password",
+            "currentPassword": "Current password",
+            "newPassword": "New password",
+            "confirmPassword": "Confirm new password",
+            "cancel": "Cancel",
+            "save": "Save"
+        }
+    },
+    "anonymous": "Anonymous"
 }

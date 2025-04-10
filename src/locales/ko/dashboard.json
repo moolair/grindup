@@ -1,7 +1,8 @@
 {
-    "greeting": "안녕하세요!",
+    "greeting": "안녕하세요,",
     "todayStatus": "오늘의 현황",
     "todayTasksHeader": "오늘의 작업",
+    "todayRoutineHeader": "오늘의 루틴",
     "todayTasks": {
         "title": "오늘의 작업",
         "completed": "완료됨",
@@ -11,6 +12,15 @@
         "viewAll": "모두 보기",
         "emptyState": "오늘의 작업이 없습니다",
         "addNew": "새 작업 추가하기"
+    },
+    "todayRoutines": {
+        "title": "오늘의 루틴",
+        "completed": "완료됨",
+        "remaining": "남음",
+        "addRoutine": "루틴 추가",
+        "viewAll": "모두 보기",
+        "emptyState": "설정된 루틴이 없습니다",
+        "addNew": "새 루틴 추가하기"
     },
     "streak": {
         "current": "현재 연속",

@@ -1,7 +1,8 @@
 {
-    "greeting": "Hello!",
+    "greeting": "Hello",
     "todayStatus": "Today's Status",
     "todayTasksHeader": "Today's Tasks",
+    "todayRoutineHeader": "Today's Routines",
     "todayTasks": {
         "title": "Today's Tasks",
         "completed": "completed",
@@ -11,6 +12,15 @@
         "viewAll": "View All",
         "emptyState": "No tasks for today",
         "addNew": "Add a new task"
+    },
+    "todayRoutines": {
+        "title": "Today's Routines",
+        "completed": "completed",
+        "remaining": "remaining",
+        "addRoutine": "Add Routine",
+        "viewAll": "View All",
+        "emptyState": "No routines set up",
+        "addNew": "Add a new routine"
     },
     "streak": {
         "current": "Current Streak",

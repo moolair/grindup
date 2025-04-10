@@ -38,7 +38,12 @@
     "notifications": {
         "title": "알림",
         "pushNotifications": "푸시 알림",
-        "emailNotifications": "이메일 알림",
+        "routine": {
+            "title": "루틴 알림",
+            "startReminder": "오늘의 루틴 시작 알림",
+            "endReminder": "미완료 루틴 알림",
+            "reminderTime": "알림 시간"
+        },
         "tasks": {
             "title": "할 일",
             "due": "할 일 마감 알림",
