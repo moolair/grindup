@@ -38,7 +38,7 @@ const TabNavigator = () => {
         tabBarActiveTintColor: theme.colors.ui.primary,
         tabBarInactiveTintColor: theme.colors.content.secondary,
         tabBarStyle: {
-          height: 60,
+          height: 68,
           backgroundColor: theme.colors.background.primary,
           borderTopColor: theme.colors.border.light,
         },
@@ -46,6 +46,7 @@ const TabNavigator = () => {
           fontSize: 14,
           fontWeight: '500',
           textAlign: 'center',
+          paddingVertical: 8,
         },
         tabBarItemStyle: {
           height: '100%',
