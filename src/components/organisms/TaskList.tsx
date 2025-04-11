@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useTheme } from '../../theme/ThemeProvider';
 
 interface Task {
     id: string;
@@ -17,10 +18,12 @@ interface TaskListProps {
 }
 
 const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress }) => {
+    const { theme } = useTheme();
+
     if (tasks.length === 0) {
         return (
             <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No tasks available</Text>
+                <Text style={[styles.emptyText, { color: theme.colors.content.secondary }]}>No tasks available</Text>
             </View>
         );
     }
@@ -32,28 +35,33 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress }) => {
                     key={task.id}
                     style={[
                         styles.taskItem,
+                        { borderBottomColor: theme.colors.border.light },
                         task.status === 'completed' && styles.completedTask,
                     ]}
                     onPress={() => onTaskPress(task.id)}
                 >
-                    <View style={styles.checkbox}>
+                    <View style={[styles.checkbox, { borderColor: theme.colors.ui.primary }]}>
                         {task.status === 'completed' && (
-                            <View style={styles.checkmark} />
+                            <View style={[styles.checkmark, { backgroundColor: theme.colors.ui.primary }]} />
                         )}
                     </View>
                     <View style={styles.taskContent}>
                         <Text
                             style={[
                                 styles.taskTitle,
-                                task.status === 'completed' && styles.completedText,
+                                { color: theme.colors.content.primary },
+                                task.status === 'completed' && [
+                                    styles.completedText,
+                                    { color: theme.colors.content.tertiary }
+                                ],
                             ]}
                             numberOfLines={1}
                         >
                             {task.title}
                         </Text>
                         {task.category && (
-                            <View style={styles.categoryTag}>
-                                <Text style={styles.categoryText}>{task.category}</Text>
+                            <View style={[styles.categoryTag, { backgroundColor: theme.colors.ui.primary + '20' }]}>
+                                <Text style={[styles.categoryText, { color: theme.colors.ui.primary }]}>{task.category}</Text>
                             </View>
                         )}
                     </View>
@@ -73,7 +81,6 @@ const styles = StyleSheet.create({
         padding: 24,
     },
     emptyText: {
-        color: '#8395A7',
         fontSize: 16,
     },
     taskItem: {
@@ -81,7 +88,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: 12,
         borderBottomWidth: 1,
-        borderBottomColor: '#F0F0F0',
     },
     completedTask: {
         opacity: 0.7,
@@ -91,7 +97,6 @@ const styles = StyleSheet.create({
         height: 20,
         borderRadius: 4,
         borderWidth: 2,
-        borderColor: '#3366FF',
         marginRight: 12,
         alignItems: 'center',
         justifyContent: 'center',
@@ -99,7 +104,6 @@ const styles = StyleSheet.create({
     checkmark: {
         width: 10,
         height: 10,
-        backgroundColor: '#3366FF',
         borderRadius: 2,
     },
     taskContent: {
@@ -114,18 +118,15 @@ const styles = StyleSheet.create({
     },
     completedText: {
         textDecorationLine: 'line-through',
-        color: '#8395A7',
     },
     categoryTag: {
         paddingHorizontal: 8,
         paddingVertical: 2,
-        backgroundColor: '#EBF0FF',
         borderRadius: 4,
         marginLeft: 8,
     },
     categoryText: {
         fontSize: 12,
-        color: '#3366FF',
     },
 });
 

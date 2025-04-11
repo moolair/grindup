@@ -1,18 +1,35 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, forwardRef, useImperativeHandle } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
 import { getWeeklyContributions } from '../../services/firebase/contributions';
 import useTranslation from '../../hooks/useTranslation';
+import { useTheme } from '../../theme/ThemeProvider';
 
 interface ContributionGraphProps {
     numWeeks?: number;
     onDayPress?: (date: Date, count: number) => void;
 }
 
-const ContributionGraph: React.FC<ContributionGraphProps> = ({
+// ref를 통해 노출할 메서드 타입 정의
+export interface ContributionGraphHandle {
+    refreshData: () => Promise<void>;
+}
+
+// 박스 크기 및 마진 상수 정의 - 더 명확한 정렬을 위해 조정
+const BOX_SIZE = 10;
+const BOX_MARGIN = 2;
+const WEEK_WIDTH = BOX_SIZE + BOX_MARGIN * 2;
+const DAY_LABEL_WIDTH = 15;
+const DAY_HEIGHT = BOX_SIZE + BOX_MARGIN * 2;
+
+// 요일별로 정확히 같은 간격을 유지하기 위한 배열 생성 함수
+const createArray = (length: number) => new Array(length).fill(0);
+
+const ContributionGraph = forwardRef<ContributionGraphHandle, ContributionGraphProps>(({
     numWeeks = 52, // 기본값을 1년으로 변경
     onDayPress = () => { },
-}) => {
+}, ref) => {
     const { t, i18n, currentLanguage } = useTranslation('dashboard');
+    const { theme } = useTheme();
     const [weekData, setWeekData] = useState<Array<Array<{ date: Date; count: number }>>>([]);
     const [monthLabels, setMonthLabels] = useState<Array<{ month: string; position: number }>>([]);
     const [loading, setLoading] = useState<boolean>(true);
@@ -58,22 +75,45 @@ const ContributionGraph: React.FC<ContributionGraphProps> = ({
         fetchContributionData();
     }, [numWeeks, currentLanguage, t]);
 
+    // ref를 통해 메서드 노출
+    useImperativeHandle(ref, () => ({
+        refreshData: async () => {
+            console.log('ContributionGraph: refreshData 호출됨');
+
+            // 상태 초기화 (강제 리렌더링 유도)
+            setWeekData([]);
+            setMonthLabels([]);
+
+            // 약간의 지연 후 데이터 다시 가져오기
+            setTimeout(async () => {
+                console.log('ContributionGraph: 데이터 새로고침 시작');
+                await fetchContributionData();
+                console.log('ContributionGraph: 데이터 새로고침 완료');
+            }, 100);
+        }
+    }));
+
     // Firebase에서 기여 데이터 가져오기
     const fetchContributionData = async () => {
         try {
+            console.log('ContributionGraph: Firebase 데이터 가져오기 시작');
             setLoading(true);
+
             // Firebase에서 기여도 데이터 가져오기
             const contributionData = await getWeeklyContributions(numWeeks);
+            console.log(`ContributionGraph: ${contributionData.length}개의 기여 데이터 수신됨`);
 
             // 데이터 맵 생성 (날짜 -> 카운트)
             const contributionMap = new Map<string, number>();
             contributionData.forEach(item => {
                 contributionMap.set(item.date, item.count);
+                console.log(`날짜: ${item.date}, 카운트: ${item.count}`);
             });
 
+            // 그래프 데이터 생성
             generateGraphData(contributionMap);
         } catch (error) {
-            console.error('Error fetching contribution data:', error);
+            console.error('ContributionGraph: 데이터 가져오기 오류', error);
             // 오류 발생 시 빈 데이터로 그래프 생성
             generateGraphData(new Map());
         } finally {
@@ -152,13 +192,13 @@ const ContributionGraph: React.FC<ContributionGraphProps> = ({
         return monthNames[month];
     };
 
-    // Determine color based on count
+    // Determine color based on count - 테마에 맞게 색상 조정
     const getColorForCount = (count: number) => {
-        if (count === 0) return '#ebedf0';
-        if (count === 1) return '#c6e48b';
-        if (count === 2) return '#7bc96f';
-        if (count === 3) return '#239a3b';
-        return '#196127';
+        if (count === 0) return theme.type === 'dark' ? '#2d333b' : '#ebedf0';
+        if (count === 1) return theme.type === 'dark' ? '#0e4429' : '#c6e48b';
+        if (count === 2) return theme.type === 'dark' ? '#006d32' : '#7bc96f';
+        if (count === 3) return theme.type === 'dark' ? '#26a641' : '#239a3b';
+        return theme.type === 'dark' ? '#39d353' : '#196127';
     };
 
     // 날짜 포맷팅
@@ -171,11 +211,6 @@ const ContributionGraph: React.FC<ContributionGraphProps> = ({
             return `${date.getFullYear()}${t('contributionGraph.year')} ${date.getMonth() + 1}${t('contributionGraph.month')} ${date.getDate()}${t('contributionGraph.day')}`;
         }
     };
-
-    // 박스 크기 및 마진 계산
-    const BOX_SIZE = 10;
-    const BOX_MARGIN = 2;
-    const WEEK_WIDTH = BOX_SIZE + BOX_MARGIN * 2;
 
     // 전체 그래프 너비 계산 (주 개수 × 주 너비)
     const totalGraphWidth = numWeeks * WEEK_WIDTH;
@@ -225,168 +260,213 @@ const ContributionGraph: React.FC<ContributionGraphProps> = ({
 
     return (
         <View style={styles.container}>
-            {/* 월 라벨 */}
-            <View style={styles.monthLabelsContainer}>
-                <View style={styles.monthLabelSpacer} />
-                <ScrollView
-                    ref={monthScrollRef}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={[
-                        styles.monthLabelsScrollContent,
-                        { width: totalGraphWidth }
-                    ]}
-                    onScroll={handleMonthScroll}
-                    scrollEventThrottle={16}
-                    testID="month-scroll"
-                >
-                    {monthLabels.map((item, index) => (
-                        <Text
-                            key={`month-${index}`}
-                            style={[
-                                styles.monthLabel,
-                                { left: item.position * WEEK_WIDTH }
-                            ]}
-                        >
-                            {item.month}
-                        </Text>
-                    ))}
-                </ScrollView>
-            </View>
-
-            <View style={styles.graphContainer}>
+            {/* 전체 그래프 레이아웃 */}
+            <View style={styles.graphLayout}>
                 {/* 요일 라벨 */}
-                <View style={styles.dayLabelsContainer}>
-                    {dayLabels.map((day, index) => (
-                        <Text key={`day-${index}`} style={styles.dayLabel}>
-                            {day}
-                        </Text>
-                    ))}
-                </View>
+                <View style={styles.labelColumn}>
+                    {/* 빈 공간 (월 라벨과 정렬) */}
+                    <View style={styles.monthPadding} />
 
-                {/* 그래프 */}
-                <ScrollView
-                    ref={graphScrollRef}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={[
-                        styles.weeksScrollContent,
-                        { width: totalGraphWidth }
-                    ]}
-                    onScroll={handleGraphScroll}
-                    scrollEventThrottle={16}
-                    testID="graph-scroll"
-                >
-                    <View style={styles.weeksContainer}>
-                        {weekData.map((week, weekIndex) => (
-                            <View key={`week-${weekIndex}`} style={styles.weekContainer}>
-                                {week.map((day, dayIndex) => (
-                                    <TouchableOpacity
-                                        key={`day-${dayIndex}`}
-                                        style={[
-                                            styles.dayBox,
-                                            {
-                                                backgroundColor: getColorForCount(day.count),
-                                                width: BOX_SIZE,
-                                                height: BOX_SIZE,
-                                                margin: BOX_MARGIN
-                                            }
-                                        ]}
-                                        onPress={() => onDayPress(day.date, day.count)}
-                                        accessibilityLabel={`${formatDate(day.date)}: ${day.count}${t('contributionGraph.activities')}`}
-                                    />
-                                ))}
+                    {/* 요일 라벨 */}
+                    <View style={styles.dayLabels}>
+                        {createArray(7).map((_, i) => (
+                            <View key={`day-${i}`} style={styles.dayLabelContainer}>
+                                <Text style={[styles.dayLabel, { color: theme.colors.content.secondary }]}>
+                                    {dayLabels[i]}
+                                </Text>
                             </View>
                         ))}
                     </View>
-                </ScrollView>
+                </View>
+
+                {/* 그래프 영역 (월 라벨 + 데이터 그리드) */}
+                <View style={styles.graphContent}>
+                    {/* 월 라벨 영역 */}
+                    <View style={styles.monthContainer}>
+                        <ScrollView
+                            ref={monthScrollRef}
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            scrollEventThrottle={16}
+                            onScroll={handleMonthScroll}
+                            style={styles.monthScrollView}
+                            contentContainerStyle={{ width: totalGraphWidth }}
+                        >
+                            {monthLabels.map((item, index) => (
+                                <Text
+                                    key={`month-${index}`}
+                                    style={[
+                                        styles.monthLabel,
+                                        {
+                                            left: item.position * WEEK_WIDTH,
+                                            color: theme.colors.content.secondary
+                                        }
+                                    ]}
+                                >
+                                    {item.month}
+                                </Text>
+                            ))}
+                        </ScrollView>
+                    </View>
+
+                    {/* 그래프 스크롤 */}
+                    <ScrollView
+                        ref={graphScrollRef}
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        scrollEventThrottle={16}
+                        onScroll={handleGraphScroll}
+                        style={styles.graphScrollView}
+                    >
+                        <View style={[styles.graph, { width: totalGraphWidth }]}>
+                            {weekData.map((week, weekIndex) => (
+                                <View key={`week-${weekIndex}`} style={styles.weekColumn}>
+                                    {week.length > 0 && createArray(Math.min(week.length, 7)).map((_, dayIndex) => {
+                                        // 안전하게 데이터 접근
+                                        const day = week[dayIndex] || { date: new Date(), count: 0 };
+                                        return (
+                                            <View key={`box-${dayIndex}`} style={styles.dayBoxContainer}>
+                                                <TouchableOpacity
+                                                    style={[
+                                                        styles.dayBox,
+                                                        {
+                                                            backgroundColor: getColorForCount(day.count),
+                                                        },
+                                                    ]}
+                                                    onPress={() => onDayPress(day.date, day.count)}
+                                                >
+                                                    {/* Empty view for touch target */}
+                                                </TouchableOpacity>
+                                            </View>
+                                        );
+                                    })}
+                                </View>
+                            ))}
+                        </View>
+                    </ScrollView>
+                </View>
             </View>
 
+            {/* 레전드 (색상 범례) */}
             <View style={styles.legend}>
-                <Text style={styles.legendText}>{t('contributionGraph.less')}</Text>
-                <View style={[styles.legendBox, { backgroundColor: '#ebedf0' }]} />
-                <View style={[styles.legendBox, { backgroundColor: '#c6e48b' }]} />
-                <View style={[styles.legendBox, { backgroundColor: '#7bc96f' }]} />
-                <View style={[styles.legendBox, { backgroundColor: '#239a3b' }]} />
-                <View style={[styles.legendBox, { backgroundColor: '#196127' }]} />
-                <Text style={styles.legendText}>{t('contributionGraph.more')}</Text>
+                <Text style={[styles.legendText, { color: theme.colors.content.secondary }]}>
+                    {t('contributionGraph.less')}
+                </Text>
+                <View style={styles.legendColors}>
+                    {[0, 1, 2, 3, 4].map((level) => (
+                        <View
+                            key={`legend-${level}`}
+                            style={[
+                                styles.legendColorBox,
+                                { backgroundColor: getColorForCount(level) },
+                            ]}
+                        />
+                    ))}
+                </View>
+                <Text style={[styles.legendText, { color: theme.colors.content.secondary }]}>
+                    {t('contributionGraph.more')}
+                </Text>
             </View>
         </View>
     );
-};
+});
 
 const styles = StyleSheet.create({
     container: {
-        backgroundColor: '#fff',
-        padding: 8,
-        borderRadius: 8,
+        width: '100%',
+        marginBottom: 24,
+        marginLeft: -6, // 왼쪽 마진 조정하여 제목과 정렬
     },
-    monthLabelsContainer: {
+    graphLayout: {
         flexDirection: 'row',
-        marginBottom: 4,
-        height: 20,
     },
-    monthLabelSpacer: {
-        width: 24, // 요일 라벨 영역 너비
+    labelColumn: {
+        width: DAY_LABEL_WIDTH,
+        marginRight: 3, // 마진 축소
     },
-    monthLabelsScrollContent: {
-        position: 'relative',
+    monthPadding: {
+        height: DAY_HEIGHT,
+        justifyContent: 'center',
     },
-    monthLabels: {
+    graphContent: {
         flex: 1,
-        height: 20,
-        position: 'relative',
+    },
+    monthContainer: {
+        height: DAY_HEIGHT,
+        justifyContent: 'center',
+        marginBottom: 0, // 월 라벨과 그래프 사이 간격 제거
+    },
+    monthScrollView: {
+        flex: 1,
+        marginLeft: -2, // 왼쪽 마진 미세 조정
+    },
+    dayLabels: {
+        height: 7 * DAY_HEIGHT,
+        justifyContent: 'space-between',
+        paddingTop: 0.5,
+        paddingBottom: 0.5,
+    },
+    dayLabelContainer: {
+        height: DAY_HEIGHT,
+        justifyContent: 'center',
+        alignItems: 'flex-end',
+        paddingRight: 1, // 패딩 축소
+    },
+    dayLabel: {
+        fontSize: 9, // 폰트 크기 축소
+        textAlign: 'right',
+    },
+    graphScrollView: {
+        flex: 1,
+        marginTop: 0, // 그래프 상단 여백 제거
+    },
+    graph: {
+        flexDirection: 'row',
+    },
+    weekColumn: {
+        width: WEEK_WIDTH,
+        height: 7 * DAY_HEIGHT,
+        justifyContent: 'space-between',
+        paddingTop: 0.5,
+        paddingBottom: 0.5,
+    },
+    dayBoxContainer: {
+        height: DAY_HEIGHT,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    dayBox: {
+        width: BOX_SIZE,
+        height: BOX_SIZE,
+        borderRadius: 2,
     },
     monthLabel: {
         position: 'absolute',
-        fontSize: 10,
-        color: '#666',
-        top: 0,
-    },
-    graphContainer: {
-        flexDirection: 'row',
-        marginBottom: 8,
-    },
-    dayLabelsContainer: {
-        width: 24,
-        marginRight: 0,
-    },
-    dayLabel: {
-        fontSize: 10,
-        color: '#666',
-        height: 14,
-        textAlign: 'center',
-    },
-    weeksScrollContent: {
-        flexDirection: 'row',
-    },
-    weeksContainer: {
-        flexDirection: 'row',
-        flex: 1,
-    },
-    weekContainer: {
-        flexDirection: 'column',
-        width: 14, // 박스(10) + 마진(2*2)
-    },
-    dayBox: {
-        borderRadius: 2,
+        fontSize: 9, // 폰트 크기 축소
+        top: '50%',
+        transform: [{ translateY: -4.5 }], // 조정
+        left: 0, // 왼쪽 정렬
     },
     legend: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'flex-end',
+        justifyContent: 'flex-start',
         marginTop: 8,
+        marginLeft: 6,
     },
     legendText: {
         fontSize: 10,
-        color: '#666',
         marginHorizontal: 4,
     },
-    legendBox: {
+    legendColors: {
+        flexDirection: 'row',
+        marginHorizontal: 4,
+    },
+    legendColorBox: {
         width: 10,
         height: 10,
-        borderRadius: 2,
         marginHorizontal: 1,
+        borderRadius: 2,
     },
 });
 
