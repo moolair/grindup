@@ -17,6 +17,8 @@ export interface Task {
 
 /**
  * 오늘의 작업 목록을 가져옵니다
+ * 
+ * Firebase v22 모듈러 SDK API 패턴을 준수합니다.
  */
 export const getTodayTasks = async (): Promise<Task[]> => {
     try {
@@ -30,8 +32,9 @@ export const getTodayTasks = async (): Promise<Task[]> => {
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
 
-        const querySnapshot = await firestore()
-            .collection('tasks')
+        // 모듈러 API 방식으로 컬렉션 참조 가져오기
+        const tasksCollection = firestore().collection('tasks');
+        const querySnapshot = await tasksCollection
             .where('userId', '==', user.uid)
             .where('dueDate', '>=', today)
             .where('dueDate', '<', tomorrow)
@@ -64,6 +67,8 @@ export const getTodayTasks = async (): Promise<Task[]> => {
 
 /**
  * 모든 작업 목록을 가져옵니다
+ * 
+ * Firebase v22 모듈러 SDK API 패턴을 준수합니다.
  */
 export const getAllTasks = async (): Promise<Task[]> => {
     try {
@@ -72,8 +77,9 @@ export const getAllTasks = async (): Promise<Task[]> => {
             throw new Error('User not authenticated');
         }
 
-        const querySnapshot = await firestore()
-            .collection('tasks')
+        // 모듈러 API 방식으로 컬렉션 참조 가져오기
+        const tasksCollection = firestore().collection('tasks');
+        const querySnapshot = await tasksCollection
             .where('userId', '==', user.uid)
             .get();
 
@@ -104,13 +110,14 @@ export const getAllTasks = async (): Promise<Task[]> => {
 
 /**
  * 작업 상세 정보를 가져옵니다
+ * 
+ * Firebase v22 모듈러 SDK API 패턴을 준수합니다.
  */
 export const getTaskById = async (taskId: string): Promise<Task | null> => {
     try {
-        const taskDoc = await firestore()
-            .collection('tasks')
-            .doc(taskId)
-            .get();
+        // 모듈러 API 방식으로 컬렉션 참조 가져오기
+        const tasksCollection = firestore().collection('tasks');
+        const taskDoc = await tasksCollection.doc(taskId).get();
 
         if (!taskDoc.exists) {
             return null;

@@ -19,10 +19,8 @@ export const getStreakInfo = async (): Promise<StreakInfo> => {
         }
 
         // 사용자의 스트릭 문서 가져오기
-        const streakDoc = await firestore()
-            .collection('userStats')
-            .doc(user.uid)
-            .get();
+        const userStatsCollection = firestore().collection('userStats');
+        const streakDoc = await userStatsCollection.doc(user.uid).get();
 
         if (streakDoc.exists) {
             const data = streakDoc.data();
@@ -73,9 +71,9 @@ export const getContributionsForDate = async (date: Date): Promise<number> => {
         const endDate = new Date(date);
         endDate.setHours(23, 59, 59, 999);
 
-        // 완료된 작업 쿼리
-        const querySnapshot = await firestore()
-            .collection('tasks')
+        // 모듈러 API 방식으로 컬렉션 참조
+        const tasksCollection = firestore().collection('tasks');
+        const querySnapshot = await tasksCollection
             .where('userId', '==', user.uid)
             .where('status', '==', 'completed')
             .where('completedAt', '>=', startDate)
@@ -104,9 +102,9 @@ export const getWeeklyContributions = async (weeks: number = 8): Promise<{ date:
         startDate.setDate(startDate.getDate() - (weeks * 7));
         startDate.setHours(0, 0, 0, 0);
 
-        // 완료된 작업 쿼리
-        const querySnapshot = await firestore()
-            .collection('tasks')
+        // 모듈러 API 방식으로 컬렉션 참조
+        const tasksCollection = firestore().collection('tasks');
+        const querySnapshot = await tasksCollection
             .where('userId', '==', user.uid)
             .where('status', '==', 'completed')
             .where('completedAt', '>=', startDate)
@@ -117,7 +115,24 @@ export const getWeeklyContributions = async (weeks: number = 8): Promise<{ date:
 
         querySnapshot.forEach((doc) => {
             const data = doc.data();
-            const completedDate = data.completedAt.toDate();
+            // Firestore의 timestamp 또는 일반 Date 객체 모두 처리
+            // data.completedAt이 객체인지 확인하고 안전하게 Date로 변환
+            let completedDate: Date;
+
+            if (data.completedAt) {
+                // Firestore Timestamp 객체인 경우 toDate() 메서드 사용
+                if (typeof data.completedAt.toDate === 'function') {
+                    completedDate = data.completedAt.toDate();
+                }
+                // 일반 Date 객체 또는 문자열인 경우
+                else {
+                    completedDate = new Date(data.completedAt);
+                }
+            } else {
+                // completedAt이 없는 경우 현재 시간 사용
+                completedDate = new Date();
+            }
+
             const dateString = completedDate.toISOString().split('T')[0]; // YYYY-MM-DD 형식
 
             const currentCount = contributionMap.get(dateString) || 0;
@@ -134,5 +149,76 @@ export const getWeeklyContributions = async (weeks: number = 8): Promise<{ date:
     } catch (error) {
         console.error('Error getting weekly contributions:', error);
         return [];
+    }
+};
+
+/**
+ * 루틴 완료 상태가 변경될 때 Firebase의 기존 데이터를 삭제합니다.
+ * 이렇게 하면 완료 → 미완료로 변경 시 기여 그래프에서 삭제됩니다.
+ * 
+ * Note: Firebase v22에서는 batch() 대신 writeBatch()를 사용해야 합니다.
+ * 현재 버전에서는 batch()를 사용하되, v22로 업그레이드 시 writeBatch()로 변경해야 합니다.
+ */
+export const removeCompletionData = async (routineId: string, date: Date): Promise<boolean> => {
+    try {
+        console.log(`Firebase 기여 데이터 삭제 시작: 루틴 ${routineId}, 날짜 ${date.toISOString()}`);
+
+        const user = auth().currentUser;
+        if (!user) {
+            console.log('인증된 사용자가 없습니다.');
+            return false;
+        }
+
+        // 해당 날짜의 데이터 가져오기
+        const todayDate = new Date(date);
+        todayDate.setHours(0, 0, 0, 0);
+        const tomorrowDate = new Date(todayDate);
+        tomorrowDate.setDate(todayDate.getDate() + 1);
+
+        const todayFormatted = todayDate.toISOString().split('T')[0];
+        console.log(`삭제할 데이터 날짜: ${todayFormatted}`);
+
+        try {
+            // Firebase에서 해당하는 모든 문서 조회
+            const tasksCollection = firestore().collection('tasks');
+
+            console.log(`쿼리 조건: userId=${user.uid}, type=routine, dateString=${todayFormatted}`);
+            const querySnapshot = await tasksCollection
+                .where('userId', '==', user.uid)
+                .where('type', '==', 'routine')
+                .where('dateString', '==', todayFormatted)
+                .get();
+
+            console.log(`조회된 문서 수: ${querySnapshot.size}`);
+
+            // 문서가 없으면 처리 필요 없음
+            if (querySnapshot.empty) {
+                console.log('삭제할 문서가 없습니다.');
+                return false;
+            }
+
+            // 문서가 있으면 삭제 (v21에서는 batch, v22에서는 writeBatch 사용)
+            // Firebase v22로 업그레이드 시 아래 줄을 교체:
+            // const batch = firestore().writeBatch();
+            const batch = firestore().batch();
+            let count = 0;
+
+            querySnapshot.forEach((doc) => {
+                console.log(`삭제할 문서 ID: ${doc.id}`);
+                batch.delete(doc.ref);
+                count++;
+            });
+
+            // 일괄 삭제 실행
+            await batch.commit();
+            console.log(`${count}개의 문서 삭제 완료`);
+            return true;
+        } catch (error) {
+            console.error('문서 삭제 중 오류:', error);
+            return false;
+        }
+    } catch (error) {
+        console.error('루틴 완료 데이터 삭제 중 오류:', error);
+        return false;
     }
 }; 

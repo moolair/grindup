@@ -1,4 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import firestore from '@react-native-firebase/firestore';
+import auth from '@react-native-firebase/auth';
+import { removeCompletionData } from './firebase/contributions';
 
 export interface Routine {
     id: string;
@@ -122,23 +125,96 @@ export const updateRoutine = async (id: string, updates: Partial<Routine>): Prom
 // 루틴 완료/미완료 토글
 export const toggleRoutineCompletion = async (id: string): Promise<Routine | null> => {
     try {
+        console.log(`루틴 토글 시작: ${id}`);
+
+        // 현재 루틴 상태 가져오기
         const routines = await getRoutines();
         const index = routines.findIndex(r => r.id === id);
 
-        if (index === -1) return null;
+        if (index === -1) {
+            console.log(`루틴이 존재하지 않음: ${id}`);
+            return null;
+        }
+
+        // 현재 상태 저장 및 상태 변경
+        const prevState = routines[index].completed;
+        const newState = !prevState;
+        console.log(`루틴 상태 변경: ${prevState} -> ${newState}`);
 
         const updatedRoutine = {
             ...routines[index],
-            completed: !routines[index].completed
+            completed: newState
         };
 
+        // 상태 변경 적용
         routines[index] = updatedRoutine;
         await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(routines));
+        console.log(`루틴 상태 저장 완료: ${updatedRoutine.completed}`);
+
+        // Firebase 데이터 처리
+        if (newState) {
+            // 완료로 변경된 경우 - Firebase에 데이터 추가
+            console.log('Firebase에 완료 데이터 추가 시작');
+            await updateFirebaseContribution();
+        } else {
+            // 미완료로 변경된 경우 - Firebase에서 데이터 삭제
+            console.log('Firebase에서 완료 데이터 삭제 시작');
+            const today = new Date();
+            await removeCompletionData(id, today);
+        }
 
         return updatedRoutine;
     } catch (error) {
         console.error('루틴 완료 상태 토글 중 오류:', error);
         throw error;
+    }
+};
+
+// Firebase에 오늘의 기여 데이터 업데이트
+/**
+ * Firebase에 오늘의 루틴 완료 기여 데이터를 업데이트합니다.
+ * 이 함수는 루틴을 완료했을 때 호출되며, 기여 그래프에 반영됩니다.
+ * 
+ * Note: Firebase v22 모듈러 SDK API 패턴을 준수합니다.
+ */
+const updateFirebaseContribution = async (): Promise<void> => {
+    try {
+        console.log('Firebase 기여 데이터 업데이트 시작');
+
+        const user = auth().currentUser;
+        if (!user) {
+            console.log('인증된 사용자가 없습니다.');
+            return;
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // 오늘 날짜의 기여 데이터 가져오기
+        const todayFormatted = today.toISOString().split('T')[0]; // YYYY-MM-DD 형식
+
+        console.log('Firestore 문서 생성 시작');
+        // Firebase 데이터 저장 (간소화된 방식)
+        const taskDocData = {
+            userId: user.uid,
+            status: 'completed',
+            completedAt: new Date(),
+            title: '루틴 완료',
+            type: 'routine',
+            dateString: todayFormatted
+        };
+
+        try {
+            // 모듈러 API 방식으로 컬렉션과 문서 참조 생성
+            const tasksCollection = firestore().collection('tasks');
+            const docRef = tasksCollection.doc(); // 자동 ID 생성
+            await docRef.set(taskDocData);
+            console.log(`Firebase 기여 데이터 저장 성공: 문서 ID ${docRef.id}`);
+        } catch (innerError) {
+            console.error('Firebase 문서 저장 실패:', innerError);
+        }
+    } catch (error) {
+        console.error('Firebase 기여 데이터 업데이트 중 오류:', error);
     }
 };
 
