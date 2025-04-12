@@ -221,6 +221,18 @@ const ContributionGraph = forwardRef<ContributionGraphHandle, ContributionGraphP
         graph: false
     });
 
+    // 데이터 로드 완료 후 최신 날짜(오른쪽 끝)로 스크롤하는 효과 추가
+    useEffect(() => {
+        if (weekData.length > 0 && !loading) {
+            // 잠시 지연 후 스크롤 실행 (컴포넌트가 완전히 렌더링된 후)
+            setTimeout(() => {
+                const scrollToEnd = totalGraphWidth - graphAreaWidth;
+                monthScrollRef.current?.scrollTo({ x: scrollToEnd, animated: false });
+                graphScrollRef.current?.scrollTo({ x: scrollToEnd, animated: false });
+            }, 100);
+        }
+    }, [weekData, loading]);
+
     // 스크롤 이벤트 동기화
     const handleMonthScroll = (event: any) => {
         if (isScrolling.graph) return; // 그래프 스크롤 중일 때는 무시
