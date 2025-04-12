@@ -7,7 +7,8 @@
         "saved": "Changes saved",
         "cancel": "Cancel",
         "resetToDefault": "Reset to Default",
-        "view": "View"
+        "view": "View",
+        "confirm": "Confirm"
     },
     "profile": {
         "title": "Profile",
@@ -146,5 +147,12 @@
         "privacyPolicy": "Privacy Policy",
         "licenses": "Licenses",
         "acknowledgements": "Acknowledgements"
+    },
+    "time": {
+        "hour": "Hour",
+        "minute": "Minute",
+        "period": "Period",
+        "am": "AM",
+        "pm": "PM"
     }
 }

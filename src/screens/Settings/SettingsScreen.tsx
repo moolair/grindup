@@ -263,49 +263,72 @@ const SettingsScreen = () => {
           visible={showStartTimePicker}
         >
           <View style={styles.modalContainer}>
-            <View style={[styles.modalContent, { backgroundColor: theme.colors.background.primary }]}>
-              <View style={styles.modalHeader}>
+            <View style={[
+              styles.modalContent,
+              {
+                backgroundColor: theme.colors.background.primary,
+                borderTopColor: theme.colors.border.light,
+                borderLeftColor: theme.colors.border.light,
+                borderRightColor: theme.colors.border.light,
+              }
+            ]}>
+              <View style={[
+                styles.modalHeader,
+                {
+                  borderBottomColor: theme.colors.border.light,
+                  backgroundColor: theme.colors.background.secondary
+                }
+              ]}>
                 <TouchableOpacity onPress={() => setShowStartTimePicker(false)}>
-                  <Text style={{ color: theme.colors.ui.error }}>취소</Text>
+                  <Text style={{ color: theme.colors.ui.error }}>{t('general.cancel')}</Text>
                 </TouchableOpacity>
-                <Text style={[styles.modalTitle, { color: theme.colors.content.primary }]}>알림 시간 설정</Text>
+                <Text style={[styles.modalTitle, { color: theme.colors.content.primary }]}>{t('notifications.routine.reminderTime')}</Text>
                 <TouchableOpacity onPress={saveStartTime}>
-                  <Text style={{ color: theme.colors.ui.primary }}>확인</Text>
+                  <Text style={{ color: theme.colors.ui.primary }}>{t('general.confirm')}</Text>
                 </TouchableOpacity>
               </View>
 
-              <View style={styles.pickerContainer}>
+              <View style={[styles.pickerContainer, { backgroundColor: theme.colors.background.primary }]}>
                 <View style={styles.pickerColumn}>
-                  <Text style={styles.pickerLabel}>시</Text>
+                  <Text style={[styles.pickerLabel, { color: theme.colors.content.primary }]}>{t('time.hour')}</Text>
                   <Picker
                     selectedValue={tempHour}
                     onValueChange={(itemValue: string) => setTempHour(itemValue)}
-                    style={{ width: 100, height: 200 }}
+                    style={[{ width: 100, height: 200 }, Platform.select({
+                      ios: { color: theme.colors.content.primary }
+                    })]}
+                    itemStyle={{ color: theme.colors.content.primary }}
                   >
                     {generateHours()}
                   </Picker>
                 </View>
 
                 <View style={styles.pickerColumn}>
-                  <Text style={styles.pickerLabel}>분</Text>
+                  <Text style={[styles.pickerLabel, { color: theme.colors.content.primary }]}>{t('time.minute')}</Text>
                   <Picker
                     selectedValue={tempMinute}
                     onValueChange={(itemValue: string) => setTempMinute(itemValue)}
-                    style={{ width: 100, height: 200 }}
+                    style={[{ width: 100, height: 200 }, Platform.select({
+                      ios: { color: theme.colors.content.primary }
+                    })]}
+                    itemStyle={{ color: theme.colors.content.primary }}
                   >
                     {generateMinutes()}
                   </Picker>
                 </View>
 
                 <View style={styles.pickerColumn}>
-                  <Text style={styles.pickerLabel}>AM/PM</Text>
+                  <Text style={[styles.pickerLabel, { color: theme.colors.content.primary }]}>{t('time.period')}</Text>
                   <Picker
                     selectedValue={tempAmPm}
                     onValueChange={(itemValue: string) => setTempAmPm(itemValue)}
-                    style={{ width: 100, height: 200 }}
+                    style={[{ width: 100, height: 200 }, Platform.select({
+                      ios: { color: theme.colors.content.primary }
+                    })]}
+                    itemStyle={{ color: theme.colors.content.primary }}
                   >
-                    <Picker.Item label="AM" value="AM" />
-                    <Picker.Item label="PM" value="PM" />
+                    <Picker.Item label={t('time.am')} value="AM" />
+                    <Picker.Item label={t('time.pm')} value="PM" />
                   </Picker>
                 </View>
               </View>
@@ -321,49 +344,72 @@ const SettingsScreen = () => {
           visible={showEndTimePicker}
         >
           <View style={styles.modalContainer}>
-            <View style={[styles.modalContent, { backgroundColor: theme.colors.background.primary }]}>
-              <View style={styles.modalHeader}>
+            <View style={[
+              styles.modalContent,
+              {
+                backgroundColor: theme.colors.background.primary,
+                borderTopColor: theme.colors.border.light,
+                borderLeftColor: theme.colors.border.light,
+                borderRightColor: theme.colors.border.light,
+              }
+            ]}>
+              <View style={[
+                styles.modalHeader,
+                {
+                  borderBottomColor: theme.colors.border.light,
+                  backgroundColor: theme.colors.background.secondary
+                }
+              ]}>
                 <TouchableOpacity onPress={() => setShowEndTimePicker(false)}>
-                  <Text style={{ color: theme.colors.ui.error }}>취소</Text>
+                  <Text style={{ color: theme.colors.ui.error }}>{t('general.cancel')}</Text>
                 </TouchableOpacity>
-                <Text style={[styles.modalTitle, { color: theme.colors.content.primary }]}>알림 시간 설정</Text>
+                <Text style={[styles.modalTitle, { color: theme.colors.content.primary }]}>{t('notifications.routine.reminderTime')}</Text>
                 <TouchableOpacity onPress={saveEndTime}>
-                  <Text style={{ color: theme.colors.ui.primary }}>확인</Text>
+                  <Text style={{ color: theme.colors.ui.primary }}>{t('general.confirm')}</Text>
                 </TouchableOpacity>
               </View>
 
-              <View style={styles.pickerContainer}>
+              <View style={[styles.pickerContainer, { backgroundColor: theme.colors.background.primary }]}>
                 <View style={styles.pickerColumn}>
-                  <Text style={styles.pickerLabel}>시</Text>
+                  <Text style={[styles.pickerLabel, { color: theme.colors.content.primary }]}>{t('time.hour')}</Text>
                   <Picker
                     selectedValue={tempEndHour}
                     onValueChange={(itemValue: string) => setTempEndHour(itemValue)}
-                    style={{ width: 100, height: 200 }}
+                    style={[{ width: 100, height: 200 }, Platform.select({
+                      ios: { color: theme.colors.content.primary }
+                    })]}
+                    itemStyle={{ color: theme.colors.content.primary }}
                   >
                     {generateHours()}
                   </Picker>
                 </View>
 
                 <View style={styles.pickerColumn}>
-                  <Text style={styles.pickerLabel}>분</Text>
+                  <Text style={[styles.pickerLabel, { color: theme.colors.content.primary }]}>{t('time.minute')}</Text>
                   <Picker
                     selectedValue={tempEndMinute}
                     onValueChange={(itemValue: string) => setTempEndMinute(itemValue)}
-                    style={{ width: 100, height: 200 }}
+                    style={[{ width: 100, height: 200 }, Platform.select({
+                      ios: { color: theme.colors.content.primary }
+                    })]}
+                    itemStyle={{ color: theme.colors.content.primary }}
                   >
                     {generateMinutes()}
                   </Picker>
                 </View>
 
                 <View style={styles.pickerColumn}>
-                  <Text style={styles.pickerLabel}>AM/PM</Text>
+                  <Text style={[styles.pickerLabel, { color: theme.colors.content.primary }]}>{t('time.period')}</Text>
                   <Picker
                     selectedValue={tempEndAmPm}
                     onValueChange={(itemValue: string) => setTempEndAmPm(itemValue)}
-                    style={{ width: 100, height: 200 }}
+                    style={[{ width: 100, height: 200 }, Platform.select({
+                      ios: { color: theme.colors.content.primary }
+                    })]}
+                    itemStyle={{ color: theme.colors.content.primary }}
                   >
-                    <Picker.Item label="AM" value="AM" />
-                    <Picker.Item label="PM" value="PM" />
+                    <Picker.Item label={t('time.am')} value="AM" />
+                    <Picker.Item label={t('time.pm')} value="PM" />
                   </Picker>
                 </View>
               </View>
@@ -470,6 +516,9 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingBottom: 20,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -477,7 +526,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#eaeaea',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
   },
   modalTitle: {
     fontSize: 18,
