@@ -1,17 +1,20 @@
 import React, { useState, useEffect, useRef, useMemo, forwardRef, useImperativeHandle } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
-import { getWeeklyContributions } from '../../services/firebase/contributions';
+import { getWeeklyContributions, subscribeToContributionLevels } from '../../services/firebase/contributions';
 import useTranslation from '../../hooks/useTranslation';
 import { useTheme } from '../../theme/ThemeProvider';
 
 interface ContributionGraphProps {
     numWeeks?: number;
     onDayPress?: (date: Date, count: number) => void;
+    onMonthChange?: (date: Date) => void;
+    selectedDate?: Date;
 }
 
 // ref를 통해 노출할 메서드 타입 정의
 export interface ContributionGraphHandle {
     refreshData: () => Promise<void>;
+    updateTodayCount: (increase: boolean) => void;
 }
 
 // 박스 크기 및 마진 상수 정의 - 더 명확한 정렬을 위해 조정
@@ -27,12 +30,17 @@ const createArray = (length: number) => new Array(length).fill(0);
 const ContributionGraph = forwardRef<ContributionGraphHandle, ContributionGraphProps>(({
     numWeeks = 52, // 기본값을 1년으로 변경
     onDayPress = () => { },
+    onMonthChange = () => { },
+    selectedDate,
 }, ref) => {
     const { t, i18n, currentLanguage } = useTranslation('dashboard');
     const { theme } = useTheme();
     const [weekData, setWeekData] = useState<Array<Array<{ date: Date; count: number }>>>([]);
     const [monthLabels, setMonthLabels] = useState<Array<{ month: string; position: number }>>([]);
     const [loading, setLoading] = useState<boolean>(true);
+
+    // 실시간 리스너 unsubscribe 함수를 저장할 ref
+    const unsubscribeRef = useRef<(() => void) | null>(null);
 
     // 스크롤뷰 ref 생성
     const monthScrollRef = useRef<ScrollView>(null);
@@ -73,12 +81,27 @@ const ContributionGraph = forwardRef<ContributionGraphHandle, ContributionGraphP
     // 언어 변경 또는 numWeeks 변경 시 데이터 다시 가져오기
     useEffect(() => {
         fetchContributionData();
+
+        // 컴포넌트 언마운트 시 리스너 해제
+        return () => {
+            if (unsubscribeRef.current) {
+                console.log('ContributionGraph: 실시간 리스너 해제');
+                unsubscribeRef.current();
+                unsubscribeRef.current = null;
+            }
+        };
     }, [numWeeks, currentLanguage, t]);
 
     // ref를 통해 메서드 노출
     useImperativeHandle(ref, () => ({
         refreshData: async () => {
             console.log('ContributionGraph: refreshData 호출됨');
+
+            // 기존 리스너 해제
+            if (unsubscribeRef.current) {
+                unsubscribeRef.current();
+                unsubscribeRef.current = null;
+            }
 
             // 상태 초기화 (강제 리렌더링 유도)
             setWeekData([]);
@@ -90,6 +113,49 @@ const ContributionGraph = forwardRef<ContributionGraphHandle, ContributionGraphP
                 await fetchContributionData();
                 console.log('ContributionGraph: 데이터 새로고침 완료');
             }, 100);
+        },
+        updateTodayCount: (increase: boolean) => {
+            console.log(`ContributionGraph: 오늘 기여 카운트 ${increase ? '증가' : '감소'}`);
+
+            // 오늘 날짜 문자열 (YYYY-MM-DD)
+            const today = new Date();
+            const todayString = today.toISOString().split('T')[0];
+
+            // 주별 데이터 복사
+            const newWeekData = [...weekData];
+
+            // 오늘 날짜에 해당하는 날짜 박스 찾기
+            let found = false;
+
+            for (let weekIndex = 0; weekIndex < newWeekData.length; weekIndex++) {
+                const week = newWeekData[weekIndex];
+                for (let dayIndex = 0; dayIndex < week.length; dayIndex++) {
+                    const day = week[dayIndex];
+                    const dateString = day.date.toISOString().split('T')[0];
+
+                    if (dateString === todayString) {
+                        // 오늘 날짜 데이터 발견
+                        found = true;
+                        const newCount = increase ? day.count + 1 : Math.max(0, day.count - 1);
+                        console.log(`오늘 기여도: ${day.count} → ${newCount}`);
+
+                        // 불변성을 유지하면서 데이터 업데이트
+                        const newDay = { ...day, count: newCount };
+                        const newWeek = [...week];
+                        newWeek[dayIndex] = newDay;
+                        newWeekData[weekIndex] = newWeek;
+                        break;
+                    }
+                }
+                if (found) break;
+            }
+
+            // 상태 업데이트
+            if (found) {
+                setWeekData(newWeekData);
+            } else {
+                console.log('오늘 날짜 데이터를 찾을 수 없음');
+            }
         }
     }));
 
@@ -99,19 +165,49 @@ const ContributionGraph = forwardRef<ContributionGraphHandle, ContributionGraphP
             console.log('ContributionGraph: Firebase 데이터 가져오기 시작');
             setLoading(true);
 
-            // Firebase에서 기여도 데이터 가져오기
-            const contributionData = await getWeeklyContributions(numWeeks);
-            console.log(`ContributionGraph: ${contributionData.length}개의 기여 데이터 수신됨`);
+            // 기존 리스너 해제
+            if (unsubscribeRef.current) {
+                unsubscribeRef.current();
+                unsubscribeRef.current = null;
+            }
 
-            // 데이터 맵 생성 (날짜 -> 카운트)
-            const contributionMap = new Map<string, number>();
-            contributionData.forEach(item => {
-                contributionMap.set(item.date, item.count);
+            // 데이터 범위 설정
+            const today = new Date();
+            const startDate = new Date(today);
+            startDate.setDate(today.getDate() - numWeeks * 7);
+
+            // 실시간 리스너 설정
+            unsubscribeRef.current = subscribeToContributionLevels(
+                startDate,
+                today,
+                (contributionData) => {
+                    console.log(`ContributionGraph: 실시간 기여 데이터 수신됨 - ${Object.keys(contributionData).length}개`);
+
+                    // 데이터 맵 생성 (날짜 -> 카운트)
+                    const contributionMap = new Map<string, number>();
+                    Object.entries(contributionData).forEach(([date, data]) => {
+                        contributionMap.set(date, data.count);
+                    });
+
+                    // 그래프 데이터 생성
+                    generateGraphData(contributionMap);
+                    setLoading(false);
+                }
+            );
+
+            // 초기 데이터 로드 (리스너 설정 후에도 한 번 호출)
+            const initialData = await getWeeklyContributions(numWeeks);
+            console.log(`ContributionGraph: ${initialData.length}개의 초기 기여 데이터 수신됨`);
+
+            // 초기 데이터 맵 생성
+            const initialContributionMap = new Map<string, number>();
+            initialData.forEach(item => {
+                initialContributionMap.set(item.date, item.count);
                 console.log(`날짜: ${item.date}, 카운트: ${item.count}`);
             });
 
-            // 그래프 데이터 생성
-            generateGraphData(contributionMap);
+            // 초기 그래프 데이터 생성
+            generateGraphData(initialContributionMap);
         } catch (error) {
             console.error('ContributionGraph: 데이터 가져오기 오류', error);
             // 오류 발생 시 빈 데이터로 그래프 생성

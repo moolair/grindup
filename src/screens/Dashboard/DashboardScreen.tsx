@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, RefreshControl, ScrollView } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useTheme } from '../../theme/ThemeProvider';
-import ContributionGraph from '../../components/organisms/ContributionGraph';
+import ContributionGraph, { ContributionGraphHandle } from '../../components/organisms/ContributionGraph';
 import TaskList from '../../components/organisms/TaskList';
 import { FloatingActionButton } from '../../components/atoms/Buttons';
 import { RootStackParamList, Task } from '../../navigation/AppNavigator';
@@ -11,6 +11,9 @@ import useTranslation from '../../hooks/useTranslation';
 import { useAuth } from '../../context/AuthContext';
 import * as routineService from '../../services/routineService';
 import { Routine } from '../../services/routineService';
+import { writeBatch, doc, getDoc } from 'firebase/firestore';
+import { format } from 'date-fns';
+import { firestore } from '../../firebase/firebaseConfig';
 
 // 타입 정의
 type DashboardScreenNavigationProp = StackNavigationProp<RootStackParamList>;
@@ -36,6 +39,11 @@ const DashboardScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const { t } = useTranslation('dashboard');
   const { user } = useAuth();
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const contributionGraphRef = useRef<ContributionGraphHandle>(null);
+
+  // 루틴 상태 변경 리스너 해제 함수 ref
+  const unsubscribeRoutineListenersRef = useRef<(() => void)[]>([]);
 
   // 루틴 데이터 로드
   const loadRoutines = useCallback(async () => {
@@ -74,9 +82,42 @@ const DashboardScreen = () => {
     }
   }, []);
 
-  // 컴포넌트 마운트 시 루틴 로드
+  // 루틴 상태 변경 구독 설정
+  const setupRoutineListeners = useCallback(() => {
+    // 기존 리스너 해제
+    unsubscribeRoutineListenersRef.current.forEach(unsubscribe => unsubscribe());
+    unsubscribeRoutineListenersRef.current = [];
+
+    // 완료 상태 변경 리스너 등록
+    const unsubscribeComplete = routineService.addRoutineStateListener('complete', () => {
+      console.log('루틴 완료 상태 변경 감지됨 - 데이터 새로고침');
+      loadRoutines();
+    });
+
+    // 업데이트 리스너 등록
+    const unsubscribeUpdate = routineService.addRoutineStateListener('update', () => {
+      console.log('루틴 업데이트 감지됨 - 데이터 새로고침');
+      loadRoutines();
+    });
+
+    // 리셋 리스너 등록
+    const unsubscribeReset = routineService.addRoutineStateListener('reset', () => {
+      console.log('루틴 리셋 감지됨 - 데이터 새로고침');
+      loadRoutines();
+    });
+
+    // 리스너 해제 함수 저장
+    unsubscribeRoutineListenersRef.current = [
+      unsubscribeComplete,
+      unsubscribeUpdate,
+      unsubscribeReset
+    ];
+  }, [loadRoutines]);
+
+  // 컴포넌트 마운트 시 루틴 로드 및 리스너 설정
   useEffect(() => {
     loadRoutines();
+    setupRoutineListeners();
 
     // 자정 리셋 타이머 설정
     const scheduleReset = () => {
@@ -99,38 +140,83 @@ const DashboardScreen = () => {
 
     const resetTimer = scheduleReset();
 
-    // 컴포넌트 언마운트 시 타이머 정리
+    // 컴포넌트 언마운트 시 타이머 및 리스너 정리
     return () => {
       clearTimeout(resetTimer);
+      // 모든 루틴 상태 리스너 해제
+      unsubscribeRoutineListenersRef.current.forEach(unsubscribe => unsubscribe());
+      unsubscribeRoutineListenersRef.current = [];
     };
-  }, [loadRoutines]);
+  }, [loadRoutines, setupRoutineListeners]);
 
   const handleDayPress = (date: Date, count: number) => {
     console.log(`선택한 날짜: ${date.toLocaleDateString()}, 완료한 작업: ${count}개`);
     // 여기에 선택한 날짜의 상세 정보를 보여주는 기능 추가 예정
   };
 
+  const handleMonthChange = (date: Date) => {
+    console.log(`선택한 월: ${date.toLocaleDateString()}`);
+    // 여기에 선택한 월의 상세 정보를 보여주는 기능 추가 예정
+  };
+
   // 루틴 클릭 시 완료 상태 토글
   const handleRoutinePress = async (taskId: string) => {
     try {
+      console.log(`루틴 클릭: ${taskId}`);
+
+      // 기존 루틴 찾기
+      const routineToUpdate = routines.find(r => r.id === taskId);
+      if (!routineToUpdate) return;
+
+      // 낙관적 UI 업데이트를 위한 업데이트된 상태
+      const newCompletedState = !routineToUpdate.completed;
+      console.log(`루틴 상태 변경: ${routineToUpdate.title} -> ${newCompletedState ? '완료' : '미완료'}`);
+
+      // 낙관적 UI 업데이트 (API 응답 전에 UI 먼저 업데이트)
+      setRoutines(prevRoutines => prevRoutines.map(routine =>
+        routine.id === taskId ? { ...routine, completed: newCompletedState } : routine
+      ));
+
+      // TaskList 표시용 업데이트
+      setRoutineTasks(prevTasks => prevTasks.map(task =>
+        task.id === taskId ? {
+          ...task,
+          status: newCompletedState ? 'completed' : 'pending'
+        } : task
+      ));
+
+      // ContributionGraph 즉시 낙관적 업데이트 (Firebase 응답 기다리지 않음)
+      if (contributionGraphRef.current) {
+        console.log('ContributionGraph 낙관적 업데이트');
+        contributionGraphRef.current.updateTodayCount(newCompletedState);
+      }
+
+      // 서버에 변경사항 반영 (백그라운드에서 진행)
       const updatedRoutine = await routineService.toggleRoutineCompletion(taskId);
 
-      if (updatedRoutine) {
-        // 루틴 상태 업데이트
+      // 서버 응답이 예상과 다르면 UI 롤백 (선택적)
+      if (updatedRoutine && updatedRoutine.completed !== newCompletedState) {
+        console.log('서버 응답이 예상과 다름 - UI 롤백');
         setRoutines(prevRoutines => prevRoutines.map(routine =>
           routine.id === taskId ? updatedRoutine : routine
         ));
 
-        // TaskList 표시용 업데이트
         setRoutineTasks(prevTasks => prevTasks.map(task =>
           task.id === taskId ? {
             ...task,
             status: updatedRoutine.completed ? 'completed' : 'pending'
           } : task
         ));
+
+        // 그래프 업데이트도 롤백
+        if (contributionGraphRef.current) {
+          console.log('그래프 업데이트 롤백');
+          contributionGraphRef.current.updateTodayCount(!newCompletedState);
+        }
       }
     } catch (error) {
       console.error('루틴 상태 변경 중 오류:', error);
+      // 오류 발생 시 UI 롤백을 여기에 추가할 수 있음
     }
   };
 
@@ -175,8 +261,10 @@ const DashboardScreen = () => {
         <Text style={[styles.title, { color: theme.colors.content.primary }]}>{t('todayStatus')}</Text>
         {/* 기여도 그래프 컴포넌트 */}
         <ContributionGraph
-          numWeeks={52}
+          ref={contributionGraphRef}
           onDayPress={handleDayPress}
+          onMonthChange={handleMonthChange}
+          selectedDate={selectedDate}
         />
 
         <View style={styles.tasksContainer}>
