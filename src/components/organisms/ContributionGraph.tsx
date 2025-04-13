@@ -38,6 +38,8 @@ const ContributionGraph = forwardRef<ContributionGraphHandle, ContributionGraphP
     const [weekData, setWeekData] = useState<Array<Array<{ date: Date; count: number }>>>([]);
     const [monthLabels, setMonthLabels] = useState<Array<{ month: string; position: number }>>([]);
     const [loading, setLoading] = useState<boolean>(true);
+    // 새로고침 효과를 위한 상태 추가
+    const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
     // 실시간 리스너 unsubscribe 함수를 저장할 ref
     const unsubscribeRef = useRef<(() => void) | null>(null);
@@ -80,6 +82,11 @@ const ContributionGraph = forwardRef<ContributionGraphHandle, ContributionGraphP
 
     // 언어 변경 또는 numWeeks 변경 시 데이터 다시 가져오기
     useEffect(() => {
+        // 초기 빈 데이터로 그래프 UI 먼저 생성 (낙관적 UI)
+        const emptyContributionMap = new Map<string, number>();
+        generateGraphData(emptyContributionMap);
+
+        // 그 후 실제 데이터 가져오기
         fetchContributionData();
 
         // 컴포넌트 언마운트 시 리스너 해제
@@ -97,21 +104,26 @@ const ContributionGraph = forwardRef<ContributionGraphHandle, ContributionGraphP
         refreshData: async () => {
             console.log('ContributionGraph: refreshData 호출됨');
 
+            // 새로고침 효과 시작
+            setIsRefreshing(true);
+
             // 기존 리스너 해제
             if (unsubscribeRef.current) {
                 unsubscribeRef.current();
                 unsubscribeRef.current = null;
             }
 
-            // 상태 초기화 (강제 리렌더링 유도)
-            setWeekData([]);
-            setMonthLabels([]);
+            // 현재 데이터 유지 (낙관적 UI)
+            // 완전히 상태를 초기화하지 않고 현재 데이터를 계속 표시
 
             // 약간의 지연 후 데이터 다시 가져오기
             setTimeout(async () => {
                 console.log('ContributionGraph: 데이터 새로고침 시작');
                 await fetchContributionData();
                 console.log('ContributionGraph: 데이터 새로고침 완료');
+
+                // 새로고침 효과 종료
+                setIsRefreshing(false);
             }, 100);
         },
         updateTodayCount: (increase: boolean) => {
@@ -163,7 +175,9 @@ const ContributionGraph = forwardRef<ContributionGraphHandle, ContributionGraphP
     const fetchContributionData = async () => {
         try {
             console.log('ContributionGraph: Firebase 데이터 가져오기 시작');
-            setLoading(true);
+
+            // 로딩 상태는 더 이상 초기에 설정하지 않음 (이미 UI가 표시되어 있음)
+            // setLoading(true);
 
             // 기존 리스너 해제
             if (unsubscribeRef.current) {
@@ -176,7 +190,22 @@ const ContributionGraph = forwardRef<ContributionGraphHandle, ContributionGraphP
             const startDate = new Date(today);
             startDate.setDate(today.getDate() - numWeeks * 7);
 
-            // 실시간 리스너 설정
+            // 초기 데이터 로드 (낙관적 UI 업데이트를 위해 순서 변경)
+            const initialData = await getWeeklyContributions(numWeeks);
+            console.log(`ContributionGraph: ${initialData.length}개의 초기 기여 데이터 수신됨`);
+
+            // 초기 데이터 맵 생성
+            const initialContributionMap = new Map<string, number>();
+            initialData.forEach(item => {
+                initialContributionMap.set(item.date, item.count);
+                console.log(`날짜: ${item.date}, 카운트: ${item.count}`);
+            });
+
+            // 초기 그래프 데이터 생성
+            generateGraphData(initialContributionMap);
+            setLoading(false);
+
+            // 이후 실시간 리스너 설정
             unsubscribeRef.current = subscribeToContributionLevels(
                 startDate,
                 today,
@@ -191,28 +220,12 @@ const ContributionGraph = forwardRef<ContributionGraphHandle, ContributionGraphP
 
                     // 그래프 데이터 생성
                     generateGraphData(contributionMap);
-                    setLoading(false);
                 }
             );
-
-            // 초기 데이터 로드 (리스너 설정 후에도 한 번 호출)
-            const initialData = await getWeeklyContributions(numWeeks);
-            console.log(`ContributionGraph: ${initialData.length}개의 초기 기여 데이터 수신됨`);
-
-            // 초기 데이터 맵 생성
-            const initialContributionMap = new Map<string, number>();
-            initialData.forEach(item => {
-                initialContributionMap.set(item.date, item.count);
-                console.log(`날짜: ${item.date}, 카운트: ${item.count}`);
-            });
-
-            // 초기 그래프 데이터 생성
-            generateGraphData(initialContributionMap);
         } catch (error) {
             console.error('ContributionGraph: 데이터 가져오기 오류', error);
             // 오류 발생 시 빈 데이터로 그래프 생성
             generateGraphData(new Map());
-        } finally {
             setLoading(false);
         }
     };
@@ -368,8 +381,12 @@ const ContributionGraph = forwardRef<ContributionGraphHandle, ContributionGraphP
 
     return (
         <View style={styles.container}>
-            {/* 전체 그래프 레이아웃 */}
-            <View style={styles.graphLayout}>
+            {/* 전체 그래프 레이아웃 - 로딩 중에도 표시 */}
+            <View style={[
+                styles.graphLayout,
+                loading && { opacity: 0.7 }, // 로딩 중일 때 약간 투명하게 표시
+                isRefreshing && { opacity: 0.8 } // 새로고침 중일 때도 약간 투명하게 표시
+            ]}>
                 {/* 요일 라벨 */}
                 <View style={styles.labelColumn}>
                     {/* 빈 공간 (월 라벨과 정렬) */}
@@ -511,18 +528,18 @@ const styles = StyleSheet.create({
     dayLabels: {
         height: 7 * DAY_HEIGHT,
         justifyContent: 'space-between',
-        paddingTop: 0.5,
+        paddingTop: 3,
         paddingBottom: 0.5,
     },
     dayLabelContainer: {
         height: DAY_HEIGHT,
         justifyContent: 'center',
-        alignItems: 'flex-end',
+        alignItems: 'center',
         paddingRight: 1, // 패딩 축소
     },
     dayLabel: {
         fontSize: 9, // 폰트 크기 축소
-        textAlign: 'right',
+        textAlign: 'center',
     },
     graphScrollView: {
         flex: 1,
@@ -535,7 +552,7 @@ const styles = StyleSheet.create({
         width: WEEK_WIDTH,
         height: 7 * DAY_HEIGHT,
         justifyContent: 'space-between',
-        paddingTop: 0.5,
+        paddingTop: 3,
         paddingBottom: 0.5,
     },
     dayBoxContainer: {
