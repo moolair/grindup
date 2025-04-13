@@ -73,6 +73,13 @@
         "ago": "전",
         "later": "후",
         "justNow": "방금",
-        "soon": "곧"
+        "soon": "곧",
+        "period": "시간대",
+        "am": "오전",
+        "pm": "오후"
+    },
+    "general": {
+        "cancel": "취소",
+        "confirm": "확인"
     }
 }

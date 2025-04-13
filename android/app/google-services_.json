@@ -29,13 +29,6 @@
             {
               "client_id": "778305964277-22c05kls22cglh9auqtodgoqmioj158r.apps.googleusercontent.com",
               "client_type": 3
-            },
-            {
-              "client_id": "778305964277-ss7nlo6l44npv8j5emu3jbucl2osjuvh.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.grindup"
-              }
             }
           ]
         }

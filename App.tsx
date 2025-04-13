@@ -64,23 +64,15 @@ function App(): React.JSX.Element {
           GoogleSignin.configure({
             // 웹 클라이언트 ID는 Firebase 콘솔의 웹 앱 설정에서 가져옵니다.
             webClientId: '778305964277-22c05kls22cglh9auqtodgoqmioj158r.apps.googleusercontent.com',
-            forceCodeForRefreshToken: true,
             offlineAccess: true,
             iosClientId: '778305964277-ss7nlo6l44npv8j5emu3jbucl2osjuvh.apps.googleusercontent.com',
             scopes: ['profile', 'email'],
           });
 
-          // 안전하게 Google 로그인 초기화 (상태 확인없이 로그아웃 시도)
-          try {
-            console.log('이전 Google 로그인 세션 정리 중...');
-            await GoogleSignin.signOut();
-            console.log('Google 로그인 상태 초기화 완료');
-          } catch (signOutError) {
-            // 로그아웃 오류는 무시 (로그인되어 있지 않을 수 있음)
-            console.log('Google 로그아웃 오류 (무시됨):', signOutError);
-          }
+          console.log('Google SignIn 초기 설정 완료');
 
-          console.log('Google SignIn 설정 완료');
+          // 초기 로그아웃 작업 생략 (LoginScreen에서 처리)
+
         } catch (error) {
           console.error('Google SignIn 설정 중 오류:', error);
         }

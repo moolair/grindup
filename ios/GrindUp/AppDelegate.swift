@@ -27,7 +27,7 @@ class AppDelegate: RCTAppDelegate {
 
   // Firebase 초기화를 별도 함수로 분리
   private func setupFirebase() {
-    // 이미 초기화되었는지 확인
+    // 이미 초기화되었는지 확인 (FirebaseApp.app() 대신 getApps().first 사용)
     if FirebaseApp.app() != nil {
       print("Firebase 이미 초기화되어 있음")
       return

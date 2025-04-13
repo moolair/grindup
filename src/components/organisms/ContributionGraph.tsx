@@ -528,18 +528,18 @@ const styles = StyleSheet.create({
     dayLabels: {
         height: 7 * DAY_HEIGHT,
         justifyContent: 'space-between',
-        paddingTop: 3,
+        paddingTop: 0.5,
         paddingBottom: 0.5,
     },
     dayLabelContainer: {
         height: DAY_HEIGHT,
         justifyContent: 'center',
-        alignItems: 'center',
+        alignItems: 'flex-end',
         paddingRight: 1, // 패딩 축소
     },
     dayLabel: {
         fontSize: 9, // 폰트 크기 축소
-        textAlign: 'center',
+        textAlign: 'right',
     },
     graphScrollView: {
         flex: 1,
@@ -552,7 +552,7 @@ const styles = StyleSheet.create({
         width: WEEK_WIDTH,
         height: 7 * DAY_HEIGHT,
         justifyContent: 'space-between',
-        paddingTop: 3,
+        paddingTop: 0.5,
         paddingBottom: 0.5,
     },
     dayBoxContainer: {

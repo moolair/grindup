@@ -8,7 +8,7 @@ import { auth, firebase, getFirebaseApp, initializeFirebase } from '../../servic
 import { useTheme } from '../../theme/ThemeProvider';
 import { useTranslation } from 'react-i18next';
 import appleAuth from '@invertase/react-native-apple-authentication';
-import { GoogleSignin, type User } from '@react-native-google-signin/google-signin';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 type LoginScreenProps = StackNavigationProp<RootStackParamList, 'Login'>;
 
@@ -100,68 +100,99 @@ const LoginScreen = () => {
 
         try {
             // 구글 로그인 흐름 시작
+            console.log('Google Play 서비스 확인 중...');
             await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+            console.log('Google Play 서비스 확인 완료');
 
-            // 이미 로그인되어 있는지 확인하고 로그아웃
+            // Google 설정 다시 확인
+            GoogleSignin.configure({
+                webClientId: '778305964277-22c05kls22cglh9auqtodgoqmioj158r.apps.googleusercontent.com',
+                offlineAccess: true,
+                iosClientId: '778305964277-ss7nlo6l44npv8j5emu3jbucl2osjuvh.apps.googleusercontent.com',
+                scopes: ['profile', 'email'],
+                forceCodeForRefreshToken: true, // iOS에서 auth code를 강제로 받아오게 함
+            });
+
             try {
-                await GoogleSignin.signOut();
-                console.log('Google 로그아웃 성공 - 새로운 로그인 시도를 위한 준비');
-            } catch (error) {
-                console.error('Google 로그아웃 중 오류:', error);
-                // 로그아웃 오류는 무시하고 계속 진행
-            }
-
-            // 구글 로그인 진행 및 사용자 정보 가져오기
-            const userInfo = await GoogleSignin.signIn();
-
-            // 사용자 정보 디버깅 로그 추가
-            console.log('Google SignIn 성공! 응답:', JSON.stringify(userInfo, null, 2));
-            console.log('응답 객체 프로퍼티:', Object.keys(userInfo));
-
-            // 최신 SDK에서는 idToken을 직접 얻을 수 있음
-            const userInfoAny = userInfo as any;
-
-            // ID 토큰 가져오기 시도
-            let idToken = null;
-
-            // 토큰 직접 접근
-            if (userInfoAny.idToken) {
-                idToken = userInfoAny.idToken;
-                console.log('idToken 획득 성공!');
-            } else {
-                // 토큰을 얻지 못한 경우 - 추가 정보 로깅
-                console.error('Google 로그인 성공했으나 idToken이 없음');
-                console.log('userInfo 객체의 내용:', JSON.stringify(userInfoAny, null, 2));
-
-                // Google 토큰 직접 획득 시도
+                // 이미 로그인 되어 있는지 확인 (try/catch로 감싸서 isSignedIn 함수 에러 방지)
                 try {
-                    const tokens = await GoogleSignin.getTokens();
-                    console.log('getTokens() 결과:', tokens);
-                    if (tokens && tokens.idToken) {
-                        idToken = tokens.idToken;
-                        console.log('getTokens()로 idToken 획득 성공!');
+                    const isSignedIn = await GoogleSignin.isSignedIn();
+                    console.log('이미 Google에 로그인되어 있음:', isSignedIn);
+                    if (isSignedIn) {
+                        await GoogleSignin.signOut();
+                        console.log('기존 Google 세션 로그아웃 완료');
                     }
-                } catch (tokenError) {
-                    console.error('Google 토큰 획득 시도 중 오류:', tokenError);
+                } catch (signInCheckError) {
+                    console.log('로그인 상태 확인 오류, 무시하고 계속:', signInCheckError);
                 }
+
+                // 구글 로그인 진행
+                console.log('Google 로그인 시작...');
+                const userInfo = await GoogleSignin.signIn();
+                console.log('Google 로그인 완료, 응답:', JSON.stringify(userInfo));
+
+                // ID 토큰 가져오기
+                let idToken = null;
+
+                // userInfo에서 직접 토큰 확인
+                if (userInfo.idToken) {
+                    idToken = userInfo.idToken;
+                    console.log('idToken 획득 성공!');
+                } else {
+                    console.error('Google 로그인 성공했으나 idToken이 없음');
+
+                    // 토큰 재획득 시도
+                    try {
+                        console.log('getTokens()로 토큰 재획득 시도');
+                        const tokens = await GoogleSignin.getTokens();
+                        if (tokens && tokens.idToken) {
+                            idToken = tokens.idToken;
+                            console.log('getTokens()로 idToken 획득 성공!');
+                        }
+                    } catch (tokenError) {
+                        console.error('토큰 획득 시도 오류:', tokenError);
+                    }
+
+                    // 토큰이 아직도 없으면 현재 사용자 정보 다시 가져오기
+                    if (!idToken) {
+                        try {
+                            console.log('현재 사용자 정보 다시 가져오기 시도');
+                            const currentUser = await GoogleSignin.getCurrentUser();
+                            if (currentUser && currentUser.idToken) {
+                                idToken = currentUser.idToken;
+                                console.log('getCurrentUser()로 idToken 획득 성공!');
+                            }
+                        } catch (currentUserError) {
+                            console.error('현재 사용자 정보 가져오기 오류:', currentUserError);
+                        }
+                    }
+                }
+
+                if (!idToken) {
+                    throw new Error('Google Sign-In failed - no ID token returned');
+                }
+
+                console.log('Firebase 인증 진행 중...');
+                // 구글 자격증명 생성
+                const googleCredential = auth.GoogleAuthProvider.credential(idToken);
+
+                // Firebase 인증
+                const userCredential = await auth().signInWithCredential(googleCredential);
+                console.log('Firebase 인증 성공!', userCredential.user?.uid || '사용자 ID 없음');
+
+                // 메인 화면으로 이동
+                navigation.navigate('Main', {});
+            } catch (signInError) {
+                console.error('Google SignIn 오류:', signInError);
+                throw signInError;
             }
-
-            if (!idToken) {
-                throw new Error('Google Sign-In failed - no ID token returned');
-            }
-
-            console.log('Firebase 인증 진행 중...');
-            // 구글 자격증명 생성
-            const googleCredential = auth.GoogleAuthProvider.credential(idToken);
-
-            // Firebase 인증
-            await auth().signInWithCredential(googleCredential);
-            console.log('Firebase 인증 성공!');
-
-            // 메인 화면으로 이동
-            navigation.navigate('Main', {});
-        } catch (err: any) {
+        } catch (err) {
             console.error('구글 로그인 오류:', err);
+
+            // 오류 정보 상세 출력
+            if (err.code) console.error('오류 코드:', err.code);
+            if (err.message) console.error('오류 메시지:', err.message);
+            if (err.stack) console.error('스택 추적:', err.stack);
 
             // 구체적인 오류 메시지 표시
             if (err.code === 'SIGN_IN_CANCELLED') {
@@ -356,12 +387,10 @@ const LoginScreen = () => {
                 <Button
                     mode="outlined"
                     onPress={handleDevLogin}
-                    style={[styles.socialButton, styles.devButton]}
+                    style={styles.socialButton}
                     contentStyle={styles.buttonContent}
-                    icon="code-braces"
-                    textColor="#0066cc"
                 >
-                    개발자 모드로 진입 (테스트용)
+                    개발자 모드 로그인 (시뮬레이터용)
                 </Button>
 
                 <View style={styles.forgotContainer}>

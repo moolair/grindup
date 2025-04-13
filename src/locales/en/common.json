@@ -39,7 +39,8 @@
         "failure": "Failure"
     },
     "time": {
-        "now": "Now",
+        "second": "second",
+        "seconds": "seconds",
         "minute": "minute",
         "minutes": "minutes",
         "hour": "hour",
@@ -52,6 +53,16 @@
         "months": "months",
         "year": "year",
         "years": "years",
-        "ago": "ago"
+        "ago": "ago",
+        "later": "later",
+        "justNow": "just now",
+        "soon": "soon",
+        "period": "Period",
+        "am": "AM",
+        "pm": "PM"
+    },
+    "general": {
+        "cancel": "Cancel",
+        "confirm": "Confirm"
     }
 }

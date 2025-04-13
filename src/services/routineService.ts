@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
-import { removeCompletionData } from './firebase/contributions';
+import { removeCompletionData, updateContributionLevel } from './firebase/contributions';
 
 export interface Routine {
     id: string;
@@ -50,6 +50,49 @@ export const shouldResetRoutines = async (): Promise<boolean> => {
     }
 };
 
+// 상태 변경 리스너 관리를 위한 이벤트 시스템
+type RoutineStateListener = () => void;
+type RoutineStateChange = 'update' | 'complete' | 'reset';
+
+const routineStateListeners: Record<RoutineStateChange, RoutineStateListener[]> = {
+    update: [],
+    complete: [],
+    reset: []
+};
+
+/**
+ * 루틴 상태 변경 리스너 등록
+ * 
+ * @param type 변경 유형 ('update', 'complete', 'reset')
+ * @param listener 호출될 리스너 함수
+ * @returns 리스너 제거 함수
+ */
+export const addRoutineStateListener = (type: RoutineStateChange, listener: RoutineStateListener): () => void => {
+    routineStateListeners[type].push(listener);
+    return () => {
+        const index = routineStateListeners[type].indexOf(listener);
+        if (index > -1) {
+            routineStateListeners[type].splice(index, 1);
+        }
+    };
+};
+
+/**
+ * 루틴 상태 변경 이벤트 발생
+ * 
+ * @param type 변경 유형 ('update', 'complete', 'reset')
+ */
+const notifyRoutineStateChange = (type: RoutineStateChange): void => {
+    console.log(`루틴 상태 변경 알림: ${type}`);
+    routineStateListeners[type].forEach(listener => {
+        try {
+            listener();
+        } catch (error) {
+            console.error('루틴 상태 리스너 실행 중 오류:', error);
+        }
+    });
+};
+
 // 루틴 상태 초기화 (모든 루틴을 미완료 상태로)
 export const resetRoutines = async (): Promise<void> => {
     try {
@@ -65,6 +108,9 @@ export const resetRoutines = async (): Promise<void> => {
         await AsyncStorage.setItem(LAST_RESET_KEY, new Date().toISOString());
 
         console.log('루틴 리셋 완료:', new Date().toISOString());
+
+        // 리셋 이벤트 알림
+        notifyRoutineStateChange('reset');
     } catch (error) {
         console.error('루틴 리셋 중 오류:', error);
     }
@@ -115,6 +161,10 @@ export const updateRoutine = async (id: string, updates: Partial<Routine>): Prom
         routines[index] = updatedRoutine;
 
         await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(routines));
+
+        // 업데이트 이벤트 알림
+        notifyRoutineStateChange('update');
+
         return updatedRoutine;
     } catch (error) {
         console.error('루틴 업데이트 중 오류:', error);
@@ -163,6 +213,9 @@ export const toggleRoutineCompletion = async (id: string): Promise<Routine | nul
             await removeCompletionData(id, today);
         }
 
+        // 완료 상태 변경 이벤트 알림
+        notifyRoutineStateChange('complete');
+
         return updatedRoutine;
     } catch (error) {
         console.error('루틴 완료 상태 토글 중 오류:', error);
@@ -210,6 +263,10 @@ const updateFirebaseContribution = async (): Promise<void> => {
             const docRef = tasksCollection.doc(); // 자동 ID 생성
             await docRef.set(taskDocData);
             console.log(`Firebase 기여 데이터 저장 성공: 문서 ID ${docRef.id}`);
+
+            // 기여도 레벨 업데이트 (색상 강도 계산)
+            await updateContributionLevel(today);
+            console.log('기여도 색상 레벨 업데이트 완료');
         } catch (innerError) {
             console.error('Firebase 문서 저장 실패:', innerError);
         }
