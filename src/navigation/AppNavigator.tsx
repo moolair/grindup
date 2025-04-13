@@ -26,6 +26,7 @@ type RootStackParamList = {
   Login: undefined;
   Main: {
     newTask?: Task;
+    refreshRoutines?: boolean;
   };
   Tasks: undefined;
   TaskDetail: { taskId: string };

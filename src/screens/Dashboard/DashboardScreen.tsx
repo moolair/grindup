@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, RefreshControl, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, RefreshControl, ScrollView, Animated, TouchableOpacity } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useTheme } from '../../theme/ThemeProvider';
@@ -11,9 +11,6 @@ import useTranslation from '../../hooks/useTranslation';
 import { useAuth } from '../../context/AuthContext';
 import * as routineService from '../../services/routineService';
 import { Routine } from '../../services/routineService';
-import { writeBatch, doc, getDoc } from 'firebase/firestore';
-import { format } from 'date-fns';
-import { firestore } from '../../firebase/firebaseConfig';
 
 // 타입 정의
 type DashboardScreenNavigationProp = StackNavigationProp<RootStackParamList>;
@@ -41,6 +38,12 @@ const DashboardScreen = () => {
   const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const contributionGraphRef = useRef<ContributionGraphHandle>(null);
+
+  // Undo 기능을 위한 상태 관리
+  const [deletedRoutine, setDeletedRoutine] = useState<Routine | null>(null);
+  const [showUndoMessage, setShowUndoMessage] = useState(false);
+  const undoMessageAnim = useRef(new Animated.Value(0)).current;
+  const undoTimer = useRef<NodeJS.Timeout | null>(null);
 
   // 루틴 상태 변경 리스너 해제 함수 ref
   const unsubscribeRoutineListenersRef = useRef<(() => void)[]>([]);
@@ -119,6 +122,14 @@ const DashboardScreen = () => {
     loadRoutines();
     setupRoutineListeners();
 
+    // route.params에 refreshRoutines가 있으면 루틴 새로고침
+    if (route.params?.refreshRoutines) {
+      console.log('루틴 새로고침 파라미터 감지됨');
+      loadRoutines();
+      // 파라미터 초기화 (중복 로드 방지)
+      navigation.setParams({ refreshRoutines: undefined });
+    }
+
     // 자정 리셋 타이머 설정
     const scheduleReset = () => {
       const now = new Date();
@@ -147,7 +158,7 @@ const DashboardScreen = () => {
       unsubscribeRoutineListenersRef.current.forEach(unsubscribe => unsubscribe());
       unsubscribeRoutineListenersRef.current = [];
     };
-  }, [loadRoutines, setupRoutineListeners]);
+  }, [loadRoutines, setupRoutineListeners, route.params?.refreshRoutines]);
 
   const handleDayPress = (date: Date, count: number) => {
     console.log(`선택한 날짜: ${date.toLocaleDateString()}, 완료한 작업: ${count}개`);
@@ -220,6 +231,123 @@ const DashboardScreen = () => {
     }
   };
 
+  // 삭제된 루틴을 복원하는 함수
+  const handleUndoDelete = useCallback(() => {
+    if (deletedRoutine) {
+      // 타이머 취소
+      if (undoTimer.current) {
+        clearTimeout(undoTimer.current);
+        undoTimer.current = null;
+      }
+
+      // 복원 로직
+      const restoreRoutine = async () => {
+        try {
+          // 루틴 서비스를 통해 루틴 추가
+          const restoredRoutine = await routineService.addRoutine({
+            title: deletedRoutine.title,
+            description: deletedRoutine.description || '',
+            completed: deletedRoutine.completed,
+            category: deletedRoutine.category,
+            order: deletedRoutine.order,
+          });
+
+          // UI 업데이트
+          setRoutines(prev => [...prev, restoredRoutine]);
+          setRoutineTasks(prev => [...prev, routineToTask(restoredRoutine)]);
+          console.log('루틴 복원됨:', restoredRoutine);
+        } catch (error) {
+          console.error('루틴 복원 중 오류:', error);
+          // 실패 시 다시 로드
+          loadRoutines();
+        }
+      };
+
+      restoreRoutine();
+      hideUndoMessage();
+    }
+  }, [deletedRoutine]);
+
+  // Undo 메시지 표시
+  const showUndoMessageWithTimer = useCallback((routine: Routine) => {
+    setDeletedRoutine(routine);
+    setShowUndoMessage(true);
+
+    // 애니메이션 시작
+    Animated.spring(undoMessageAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      friction: 8,
+    }).start();
+
+    // 이전 타이머가 있으면 취소
+    if (undoTimer.current) {
+      clearTimeout(undoTimer.current);
+    }
+
+    // 5초 후 메시지 숨기기
+    undoTimer.current = setTimeout(() => {
+      hideUndoMessage();
+    }, 5000);
+  }, []);
+
+  // Undo 메시지 숨기기
+  const hideUndoMessage = useCallback(() => {
+    Animated.timing(undoMessageAnim, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowUndoMessage(false);
+      setDeletedRoutine(null);
+    });
+
+    if (undoTimer.current) {
+      clearTimeout(undoTimer.current);
+      undoTimer.current = null;
+    }
+  }, []);
+
+  // 컴포넌트 언마운트 시 타이머 정리
+  useEffect(() => {
+    return () => {
+      if (undoTimer.current) {
+        clearTimeout(undoTimer.current);
+      }
+    };
+  }, []);
+
+  // 루틴 삭제 처리
+  const handleRoutineDelete = async (taskId: string) => {
+    try {
+      console.log(`루틴 삭제: ${taskId}`);
+
+      // 삭제할 루틴 찾기
+      const routineToDelete = routines.find(r => r.id === taskId);
+      if (!routineToDelete) return;
+
+      // 낙관적 UI 업데이트 (API 응답 전에 UI 먼저 업데이트)
+      setRoutines(prevRoutines => prevRoutines.filter(routine => routine.id !== taskId));
+      setRoutineTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+
+      // 서버에 삭제 요청
+      const success = await routineService.deleteRoutine(taskId);
+
+      if (success) {
+        // 성공 시 Undo 메시지 표시
+        showUndoMessageWithTimer(routineToDelete);
+      } else {
+        console.log('루틴 삭제 실패 - UI 롤백');
+        // 실패 시 데이터 다시 로드
+        loadRoutines();
+      }
+    } catch (error) {
+      console.error('루틴 삭제 중 오류:', error);
+      // 오류 발생 시 데이터 다시 로드
+      loadRoutines();
+    }
+  };
+
   // 새 루틴 생성 기능 - 루틴 설정 화면으로 이동 (추후 구현)
   const handleCreateRoutine = () => {
     // TODO: 루틴 설정 화면으로 이동
@@ -272,6 +400,7 @@ const DashboardScreen = () => {
           <TaskList
             tasks={routineTasks}
             onTaskPress={handleRoutinePress}
+            onTaskDelete={handleRoutineDelete}
           />
         </View>
       </ScrollView>
@@ -283,6 +412,37 @@ const DashboardScreen = () => {
         backgroundColor={theme.colors.ui.primary}
         onPress={handleCreateRoutine}
       />
+
+      {/* Undo 메시지 */}
+      {showUndoMessage && (
+        <Animated.View
+          style={[
+            styles.undoContainer,
+            {
+              backgroundColor: theme.colors.ui.secondary,
+              transform: [{
+                translateY: undoMessageAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [100, 0]
+                })
+              }],
+              opacity: undoMessageAnim
+            }
+          ]}
+        >
+          <Text style={[styles.undoText, { color: theme.colors.content.inverse }]}>
+            {t('routineDeleted', { defaultValue: '루틴이 삭제되었습니다' })}
+          </Text>
+          <TouchableOpacity
+            style={styles.undoButton}
+            onPress={handleUndoDelete}
+          >
+            <Text style={[styles.undoButtonText, { color: theme.colors.content.inverse }]}>
+              {t('undo', { defaultValue: '되돌리기' })}
+            </Text>
+          </TouchableOpacity>
+        </Animated.View>
+      )}
     </SafeAreaView>
   );
 };
@@ -321,6 +481,36 @@ const styles = StyleSheet.create({
   },
   tasksContainer: {
     marginTop: 16,
+  },
+  undoContainer: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    right: 20,
+    borderRadius: 8,
+    padding: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 5,
+  },
+  undoText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  undoButton: {
+    marginLeft: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 4,
+  },
+  undoButtonText: {
+    fontSize: 14,
+    fontWeight: 'bold',
   },
 });
 

@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, ScrollView, Switch } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { useTheme } from '../../theme/ThemeProvider';
 import { ChevronLeftIcon } from '../../components/Icons';
 import useTranslation from '../../hooks/useTranslation';
+import { addRoutine } from '../../services/routineService';
+import { RootStackParamList } from '../../navigation/AppNavigator';
 
 // 요일 선택을 위한 인터페이스
 interface DayOption {
@@ -23,7 +26,7 @@ interface Routine {
 }
 
 const TasksScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { theme } = useTheme();
   const { t } = useTranslation('tasks');
 
@@ -96,12 +99,36 @@ const TasksScreen = () => {
   };
 
   // 루틴 생성 핸들러
-  const handleCreateRoutine = () => {
-    // 여기서 루틴 생성 로직 구현
-    console.log('생성된 루틴:', routine);
+  const handleCreateRoutine = async () => {
+    // 필수 필드 검증
+    if (!routine.title.trim()) {
+      // TODO: 알림 또는 오류 메시지 표시
+      console.log('제목을 입력해주세요');
+      return;
+    }
 
-    // 메인 화면으로 돌아가기
-    navigation.goBack();
+    try {
+      // 선택된 요일 확인 (모두 선택되지 않은 경우 매일 실행으로 간주)
+      const anyDaySelected = routine.days.some(day => day.selected);
+
+      // 루틴 생성 로직 구현
+      const newRoutine = {
+        title: routine.title,
+        description: routine.description,
+        completed: false,
+        category: routine.category,
+        order: Date.now(), // 순서는 현재 시간으로 설정
+      };
+
+      // 루틴 서비스를 통해 루틴 추가
+      const createdRoutine = await addRoutine(newRoutine);
+      console.log('생성된 루틴:', createdRoutine);
+
+      // 메인 화면으로 돌아가기 (홈 화면)
+      navigation.navigate('Main', { refreshRoutines: true });
+    } catch (error) {
+      console.error('루틴 생성 중 오류:', error);
+    }
   };
 
   return (
