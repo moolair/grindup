@@ -204,30 +204,72 @@ const DashboardScreen = () => {
 
       // 서버에 변경사항 반영 (백그라운드에서 진행)
       const updatedRoutine = await routineService.toggleRoutineCompletion(taskId);
+    } catch (error) {
+      console.error('루틴 완료 상태 토글 중 오류:', error);
+    }
+  };
 
-      // 서버 응답이 예상과 다르면 UI 롤백 (선택적)
-      if (updatedRoutine && updatedRoutine.completed !== newCompletedState) {
-        console.log('서버 응답이 예상과 다름 - UI 롤백');
-        setRoutines(prevRoutines => prevRoutines.map(routine =>
-          routine.id === taskId ? updatedRoutine : routine
-        ));
+  // 루틴 편집 처리
+  const handleRoutineEdit = (taskId: string) => {
+    // 편집할 루틴 찾기
+    const routineToEdit = routines.find(r => r.id === taskId);
+    if (!routineToEdit) return;
 
-        setRoutineTasks(prevTasks => prevTasks.map(task =>
-          task.id === taskId ? {
-            ...task,
-            status: updatedRoutine.completed ? 'completed' : 'pending'
-          } : task
-        ));
+    // TasksScreen으로 이동하여 편집
+    navigation.navigate('Tasks', { routineId: taskId });
+  };
 
-        // 그래프 업데이트도 롤백
-        if (contributionGraphRef.current) {
-          console.log('그래프 업데이트 롤백');
-          contributionGraphRef.current.updateTodayCount(!newCompletedState);
-        }
+  // 루틴 순서 변경 처리
+  const handleRoutineReorder = async (taskId: string, newOrder: number) => {
+    try {
+      console.log(`루틴 순서 변경: ${taskId} -> 순서 ${newOrder}`);
+
+      // 기존 루틴 찾기
+      const routineToReorder = routines.find(r => r.id === taskId);
+      if (!routineToReorder) return;
+
+      // 낙관적 UI 업데이트 (재정렬된 순서 적용)
+      const reorderedRoutines = [...routines];
+
+      // 현재 위치에서 제거
+      const currentIndex = reorderedRoutines.findIndex(r => r.id === taskId);
+      if (currentIndex !== -1) {
+        const [removed] = reorderedRoutines.splice(currentIndex, 1);
+
+        // 새 위치에 삽입
+        reorderedRoutines.splice(newOrder, 0, removed);
+
+        // 모든 루틴에 새 order 값 할당
+        const updatedRoutines = reorderedRoutines.map((routine, index) => ({
+          ...routine,
+          order: index
+        }));
+
+        // 즉시 UI 업데이트 하여 사용자에게 변경 결과 표시
+        setRoutines(updatedRoutines);
+
+        // Task 형태로 변환하여 업데이트
+        const tasks = updatedRoutines.map(routineToTask);
+        setRoutineTasks(tasks);
+
+        // 백그라운드에서 서버 업데이트 진행
+        (async () => {
+          try {
+            // 각 루틴의 order 필드 업데이트
+            for (const routine of updatedRoutines) {
+              await routineService.updateRoutine(routine.id, { order: routine.order });
+            }
+            console.log('순서 변경이 서버에 성공적으로 저장되었습니다.');
+          } catch (error) {
+            console.error('서버에 순서 변경 적용 중 오류:', error);
+            // 실패 시 UI는 업데이트된 상태 유지 (낙관적 UI 업데이트)
+          }
+        })();
       }
     } catch (error) {
-      console.error('루틴 상태 변경 중 오류:', error);
-      // 오류 발생 시 UI 롤백을 여기에 추가할 수 있음
+      console.error('루틴 순서 변경 중 오류:', error);
+      // 심각한 오류 발생 시 데이터 다시 로드
+      loadRoutines();
     }
   };
 
@@ -376,16 +418,7 @@ const DashboardScreen = () => {
         <Text style={[styles.date, { color: theme.colors.content.secondary }]}>{new Date().toLocaleDateString()}</Text>
       </View>
 
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={styles.contentContainer}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-          />
-        }
-      >
+      <View style={[styles.content, styles.contentContainer]}>
         <Text style={[styles.title, { color: theme.colors.content.primary }]}>{t('todayStatus')}</Text>
         {/* 기여도 그래프 컴포넌트 */}
         <ContributionGraph
@@ -396,14 +429,16 @@ const DashboardScreen = () => {
         />
 
         <View style={styles.tasksContainer}>
-          <Text style={[styles.subtitle, { color: theme.colors.content.primary }]}>{t('todayRoutineHeader')}</Text>
           <TaskList
             tasks={routineTasks}
             onTaskPress={handleRoutinePress}
             onTaskDelete={handleRoutineDelete}
+            onTaskEdit={handleRoutineEdit}
+            onReorder={handleRoutineReorder}
+            headerTitle={t('todayRoutineHeader')}
           />
         </View>
-      </ScrollView>
+      </View>
 
       {/* 플로팅 액션 버튼 추가 */}
       <FloatingActionButton
@@ -472,12 +507,6 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '600',
     marginBottom: 16,
-  },
-  subtitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 12,
-    marginTop: 24,
   },
   tasksContainer: {
     marginTop: 16,

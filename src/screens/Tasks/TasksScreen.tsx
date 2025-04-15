@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, ScrollView, Switch } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useTheme } from '../../theme/ThemeProvider';
 import { ChevronLeftIcon } from '../../components/Icons';
 import useTranslation from '../../hooks/useTranslation';
-import { addRoutine } from '../../services/routineService';
+import { addRoutine, updateRoutine, getRoutines } from '../../services/routineService';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 
 // 요일 선택을 위한 인터페이스
@@ -22,13 +22,17 @@ interface Routine {
   description: string;
   days: DayOption[];
   reminder: boolean;
-  category: string;
 }
 
 const TasksScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, 'Tasks'>>();
   const { theme } = useTheme();
   const { t } = useTranslation('tasks');
+
+  // 편집 모드 확인 (routineId가 있으면 편집, 없으면 생성)
+  const isEditMode = Boolean(route.params?.routineId);
+  const [title, setTitle] = useState('');
 
   // 초기 요일 선택 상태
   const initialDays: DayOption[] = [
@@ -48,22 +52,38 @@ const TasksScreen = () => {
     description: '',
     days: initialDays,
     reminder: false,
-    category: t('categories.uncategorized'),
   });
 
-  // 카테고리 옵션들
-  const categories = [
-    t('categories.uncategorized'),
-    t('categories.health'),
-    t('categories.learning'),
-    t('categories.work'),
-    t('categories.hobby'),
-    t('categories.selfDevelopment')
-  ];
-  const [selectedCategory, setSelectedCategory] = useState(t('categories.uncategorized'));
+  // 편집 모드인 경우 기존 루틴 데이터 불러오기
+  useEffect(() => {
+    const loadRoutineData = async () => {
+      if (route.params?.routineId) {
+        try {
+          const routines = await getRoutines();
+          const routineToEdit = routines.find(r => r.id === route.params?.routineId);
+
+          if (routineToEdit) {
+            // 루틴 데이터로 폼 초기화
+            setRoutine({
+              id: routineToEdit.id,
+              title: routineToEdit.title,
+              description: routineToEdit.description || '',
+              days: initialDays, // 요일 정보가 없으면 기본값 사용
+              reminder: false, // 알림 정보가 없으면 기본값 사용
+            });
+          }
+        } catch (error) {
+          console.error('루틴 데이터 로드 중 오류:', error);
+        }
+      }
+    };
+
+    loadRoutineData();
+  }, [route.params?.routineId]);
 
   // 뒤로가기 핸들러
   const handleBackPress = () => {
+    // 변경사항을 저장하지 않고 이전 화면으로 돌아감
     navigation.goBack();
   };
 
@@ -92,14 +112,8 @@ const TasksScreen = () => {
     setRoutine(prev => ({ ...prev, reminder: !prev.reminder }));
   };
 
-  // 카테고리 선택 핸들러
-  const handleCategorySelect = (category: string) => {
-    setSelectedCategory(category);
-    setRoutine(prev => ({ ...prev, category }));
-  };
-
-  // 루틴 생성 핸들러
-  const handleCreateRoutine = async () => {
+  // 루틴 저장 핸들러 (생성 또는 업데이트)
+  const handleSaveRoutine = async () => {
     // 필수 필드 검증
     if (!routine.title.trim()) {
       // TODO: 알림 또는 오류 메시지 표시
@@ -111,23 +125,31 @@ const TasksScreen = () => {
       // 선택된 요일 확인 (모두 선택되지 않은 경우 매일 실행으로 간주)
       const anyDaySelected = routine.days.some(day => day.selected);
 
-      // 루틴 생성 로직 구현
-      const newRoutine = {
+      // 루틴 데이터 준비
+      const routineData = {
         title: routine.title,
         description: routine.description,
-        completed: false,
-        category: routine.category,
-        order: Date.now(), // 순서는 현재 시간으로 설정
+        order: Date.now(), // 순서는 현재 시간으로 설정 (새 루틴인 경우에만 적용)
+        completed: isEditMode ? Boolean((routine as any).completed) : false,
       };
 
-      // 루틴 서비스를 통해 루틴 추가
-      const createdRoutine = await addRoutine(newRoutine);
-      console.log('생성된 루틴:', createdRoutine);
+      let savedRoutine;
+
+      if (isEditMode) {
+        // 기존 루틴 업데이트
+        savedRoutine = await updateRoutine(routine.id, routineData);
+        console.log('루틴 업데이트됨:', savedRoutine);
+      } else {
+        // 새 루틴 생성
+        savedRoutine = await addRoutine(routineData);
+        console.log('생성된 루틴:', savedRoutine);
+      }
 
       // 메인 화면으로 돌아가기 (홈 화면)
+      // refreshRoutines를 true로 설정하여 대시보드에서 루틴 목록을 새로고침하도록 함
       navigation.navigate('Main', { refreshRoutines: true });
     } catch (error) {
-      console.error('루틴 생성 중 오류:', error);
+      console.error(`루틴 ${isEditMode ? '업데이트' : '생성'} 중 오류:`, error);
     }
   };
 
@@ -137,7 +159,9 @@ const TasksScreen = () => {
         <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
           <ChevronLeftIcon color={theme.colors.content.primary} size={24} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: theme.colors.content.primary }]}>{t('createRoutine')}</Text>
+        <Text style={[styles.title, { color: theme.colors.content.primary }]}>
+          {isEditMode ? t('루틴 편집') : t('새 루틴 만들기')}
+        </Text>
       </View>
 
       <ScrollView style={styles.content}>
@@ -203,40 +227,6 @@ const TasksScreen = () => {
           </View>
         </View>
 
-        {/* 카테고리 선택 */}
-        <View style={styles.inputContainer}>
-          <Text style={[styles.inputLabel, { color: theme.colors.content.primary }]}>{t('category')}</Text>
-          <View style={styles.categoriesContainer}>
-            {categories.map(category => (
-              <TouchableOpacity
-                key={category}
-                style={[
-                  styles.categoryButton,
-                  { borderColor: theme.colors.border.light },
-                  selectedCategory === category && [
-                    styles.selectedCategoryButton,
-                    { backgroundColor: theme.colors.ui.primary, borderColor: theme.colors.ui.primary }
-                  ]
-                ]}
-                onPress={() => handleCategorySelect(category)}
-              >
-                <Text
-                  style={[
-                    styles.categoryButtonText,
-                    { color: theme.colors.content.primary },
-                    selectedCategory === category && [
-                      styles.selectedCategoryButtonText,
-                      { color: theme.colors.content.inverse }
-                    ]
-                  ]}
-                >
-                  {category}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
         {/* 알림 설정 */}
         <View style={styles.inputContainer}>
           <View style={styles.reminderContainer}>
@@ -251,12 +241,14 @@ const TasksScreen = () => {
         </View>
       </ScrollView>
 
-      {/* 루틴 생성 버튼 */}
+      {/* 수정 완료 또는 생성 버튼 */}
       <TouchableOpacity
         style={[styles.createButton, { backgroundColor: theme.colors.ui.primary }]}
-        onPress={handleCreateRoutine}
+        onPress={handleSaveRoutine}
       >
-        <Text style={[styles.createButtonText, { color: theme.colors.content.inverse }]}>{t('createButton')}</Text>
+        <Text style={[styles.createButtonText, { color: theme.colors.content.inverse }]}>
+          {isEditMode ? t('편집 완료') : t('루틴 생성')}
+        </Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -319,27 +311,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   selectedDayButtonText: {
-    color: '#FFFFFF',
-  },
-  categoriesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  categoryButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    marginRight: 8,
-    marginBottom: 8,
-  },
-  selectedCategoryButton: {
-    borderColor: '#3366FF',
-  },
-  categoryButtonText: {
-    fontSize: 14,
-  },
-  selectedCategoryButtonText: {
     color: '#FFFFFF',
   },
   reminderContainer: {
