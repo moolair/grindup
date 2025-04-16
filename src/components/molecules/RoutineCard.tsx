@@ -444,11 +444,6 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
                                             </Text>
                                         )}
                                     </View>
-                                    {routine.category && (
-                                        <View style={[styles.categoryTag, { backgroundColor: getCategoryColor() }]}>
-                                            <Text style={styles.categoryText}>{routine.category}</Text>
-                                        </View>
-                                    )}
                                     {isDraggable && (
                                         <TouchableOpacity
                                             style={[
