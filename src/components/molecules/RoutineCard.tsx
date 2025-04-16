@@ -418,11 +418,6 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
                                 disabled={isDragging}
                             >
                                 <View style={styles.titleRow}>
-                                    <View style={[styles.checkbox, { borderColor: theme.colors.ui.primary }]}>
-                                        {routine.status === 'completed' && (
-                                            <Text style={styles.checkmark}>✓</Text>
-                                        )}
-                                    </View>
                                     <View style={styles.titleContainer}>
                                         <Text
                                             style={[
@@ -533,6 +528,7 @@ const styles = StyleSheet.create({
     titleContainer: {
         flex: 1,
         justifyContent: 'center',
+        marginLeft: 5, // 체크박스 제거 후 왼쪽 여백 추가
     },
     title: {
         fontSize: 16,
