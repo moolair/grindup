@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, ScrollView, Switch } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useTheme } from '../../theme/ThemeProvider';
@@ -15,13 +15,20 @@ interface DayOption {
   selected: boolean;
 }
 
+// 색상 옵션 인터페이스
+interface ColorOption {
+  id: string;
+  name: string;
+  value: string;
+}
+
 // 루틴 타입 인터페이스
 interface Routine {
   id: string;
   title: string;
   description: string;
   days: DayOption[];
-  reminder: boolean;
+  color: string;
 }
 
 const TasksScreen = () => {
@@ -33,6 +40,18 @@ const TasksScreen = () => {
   // 편집 모드 확인 (routineId가 있으면 편집, 없으면 생성)
   const isEditMode = Boolean(route.params?.routineId);
   const [title, setTitle] = useState('');
+
+  // 색상 옵션
+  const colorOptions: ColorOption[] = [
+    { id: 'default', name: '기본', value: theme.colors.ui.primary },
+    { id: 'red', name: '빨강', value: '#FF6B6B' },
+    { id: 'orange', name: '주황', value: '#FFA86B' },
+    { id: 'yellow', name: '노랑', value: '#FFDE6B' },
+    { id: 'green', name: '초록', value: '#6BFF8B' },
+    { id: 'blue', name: '파랑', value: '#6B9CFF' },
+    { id: 'purple', name: '보라', value: '#B96BFF' },
+    { id: 'pink', name: '분홍', value: '#FF6BC1' },
+  ];
 
   // 초기 요일 선택 상태
   const initialDays: DayOption[] = [
@@ -51,7 +70,7 @@ const TasksScreen = () => {
     title: '',
     description: '',
     days: initialDays,
-    reminder: false,
+    color: colorOptions[0].value,
   });
 
   // 편집 모드인 경우 기존 루틴 데이터 불러오기
@@ -69,7 +88,7 @@ const TasksScreen = () => {
               title: routineToEdit.title,
               description: routineToEdit.description || '',
               days: initialDays, // 요일 정보가 없으면 기본값 사용
-              reminder: false, // 알림 정보가 없으면 기본값 사용
+              color: routineToEdit.category || colorOptions[0].value, // 기존 카테고리를 색상으로 사용하거나 기본값
             });
           }
         } catch (error) {
@@ -107,9 +126,9 @@ const TasksScreen = () => {
     }));
   };
 
-  // 알림 설정 핸들러
-  const toggleReminder = () => {
-    setRoutine(prev => ({ ...prev, reminder: !prev.reminder }));
+  // 색상 선택 핸들러
+  const handleColorSelect = (colorValue: string) => {
+    setRoutine(prev => ({ ...prev, color: colorValue }));
   };
 
   // 루틴 저장 핸들러 (생성 또는 업데이트)
@@ -131,6 +150,7 @@ const TasksScreen = () => {
         description: routine.description,
         order: Date.now(), // 순서는 현재 시간으로 설정 (새 루틴인 경우에만 적용)
         completed: isEditMode ? Boolean((routine as any).completed) : false,
+        category: routine.color, // 선택한 색상을 카테고리 필드에 저장
       };
 
       let savedRoutine;
@@ -227,16 +247,25 @@ const TasksScreen = () => {
           </View>
         </View>
 
-        {/* 알림 설정 */}
+        {/* 카드 색상 선택 */}
         <View style={styles.inputContainer}>
-          <View style={styles.reminderContainer}>
-            <Text style={[styles.inputLabel, { color: theme.colors.content.primary }]}>{t('reminderSettings')}</Text>
-            <Switch
-              value={routine.reminder}
-              onValueChange={toggleReminder}
-              trackColor={{ false: theme.colors.content.disabled, true: theme.colors.ui.primary }}
-              thumbColor={theme.colors.content.inverse}
-            />
+          <Text style={[styles.inputLabel, { color: theme.colors.content.primary }]}>카드 색상</Text>
+          <View style={styles.colorContainer}>
+            {colorOptions.map(color => (
+              <TouchableOpacity
+                key={color.id}
+                style={[
+                  styles.colorOption,
+                  { backgroundColor: color.value },
+                  routine.color === color.value && styles.selectedColorOption
+                ]}
+                onPress={() => handleColorSelect(color.value)}
+              >
+                {routine.color === color.value && (
+                  <Text style={styles.colorCheckmark}>✓</Text>
+                )}
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
       </ScrollView>
@@ -313,16 +342,43 @@ const styles = StyleSheet.create({
   selectedDayButtonText: {
     color: '#FFFFFF',
   },
-  reminderContainer: {
+  colorContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
+    marginTop: 8,
+  },
+  colorOption: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    margin: 8,
+    justifyContent: 'center',
     alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1,
+  },
+  selectedColorOption: {
+    borderWidth: 2,
+    borderColor: '#000',
+  },
+  colorCheckmark: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: 'bold',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
   },
   createButton: {
     margin: 16,
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
+    zIndex: 1000,
   },
   createButtonText: {
     fontSize: 16,

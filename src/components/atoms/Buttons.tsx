@@ -113,7 +113,8 @@ const styles = StyleSheet.create({
     fab: {
         position: 'absolute',
         borderRadius: 30,
-        zIndex: 999,
+        zIndex: 9999,
+        elevation: 10,
     },
     bottomRight: {
         bottom: 24,

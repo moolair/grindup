@@ -778,18 +778,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, o
 
     // 메인 렌더링
     return (
-        <View
-            style={[
-                styles.container,
-                {
-                    backgroundColor: theme.colors.background.primary,
-                    position: 'relative'
-                }
-            ]}
-            ref={containerRef}
-            {...containerPanResponder.panHandlers}
-            collapsable={false}
-        >
+        <View style={styles.container}>
             {headerTitle && (
                 <View style={styles.headerContainer}>
                     <Text style={[styles.headerTitle, { color: theme.colors.content.primary }]}>{headerTitle}</Text>
@@ -821,7 +810,8 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, o
                 <FlatList
                     data={tasks}
                     keyExtractor={(item) => item.id}
-                    scrollEnabled={false}
+                    scrollEnabled={true}
+                    nestedScrollEnabled={true}
                     contentContainerStyle={styles.flatListContent}
                     renderItem={({ item, index }) => (
                         <RoutineCard
@@ -836,6 +826,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, o
                                 }
                             }}
                             isDraggable={editMode}
+                            editMode={editMode}
                             index={index}
                             onDragStateChange={(dragging) => {
                                 // 드래그 상태 변경 감지
@@ -866,7 +857,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: 0,
         overflow: 'hidden',
         borderRadius: 8,
-        zIndex: 1, // 명시적 z-index 설정
+        zIndex: -1, // FAB 버튼이 TaskList 위에 표시되도록 zIndex 낮춤
+        flex: 1, // 컨테이너가 가능한 모든 공간을 차지하도록 설정
+        height: 500, // 최소 높이 설정
     },
     headerContainer: {
         width: '100%',
@@ -1010,6 +1003,7 @@ const styles = StyleSheet.create({
         width: '100%',
         overflow: 'hidden',
         borderRadius: 8,
+        flex: 1, // 컨테이너가 가능한 모든 공간을 차지하도록 설정
     },
     flatListContent: {
         paddingVertical: 4,

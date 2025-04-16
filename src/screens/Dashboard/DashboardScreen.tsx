@@ -394,7 +394,10 @@ const DashboardScreen = () => {
   const handleCreateRoutine = () => {
     // TODO: 루틴 설정 화면으로 이동
     // 현재는 기존 Tasks 화면으로 이동
-    navigation.navigate('Tasks');
+    navigation.navigate({
+      name: 'Tasks',
+      params: {}
+    });
   };
 
   // 끌어내려서 새로고침 처리
@@ -502,6 +505,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 16,
+    flex: 1,
   },
   title: {
     fontSize: 22,
@@ -510,6 +514,9 @@ const styles = StyleSheet.create({
   },
   tasksContainer: {
     marginTop: 16,
+    position: 'relative',
+    zIndex: -1,
+    flex: 1,
   },
   undoContainer: {
     position: 'absolute',

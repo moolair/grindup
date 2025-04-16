@@ -33,6 +33,7 @@ interface RoutineCardProps {
     isDraggable?: boolean;
     index?: number;
     onDragStateChange?: (dragging: boolean) => void;
+    editMode?: boolean;
 }
 
 // 드래그 핸들 컴포넌트
@@ -55,7 +56,8 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
     onReorder,
     isDraggable = false,
     index = 0,
-    onDragStateChange
+    onDragStateChange,
+    editMode = false
 }) => {
     const { theme } = useTheme();
     const [isDragging, setIsDragging] = useState(false);
@@ -117,7 +119,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
 
     // 스와이프 제스처 구현
     const swipeGesture = Gesture.Pan()
-        .enabled(!isDraggable)
+        .enabled(!isDraggable && editMode)
         .onBegin(() => {
             'worklet';
             translateX.value = 0;
@@ -318,6 +320,12 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
     const getCategoryColor = () => {
         if (!routine.category) return theme.colors.background.secondary;
 
+        // 카테고리가 직접 색상 코드인 경우 (#로 시작하는 hex 값)
+        if (routine.category.startsWith('#')) {
+            return routine.category;
+        }
+
+        // 기존 카테고리 이름에 따른 색상 매핑
         switch (routine.category.toLowerCase()) {
             case '건강':
                 return theme.colors.ui.success;
@@ -357,29 +365,31 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
     return (
         <GestureHandlerRootView style={{ flex: 0 }}>
             <View style={styles.container}>
-                <View style={styles.rowBack}>
-                    {/* 왼쪽에 표시될 편집 버튼 (오른쪽으로 스와이프) */}
-                    <Animated.View style={editActionStyle}>
-                        <TouchableOpacity
-                            style={[styles.actionButton, { backgroundColor: theme.colors.ui.primary }]}
-                            onPress={handleEditPress}
-                            activeOpacity={0.7}
-                        >
-                            <Text style={styles.actionButtonText}>편집</Text>
-                        </TouchableOpacity>
-                    </Animated.View>
+                {editMode && (
+                    <View style={styles.rowBack}>
+                        {/* 왼쪽에 표시될 편집 버튼 (오른쪽으로 스와이프) */}
+                        <Animated.View style={editActionStyle}>
+                            <TouchableOpacity
+                                style={[styles.actionButton, { backgroundColor: theme.colors.ui.primary }]}
+                                onPress={handleEditPress}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={styles.actionButtonText}>편집</Text>
+                            </TouchableOpacity>
+                        </Animated.View>
 
-                    {/* 오른쪽에 표시될 삭제 버튼 (왼쪽으로 스와이프) */}
-                    <Animated.View style={deleteActionStyle}>
-                        <TouchableOpacity
-                            style={[styles.actionButton, { backgroundColor: theme.colors.ui.error }]}
-                            onPress={handleDeletePress}
-                            activeOpacity={0.7}
-                        >
-                            <Text style={styles.actionButtonText}>삭제</Text>
-                        </TouchableOpacity>
-                    </Animated.View>
-                </View>
+                        {/* 오른쪽에 표시될 삭제 버튼 (왼쪽으로 스와이프) */}
+                        <Animated.View style={deleteActionStyle}>
+                            <TouchableOpacity
+                                style={[styles.actionButton, { backgroundColor: theme.colors.ui.error }]}
+                                onPress={handleDeletePress}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={styles.actionButtonText}>삭제</Text>
+                            </TouchableOpacity>
+                        </Animated.View>
+                    </View>
+                )}
 
                 <GestureDetector gesture={Gesture.Simultaneous(swipeGesture, dragGesture)}>
                     <Animated.View
