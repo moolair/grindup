@@ -9,7 +9,10 @@ import Animated, {
     runOnJS,
     useAnimatedGestureHandler,
     cancelAnimation,
-    useAnimatedReaction
+    useAnimatedReaction,
+    interpolate,
+    Easing,
+    SharedValue
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -62,33 +65,96 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
     const { theme } = useTheme();
     const [isDragging, setIsDragging] = useState(false);
 
+    // 분류 색상 가져오기 (각 루틴 분류마다 다른 색상)
+    const getCategoryColor = () => {
+        switch (routine.category) {
+            case 'health':
+                return theme.colors.ui.success;
+            case 'work':
+                return theme.colors.ui.primary;
+            case 'personal':
+                return theme.colors.ui.accent;
+            case 'study':
+                return theme.colors.ui.secondary;
+            case 'fitness':
+                return theme.colors.ui.success;
+            case 'social':
+                return theme.colors.ui.accent;
+            default:
+                return routine.status === 'completed'
+                    ? theme.colors.ui.success
+                    : theme.colors.ui.primary;
+        }
+    };
+
     // Reanimated shared values
     const translateX = useSharedValue(0);
     const translateY = useSharedValue(0);
     const scale = useSharedValue(1);
     const zIndex = useSharedValue(0);
 
+    // 완료 애니메이션을 위한 새로운 shared value
+    const completionProgress = useSharedValue(0);
+
+    // 물결 애니메이션의 색상을 공유값으로 저장
+    const [waveColor, setWaveColor] = useState('');
+
+    // UI 스레드에서 사용할 색상 값을 미리 계산하여 공유 값으로 저장
+    const categoryColorRef = useSharedValue(
+        routine.status === 'completed'
+            ? theme.colors.ui.success
+            : getCategoryColor()
+    );
+
+    // 분류 색상에 투명도 적용
+    const getCategoryColorWithOpacity = () => {
+        const baseColor = getCategoryColor();
+        return routine.status === 'completed'
+            ? theme.colors.ui.success
+            : baseColor;
+    };
+
+    // 물결 색상을 업데이트
+    useEffect(() => {
+        setWaveColor(getCategoryColorWithOpacity());
+    }, [routine.status, routine.category]);
+
     // 컴포넌트가 마운트될 때 초기화
     useEffect(() => {
+        // 루틴 상태가 변경될 때마다 애니메이션 업데이트
+        if (routine.status === 'completed') {
+            completionProgress.value = withTiming(1, {
+                duration: 800,
+                easing: Easing.bezier(0.25, 0.1, 0.25, 1)
+            });
+        } else {
+            completionProgress.value = withTiming(0, {
+                duration: 300,
+                easing: Easing.bezier(0.25, 0.1, 0.25, 1)
+            });
+        }
+
         return () => {
             // 컴포넌트 언마운트시 애니메이션 상태 리셋 및 진행중인 애니메이션 취소
             cancelAnimation(translateX);
             cancelAnimation(translateY);
             cancelAnimation(scale);
             cancelAnimation(zIndex);
+            cancelAnimation(completionProgress);
 
             // 즉시 값들을 기본값으로 설정
             translateX.value = 0;
             translateY.value = 0;
             scale.value = 1;
             zIndex.value = 0;
+            completionProgress.value = 0;
 
             // 부모 컴포넌트에 드래그 종료 알림
             if (isDragging && onDragStateChange) {
                 onDragStateChange(false);
             }
         };
-    }, []);
+    }, [routine.status]);
 
     // 모든 애니메이션이 완료되었는지 확인하는 반응 추가
     useAnimatedReaction(
@@ -251,399 +317,332 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
             }
         });
 
-    // 애니메이션 스타일 정의
-    const animatedStyle = useAnimatedStyle(() => {
+    // 탭 제스처 (클릭 처리)
+    const tapGesture = Gesture.Tap()
+        .enabled(!isDraggable)
+        .onEnd(() => {
+            'worklet';
+            // 사용자가 카드 탭 시 상태 토글
+            if (onPress) {
+                runOnJS(onPress)(routine.id);
+
+                // 클릭 시 즉시 애니메이션 시작 (낙관적 UI 업데이트)
+                if (routine.status === 'pending') {
+                    // 애니메이션 완료로 전환
+                    completionProgress.value = withTiming(1, {
+                        duration: 800,
+                        easing: Easing.bezier(0.25, 0.1, 0.25, 1)
+                    });
+
+                    // 색상 즉시 업데이트 (완료 상태로)
+                    runOnJS(setWaveColor)(theme.colors.ui.success);
+                    // 공유 값도 함께 업데이트
+                    categoryColorRef.value = theme.colors.ui.success;
+                } else {
+                    // 애니메이션 미완료로 전환
+                    completionProgress.value = withTiming(0, {
+                        duration: 300,
+                        easing: Easing.bezier(0.25, 0.1, 0.25, 1)
+                    });
+
+                    // 색상 즉시 업데이트 (미리 계산된 색상 사용)
+                    runOnJS(setWaveColor)(
+                        routine.status === 'completed'
+                            ? theme.colors.ui.success
+                            : getCategoryColor()
+                    );
+                    // 공유 값도 함께 업데이트
+                    categoryColorRef.value =
+                        routine.status === 'completed'
+                            ? theme.colors.ui.success
+                            : getCategoryColor();
+                }
+            }
+        });
+
+    // 제스처 결합
+    const combinedGesture = Gesture.Exclusive(dragGesture, Gesture.Simultaneous(swipeGesture, tapGesture));
+
+    // 카드 이동 애니메이션 스타일
+    const cardStyle = useAnimatedStyle(() => {
         'worklet';
         return {
             transform: [
-                { translateX: translateX.value },
-                { translateY: translateY.value },
+                { translateX: typeof translateX.value === 'number' ? translateX.value : 0 },
+                { translateY: typeof translateY.value === 'number' ? translateY.value : 0 },
                 { scale: scale.value }
             ],
             zIndex: zIndex.value,
         };
     });
 
-    // 카드 배경 스타일 - 스와이프에 따라 배경색 변경
-    const cardBackgroundStyle = useAnimatedStyle(() => {
+    // 물결 애니메이션 스타일
+    const waveAnimationStyle = useAnimatedStyle(() => {
         'worklet';
-        const THRESHOLD = 80;
+        const progress = typeof completionProgress.value === 'number' ? completionProgress.value : 0;
 
-        // 기본 배경색은 투명
+        // 물결 색상 안전하게 가져오기
+        const safeColor = categoryColorRef?.value || waveColor || theme.colors.ui.primary;
+
         return {
-            backgroundColor: 'transparent',
-            // 편집/삭제 영역이 보일 때 약간의 그림자 효과 추가
-            shadowOpacity: Math.abs(translateX.value) > 20 ? 0.2 : 0.1,
-            shadowRadius: Math.abs(translateX.value) > 20 ? 5 : 3,
+            position: 'absolute',
+            top: 0,
+            bottom: 0,
+            left: 0,
+            width: `${progress * 100}%`, // 완료 진행률에 따른 너비
+            backgroundColor: safeColor, // 안전한 색상 값 사용
+            borderRadius: 12, // 카드와 동일한 모서리 둥글기
+            opacity: 0.6 // 베이스 카드 내용이 보이도록 투명도 설정
         };
     });
 
-    // 편집 버튼 스타일 - 왼쪽
-    const editActionStyle = useAnimatedStyle(() => {
+    // 완료 상태에 따른 내용 스타일
+    const contentStyle = useAnimatedStyle(() => {
         'worklet';
-        const THRESHOLD = 80;
-
-        // 오른쪽으로 스와이프 거리에 따른 투명도
-        const opacity = translateX.value > 0 ? 1 : 0;
-
-        // 스와이프 거리에 따른 스케일 (0.8~1.0)
-        const scale = translateX.value > 0
-            ? Math.min(0.8 + (translateX.value / THRESHOLD) * 0.2, 1.0)
-            : 0.8;
+        // 완료 상태에 따라 텍스트 색상 변경 (밝은 색으로)
+        const progress = typeof completionProgress.value === 'number' ? completionProgress.value : 0;
+        const textColorOpacity = interpolate(
+            progress,
+            [0, 1],
+            [1, 0.8] // 완료시 약간 밝게
+        );
 
         return {
-            opacity,
-            transform: [{ scale }]
+            opacity: textColorOpacity
         };
     });
 
-    // 삭제 버튼 스타일 - 오른쪽
-    const deleteActionStyle = useAnimatedStyle(() => {
-        'worklet';
-        const THRESHOLD = 80;
-
-        // 왼쪽으로 스와이프 거리에 따른 투명도
-        const opacity = translateX.value < 0 ? 1 : 0;
-
-        // 스와이프 거리에 따른 스케일 (0.8~1.0)
-        const scale = translateX.value < 0
-            ? Math.min(0.8 + (Math.abs(translateX.value) / THRESHOLD) * 0.2, 1.0)
-            : 0.8;
-
-        return {
-            opacity,
-            transform: [{ scale }]
-        };
-    });
-
-    // 카테고리에 따른 색상 선택
-    const getCategoryColor = () => {
-        if (!routine.category) return theme.colors.background.secondary;
-
-        // 카테고리가 직접 색상 코드인 경우 (#로 시작하는 hex 값)
-        if (routine.category.startsWith('#')) {
-            return routine.category;
-        }
-
-        // 기존 카테고리 이름에 따른 색상 매핑
-        switch (routine.category.toLowerCase()) {
-            case '건강':
-                return theme.colors.ui.success;
-            case '업무':
-                return theme.colors.ui.primary;
-            case '개인':
-                return theme.colors.ui.accent;
-            default:
-                return theme.colors.background.secondary;
-        }
-    };
-
-    // 삭제 액션 버튼 클릭 핸들러
+    // 삭제 버튼 동작
     const handleDeletePress = () => {
         if (onDelete) {
-            // 삭제 액션 실행만 하고 카드 위치는 초기화하지 않음
-            // 서버/데이터베이스 응답 후 부모 컴포넌트에서 상태 업데이트 시 자동으로 리렌더링됨
+            Vibration.vibrate(30); // 짧은 진동 피드백
             onDelete(routine.id);
-
-            // 위치 초기화를 하지 않음으로써 삭제 중인 시각적 상태를 유지
-            // translateX.value = withTiming(0); // 이 코드를 제거하거나 주석 처리
         }
     };
 
-    // 편집 액션 버튼 클릭 핸들러
+    // 편집 버튼 동작
     const handleEditPress = () => {
         if (onEdit) {
-            // 편집 액션 실행만 하고 카드 위치는 초기화하지 않음
-            // 서버/데이터베이스 응답 후 부모 컴포넌트에서 상태 업데이트 시 자동으로 리렌더링됨
+            Vibration.vibrate(30); // 짧은 진동 피드백
             onEdit(routine.id);
-
-            // 위치 초기화를 하지 않음으로써 편집 중인 시각적 상태를 유지
-            // translateX.value = withTiming(0); // 이 코드를 제거하거나 주석 처리
         }
     };
 
+    // 카드 왼쪽 테두리 색상
+    const getBorderColor = () => {
+        return routine.status === 'completed'
+            ? theme.colors.ui.success
+            : getCategoryColor();
+    };
+
+    // 상태가 변경될 때마다 공유 값 업데이트
+    useEffect(() => {
+        categoryColorRef.value = routine.status === 'completed'
+            ? theme.colors.ui.success
+            : getCategoryColor();
+    }, [routine.status, routine.category]);
+
+    // 삭제 버튼 애니메이션 스타일
+    const deleteButtonStyle = useAnimatedStyle(() => {
+        'worklet';
+        return {
+            backgroundColor: theme.colors.ui.error,
+            transform: [
+                {
+                    translateX: typeof translateX.value === 'number' && translateX.value < -50 ? 0 : 100
+                },
+            ],
+        };
+    });
+
+    // 편집 버튼 애니메이션 스타일
+    const editButtonStyle = useAnimatedStyle(() => {
+        'worklet';
+        return {
+            backgroundColor: theme.colors.ui.secondary,
+            transform: [
+                {
+                    translateX: typeof translateX.value === 'number' && translateX.value > 50 ? 0 : -100
+                },
+            ],
+        };
+    });
+
     return (
-        <GestureHandlerRootView style={{ flex: 0 }}>
-            <View style={styles.container}>
-                {editMode && (
-                    <View style={styles.rowBack}>
-                        {/* 왼쪽에 표시될 편집 버튼 (오른쪽으로 스와이프) */}
-                        <Animated.View style={editActionStyle}>
-                            <TouchableOpacity
-                                style={[styles.actionButton, { backgroundColor: theme.colors.ui.primary }]}
-                                onPress={handleEditPress}
-                                activeOpacity={0.7}
-                            >
-                                <Text style={styles.actionButtonText}>편집</Text>
-                            </TouchableOpacity>
-                        </Animated.View>
+        <GestureHandlerRootView>
+            <GestureDetector gesture={combinedGesture}>
+                <Animated.View
+                    style={[
+                        styles.cardContainer,
+                        {
+                            backgroundColor: theme.colors.surface.primary,
+                            borderLeftColor: categoryColorRef?.value || getCategoryColor(),
+                            borderLeftWidth: 4,
+                            borderRadius: 12,
+                            shadowColor: theme.type === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.1)',
+                        },
+                        cardStyle,
+                        isDragging && {
+                            elevation: 5,
+                            shadowOpacity: 0.3,
+                            shadowRadius: 10,
+                            shadowOffset: { width: 0, height: 5 }
+                        }
+                    ]}
+                >
+                    {/* 물결 애니메이션 배경 */}
+                    <Animated.View style={waveAnimationStyle} />
 
-                        {/* 오른쪽에 표시될 삭제 버튼 (왼쪽으로 스와이프) */}
-                        <Animated.View style={deleteActionStyle}>
-                            <TouchableOpacity
-                                style={[styles.actionButton, { backgroundColor: theme.colors.ui.error }]}
-                                onPress={handleDeletePress}
-                                activeOpacity={0.7}
-                            >
-                                <Text style={styles.actionButtonText}>삭제</Text>
-                            </TouchableOpacity>
-                        </Animated.View>
-                    </View>
-                )}
+                    {/* 왼쪽에 드래그 핸들 표시 (editMode가 true일 때) */}
+                    {isDraggable && editMode && (
+                        <DragHandle isDragging={isDragging} theme={theme} />
+                    )}
 
-                <GestureDetector gesture={Gesture.Simultaneous(swipeGesture, dragGesture)}>
-                    <Animated.View
-                        style={[
-                            styles.cardContainer,
-                            {
-                                backgroundColor: routine.status === 'completed'
-                                    ? theme.colors.background.secondary
-                                    : theme.colors.background.primary,
-                                borderLeftColor: getCategoryColor(),
-                                shadowOpacity: isDragging ? 0.3 : 0.1,
-                                elevation: isDragging ? 10 : 3,
-                                borderColor: isDragging ? theme.colors.ui.primary : 'transparent',
-                                borderWidth: isDragging ? 1 : 0
-                            },
-                            animatedStyle,
-                            cardBackgroundStyle
-                        ]}
-                    >
-                        <View style={styles.cardWrapper}>
-                            {/* 카드 내용 */}
-                            <TouchableOpacity
-                                style={styles.cardContent}
-                                onPress={() => !isDraggable && onPress(routine.id)}
-                                onLongPress={() => {
-                                    if (isDraggable && !isDragging) {
-                                        setIsDragging(true);
-                                        translateX.value = 0;
-                                        translateY.value = 0;
-                                        scale.value = withSpring(1.05, { damping: 14 });
-                                        zIndex.value = withTiming(1000, { duration: 200 });
-                                    }
-                                }}
-                                delayLongPress={200}
-                                activeOpacity={0.7}
-                                disabled={isDragging}
-                            >
-                                <View style={styles.titleRow}>
-                                    <View style={styles.titleContainer}>
-                                        <Text
-                                            style={[
-                                                styles.title,
-                                                { color: theme.colors.content.primary },
-                                                routine.status === 'completed' && styles.completedText
-                                            ]}
-                                            numberOfLines={1}
-                                            ellipsizeMode="tail"
-                                        >
-                                            {routine.title}
-                                        </Text>
-                                        {routine.description && (
-                                            <Text
-                                                style={[
-                                                    styles.description,
-                                                    { color: theme.colors.content.secondary },
-                                                    routine.status === 'completed' && styles.completedText
-                                                ]}
-                                                numberOfLines={1}
-                                                ellipsizeMode="tail"
-                                            >
-                                                {routine.description}
-                                            </Text>
-                                        )}
-                                    </View>
-                                    {isDraggable && (
-                                        <TouchableOpacity
-                                            style={[
-                                                styles.dragHandleContainer,
-                                                isDragging && styles.dragHandleContainerActive
-                                            ]}
-                                            onPress={() => {
-                                                if (isDraggable && !isDragging) {
-                                                    setIsDragging(true);
-                                                    translateX.value = 0;
-                                                    translateY.value = 0;
-                                                    scale.value = withSpring(1.05, { damping: 14 });
-                                                    zIndex.value = withTiming(1000, { duration: 200 });
-                                                }
-                                            }}
-                                            activeOpacity={0.5}
-                                            hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
-                                        >
-                                            <DragHandle isDragging={isDragging} theme={theme} />
-                                        </TouchableOpacity>
-                                    )}
-                                </View>
-                            </TouchableOpacity>
-                        </View>
-
-                        {isDraggable && (
-                            <View
+                    {/* 카드 컨텐츠 */}
+                    <Animated.View style={[styles.content, contentStyle]}>
+                        <View style={styles.textContainer}>
+                            <Text
                                 style={[
-                                    styles.dragOverlay,
+                                    styles.title,
                                     {
-                                        opacity: isDragging ? 0.1 : 0,
-                                        backgroundColor: theme.colors.ui.primary
+                                        color: theme.colors.content.primary,
+                                        // 완료시 취소선 제거 (물결 애니메이션으로 대체)
+                                        // textDecorationLine: routine.status === 'completed' ? 'line-through' : 'none' 
                                     }
                                 ]}
-                                pointerEvents="none"
-                            />
-                        )}
+                                numberOfLines={1}
+                            >
+                                {routine.title}
+                            </Text>
+                            {routine.description && (
+                                <Text
+                                    style={[
+                                        styles.description,
+                                        {
+                                            color: theme.colors.content.secondary,
+                                            // 완료시 취소선 제거 (물결 애니메이션으로 대체)
+                                            // textDecorationLine: routine.status === 'completed' ? 'line-through' : 'none' 
+                                        }
+                                    ]}
+                                    numberOfLines={1}
+                                >
+                                    {routine.description}
+                                </Text>
+                            )}
+                        </View>
                     </Animated.View>
-                </GestureDetector>
-            </View>
+
+                    {/* 왼쪽으로 스와이프 시 나타나는 삭제 버튼 (오른쪽에 위치) */}
+                    <Animated.View
+                        style={[
+                            styles.rightActionContainer,
+                            deleteButtonStyle
+                        ]}
+                    >
+                        <TouchableOpacity onPress={handleDeletePress} style={styles.actionButton}>
+                            <Text style={[styles.actionText, { color: theme.colors.content.inverse }]}>
+                                삭제
+                            </Text>
+                        </TouchableOpacity>
+                    </Animated.View>
+
+                    {/* 오른쪽으로 스와이프 시 나타나는 편집 버튼 (왼쪽에 위치) */}
+                    <Animated.View
+                        style={[
+                            styles.leftActionContainer,
+                            editButtonStyle
+                        ]}
+                    >
+                        <TouchableOpacity onPress={handleEditPress} style={styles.actionButton}>
+                            <Text style={[styles.actionText, { color: theme.colors.content.inverse }]}>
+                                편집
+                            </Text>
+                        </TouchableOpacity>
+                    </Animated.View>
+                </Animated.View>
+            </GestureDetector>
         </GestureHandlerRootView>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        position: 'relative',
-        width: '100%',
-        height: 60,
-        marginBottom: 8,
-    },
     cardContainer: {
-        width: '100%',
-        borderRadius: 8,
-        borderLeftWidth: 3,
-        overflow: 'hidden',
-        height: 60, // 카드 높이 고정
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: 4,
+        paddingVertical: 12,
+        paddingHorizontal: 12,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 2,
+        minHeight: 60,
+        overflow: 'hidden', // 중요: 물결 애니메이션이 카드 바깥으로 넘치지 않도록
     },
-    cardWrapper: {
+    content: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        position: 'relative',
-        height: '100%',
+        zIndex: 1, // 물결 애니메이션 위에 보이도록
     },
-    cardContent: {
-        flex: 1,
-        padding: 12,
-        backgroundColor: 'transparent',
-        zIndex: 1,
-    },
-    titleRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    titleContainer: {
+    textContainer: {
         flex: 1,
         justifyContent: 'center',
-        marginLeft: 5, // 체크박스 제거 후 왼쪽 여백 추가
+        marginLeft: 4,
     },
     title: {
         fontSize: 16,
         fontWeight: '600',
     },
     description: {
-        fontSize: 12,
+        fontSize: 14,
         marginTop: 2,
     },
-    dragHandleContainer: {
-        padding: 8,
-        borderRadius: 6,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    dragHandleContainerActive: {
-        backgroundColor: 'rgba(0,0,0,0.05)',
-    },
-    dragHandle: {
-        width: 20,
-        height: 20,
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingVertical: 4,
-        borderRadius: 4,
-    },
-    dragBar: {
-        width: 14,
-        height: 2,
-        borderRadius: 1,
-        marginVertical: 1,
-    },
-    statusRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    categoryTag: {
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-        borderRadius: 4,
-        marginRight: 8,
-    },
-    categoryText: {
-        color: '#fff',
-        fontSize: 10,
-        fontWeight: '500',
-    },
-    statusIcon: {
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    checkbox: {
-        width: 20,
-        height: 20,
-        borderRadius: 4,
-        borderWidth: 2,
-        marginRight: 10,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    checkmark: {
-        color: '#fff',
-        fontSize: 12,
-        fontWeight: 'bold',
-    },
-    dragOverlay: {
+    rightActionContainer: {
         position: 'absolute',
-        top: 0,
-        left: 0,
         right: 0,
-        bottom: 0,
-        backgroundColor: '#000',
-        zIndex: 1,
-        pointerEvents: 'none',
-    },
-    completedText: {
-        textDecorationLine: 'line-through',
-        opacity: 0.7,
-    },
-    rowBack: {
-        position: 'absolute',
         top: 0,
         bottom: 0,
-        left: 0,
-        right: 0,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
+        width: 100,
+        justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 15,
-        zIndex: -1, // 카드 아래에 위치
+        borderTopRightRadius: 12,
+        borderBottomRightRadius: 12,
+    },
+    leftActionContainer: {
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        bottom: 0,
+        width: 100,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderTopLeftRadius: 12,
+        borderBottomLeftRadius: 12,
     },
     actionButton: {
-        minWidth: 58,
-        height: 36,
-        borderRadius: 18,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 12,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-        elevation: 2,
+        flex: 1,
+        width: '100%',
     },
-    actionButtonText: {
-        color: '#fff',
-        fontSize: 14,
-        fontWeight: '500',
-        letterSpacing: 0.5,
+    actionText: {
+        fontWeight: '600',
+        fontSize: 16,
+    },
+    dragHandle: {
+        width: 30,
+        height: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 8,
+        borderRadius: 8,
+    },
+    dragBar: {
+        width: 20,
+        height: 2,
+        borderRadius: 2,
+        marginVertical: 2,
     },
 });
 
