@@ -55,9 +55,6 @@ function App(): React.JSX.Element {
         const testKey = 'login.tagline';
         console.log(`테스트 번역 (${testKey}):`, i18next.t(testKey, { ns: 'auth' }));
 
-        // 스플래시 화면 숨기기
-        SplashScreen.hide();
-
         // 구글 로그인 초기화 (수정된 설정)
         try {
           console.log('Google SignIn 설정 시작...');
@@ -80,9 +77,10 @@ function App(): React.JSX.Element {
         // Firebase 앱 상태는 src/services/firebase/index.ts에서 이미 확인 및 초기화됨
       } catch (error) {
         console.error('앱 초기화 중 오류 발생:', error);
-        // 오류가 있어도 스플래시 화면은 숨김
-        SplashScreen.hide();
       }
+
+      // 스플래시 화면 숨기기 - 초기화가 완료된 후 모든 작업이 끝난 다음 실행
+      SplashScreen.hide();
     };
 
     initializeApp();
