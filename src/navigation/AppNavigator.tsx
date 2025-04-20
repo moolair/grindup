@@ -28,7 +28,9 @@ type RootStackParamList = {
     newTask?: Task;
     refreshRoutines?: boolean;
   };
-  Tasks: undefined;
+  Tasks: {
+    routineId?: string;
+  };
   TaskDetail: { taskId: string };
   LanguageSettings: undefined;
   Register: undefined;

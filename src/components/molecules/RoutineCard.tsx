@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Vibration, GestureResponderEvent, PanResponderGestureState, NativeSyntheticEvent } from 'react-native';
 import { useTheme } from '../../theme/ThemeProvider';
 import Animated, {
@@ -37,6 +37,9 @@ interface RoutineCardProps {
     index?: number;
     onDragStateChange?: (dragging: boolean) => void;
     editMode?: boolean;
+    onDragStart?: () => void;
+    onDragUpdate?: (position: number) => void;
+    onDragEnd?: (position: number) => void;
 }
 
 // 드래그 핸들 컴포넌트
@@ -60,13 +63,16 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
     isDraggable = false,
     index = 0,
     onDragStateChange,
-    editMode = false
+    editMode = false,
+    onDragStart,
+    onDragUpdate,
+    onDragEnd
 }) => {
     const { theme } = useTheme();
     const [isDragging, setIsDragging] = useState(false);
 
     // 분류 색상 가져오기 (각 루틴 분류마다 다른 색상)
-    const getCategoryColor = () => {
+    const getCategoryColor = useCallback(() => {
         switch (routine.category) {
             case 'health':
                 return theme.colors.ui.success;
@@ -85,19 +91,18 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
                     ? theme.colors.ui.success
                     : theme.colors.ui.primary;
         }
-    };
+    }, [routine.category, routine.status, theme.colors.ui]);
 
     // Reanimated shared values
     const translateX = useSharedValue(0);
     const translateY = useSharedValue(0);
     const scale = useSharedValue(1);
     const zIndex = useSharedValue(0);
+    const offsetY = useSharedValue(0); // 드래그 오프셋 추가
 
-    // 완료 애니메이션을 위한 새로운 shared value
-    const completionProgress = useSharedValue(0);
-
-    // 물결 애니메이션의 색상을 공유값으로 저장
-    const [waveColor, setWaveColor] = useState('');
+    // 드래그 제스처 관련 변수 추가
+    const initialY = useSharedValue(0);
+    const dragActivationThreshold = 5; // 드래그 활성화 임계값 (픽셀 단위)
 
     // UI 스레드에서 사용할 색상 값을 미리 계산하여 공유 값으로 저장
     const categoryColorRef = useSharedValue(
@@ -106,67 +111,25 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
             : getCategoryColor()
     );
 
-    // 분류 색상에 투명도 적용
-    const getCategoryColorWithOpacity = () => {
-        const baseColor = getCategoryColor();
-        return routine.status === 'completed'
+    // 카드 배경색 업데이트
+    const [cardBackgroundColor, setCardBackgroundColor] = useState(
+        routine.status === 'completed'
             ? theme.colors.ui.success
-            : baseColor;
-    };
+            : theme.colors.surface.primary
+    );
 
-    // 물결 색상을 업데이트
+    // 메모리 정리 함수 - 컴포넌트 언마운트 시 관련 리소스 해제
     useEffect(() => {
-        setWaveColor(getCategoryColorWithOpacity());
-    }, [routine.status, routine.category]);
-
-    // 컴포넌트가 마운트될 때 초기화
-    useEffect(() => {
-        // 루틴 상태가 변경될 때마다 애니메이션 업데이트
-        if (routine.status === 'completed') {
-            completionProgress.value = withTiming(1, {
-                duration: 800,
-                easing: Easing.bezier(0.25, 0.1, 0.25, 1)
-            });
-        } else {
-            completionProgress.value = withTiming(0, {
-                duration: 300,
-                easing: Easing.bezier(0.25, 0.1, 0.25, 1)
-            });
-        }
-
         return () => {
-            // 컴포넌트 언마운트시 애니메이션 상태 리셋 및 진행중인 애니메이션 취소
-            cancelAnimation(translateX);
-            cancelAnimation(translateY);
-            cancelAnimation(scale);
-            cancelAnimation(zIndex);
-            cancelAnimation(completionProgress);
-
-            // 즉시 값들을 기본값으로 설정
+            // 관련 애니메이션 취소 및 공유 값 초기화
             translateX.value = 0;
             translateY.value = 0;
             scale.value = 1;
             zIndex.value = 0;
-            completionProgress.value = 0;
-
-            // 부모 컴포넌트에 드래그 종료 알림
-            if (isDragging && onDragStateChange) {
-                onDragStateChange(false);
-            }
+            offsetY.value = 0;
+            initialY.value = 0;
         };
-    }, [routine.status]);
-
-    // 모든 애니메이션이 완료되었는지 확인하는 반응 추가
-    useAnimatedReaction(
-        () => {
-            'worklet';
-            return { x: translateX.value, y: translateY.value };
-        },
-        (current, previous) => {
-            'worklet';
-            // 워크렛 내부에서 필요한 로직만 수행
-        }
-    );
+    }, []);
 
     // 드래그 상태 변경 시 부모 컴포넌트에 알림
     useEffect(() => {
@@ -183,232 +146,228 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
         }
     }, [isDragging]);
 
+    // 안전한 스와이프 제스처 구현
+    const safeUpdateTranslateX = useCallback((value: number) => {
+        try {
+            translateX.value = value;
+        } catch (error) {
+            console.error('스와이프 업데이트 오류:', error);
+        }
+    }, [translateX]);
+
     // 스와이프 제스처 구현
     const swipeGesture = Gesture.Pan()
         .enabled(!isDraggable && editMode)
         .onBegin(() => {
             'worklet';
-            translateX.value = 0;
+            try {
+                translateX.value = 0;
+            } catch (error) {
+                console.error('스와이프 시작 오류:', error);
+            }
         })
         .onUpdate((event) => {
             'worklet';
-            // 양방향 스와이프 허용 - 저항감 추가 (스와이프가 멀어질수록 느려짐)
-            const dampingFactor = 0.8;
-            translateX.value = event.translationX > 0
-                ? event.translationX * dampingFactor
-                : event.translationX * dampingFactor;
+            try {
+                // 양방향 스와이프 허용 - 저항감 추가 (스와이프가 멀어질수록 느려짐)
+                const dampingFactor = 0.8;
+                translateX.value = event.translationX > 0
+                    ? event.translationX * dampingFactor
+                    : event.translationX * dampingFactor;
+            } catch (error) {
+                console.error('스와이프 업데이트 오류:', error);
+            }
         })
         .onEnd((event) => {
             'worklet';
-            const THRESHOLD = 80; // 액션 실행 임계값
+            try {
+                const THRESHOLD = 80; // 액션 실행 임계값
 
-            // 왼쪽으로 스와이프 (삭제) - 임계값 초과시 버튼이 노출되지만 자동 실행되지 않음
-            if (event.translationX < -THRESHOLD) {
-                translateX.value = withSpring(-100, {
-                    damping: 15,
-                    stiffness: 150
-                });
-            }
-            // 오른쪽으로 스와이프 (편집) - 임계값 초과시 버튼이 노출되지만 자동 실행되지 않음
-            else if (event.translationX > THRESHOLD) {
-                translateX.value = withSpring(100, {
-                    damping: 15,
-                    stiffness: 150
-                });
-            }
-            // 충분히 스와이프하지 않은 경우 스프링 효과로 부드럽게 원위치
-            else {
-                translateX.value = withSpring(0, {
-                    damping: 15,
-                    stiffness: 150
-                });
+                // 왼쪽으로 스와이프 (삭제) - 임계값 초과시 버튼이 노출되지만 자동 실행되지 않음
+                if (event.translationX < -THRESHOLD) {
+                    translateX.value = withSpring(-100, {
+                        damping: 15,
+                        stiffness: 150
+                    });
+                }
+                // 오른쪽으로 스와이프 (편집) - 임계값 초과시 버튼이 노출되지만 자동 실행되지 않음
+                else if (event.translationX > THRESHOLD) {
+                    translateX.value = withSpring(100, {
+                        damping: 15,
+                        stiffness: 150
+                    });
+                }
+                // 충분히 스와이프하지 않은 경우 스프링 효과로 부드럽게 원위치
+                else {
+                    translateX.value = withSpring(0, {
+                        damping: 15,
+                        stiffness: 150
+                    });
+                }
+            } catch (error) {
+                console.error('스와이프 종료 오류:', error);
+                // 오류 발생 시 기본 위치로 리셋
+                translateX.value = withSpring(0);
             }
         })
         .onFinalize(() => {
             'worklet';
-            // 제스처가 취소된 경우 애니메이션 상태 리셋
-            if (Math.abs(translateX.value) < 50) {
-                translateX.value = withSpring(0, {
-                    damping: 15,
-                    stiffness: 150
-                });
+            try {
+                // 제스처가 취소된 경우 애니메이션 상태 리셋
+                if (Math.abs(translateX.value) < 50) {
+                    translateX.value = withSpring(0, {
+                        damping: 15,
+                        stiffness: 150
+                    });
+                }
+            } catch (error) {
+                console.error('스와이프 종료 확인 오류:', error);
             }
         });
 
-    // 드래그 제스처 구현
+    // 드래그 제스처
     const dragGesture = Gesture.Pan()
         .enabled(isDraggable)
-        .onBegin(() => {
+        .manualActivation(true)
+        .onTouchesDown((e, state) => {
             'worklet';
-            if (isDraggable) {
-                // 드래그 시작 시 진동 피드백 및 시각적 효과
+            initialY.value = e.allTouches[0].absoluteY;
+        })
+        .onTouchesMove((e, state) => {
+            'worklet';
+            // 수직 이동이 충분히 크면 활성화
+            if (Math.abs(e.allTouches[0].absoluteY - initialY.value) > dragActivationThreshold) {
+                state.activate();
+            }
+        })
+        .onStart(() => {
+            'worklet';
+            try {
+                // 항상 드래그 상태 초기화 실행
                 runOnJS(setIsDragging)(true);
-                runOnJS(Vibration.vibrate)(70);
-
-                // 시각적 피드백 - 카드 확대 및 z-index 증가
-                scale.value = withSpring(1.05, { damping: 14 });
-                zIndex.value = 1000;
-
-                // 부모 컴포넌트에 드래그 상태 알림
-                if (onDragStateChange) {
-                    runOnJS(onDragStateChange)(true);
+                if (onDragStart) {
+                    runOnJS(onDragStart)();
                 }
+                translateY.value = offsetY.value;
+            } catch (error) {
+                console.log('드래그 시작 오류:', error);
             }
         })
-        .onUpdate((event) => {
+        .onUpdate((e) => {
             'worklet';
-            if (isDraggable) {
-                // Y축 이동만 허용 (위아래로 드래그)
-                translateY.value = event.translationY;
+            try {
+                // 드래그 중 위치 업데이트
+                translateY.value = offsetY.value + e.translationY;
+                if (onDragUpdate) {
+                    runOnJS(onDragUpdate)(translateY.value);
+                }
+            } catch (error) {
+                console.log('드래그 업데이트 오류:', error);
             }
         })
-        .onEnd((event) => {
+        .onEnd((e) => {
             'worklet';
-            if (isDraggable && onReorder) {
-                // 카드 높이 기준으로 이동 위치 계산
-                const cardHeight = 60;
-
-                // 이동 거리 계산
-                const moveDistance = Math.round(event.translationY / cardHeight);
-
-                // 새 인덱스 계산 (0 이상, 최대값은 부모에서 처리)
-                const newIndex = Math.max(0, index + moveDistance);
-
-                // 위치 변경이 있을 때만 처리
-                if (newIndex !== index) {
-                    console.log(`카드 순서 변경: ${index} -> ${newIndex}`);
-                    runOnJS(onReorder)(routine.id, newIndex);
+            try {
+                // 드래그 종료 처리
+                offsetY.value = translateY.value;
+                // 항상 드래그 상태 초기화 함수 호출
+                runOnJS(setIsDragging)(false);
+                if (onDragEnd) {
+                    runOnJS(onDragEnd)(e.absoluteY);
                 }
+            } catch (error) {
+                console.log('드래그 종료 오류:', error);
+                // 오류 발생 시에도 상태 초기화
+                runOnJS(setIsDragging)(false);
             }
-
-            // 드래그 종료 후 애니메이션 처리
-            translateY.value = withSpring(0, { damping: 15 }, (finished) => {
-                'worklet';
-                if (finished) {
-                    // 드래그 종료 상태로 변경
-                    runOnJS(setIsDragging)(false);
-
-                    // 부모 컴포넌트에 드래그 종료 알림
-                    if (onDragStateChange) {
-                        runOnJS(onDragStateChange)(false);
-                    }
-                }
-            });
-
-            // 시각적 효과 원상복구
-            scale.value = withSpring(1);
-            zIndex.value = withTiming(0);
         })
         .onFinalize(() => {
             'worklet';
-            // 제스처가 취소된 경우에도 상태 초기화
-            if (isDragging) {
-                translateY.value = withSpring(0);
-                scale.value = withSpring(1);
-                zIndex.value = withTiming(0);
-
-                // 드래그 상태 초기화
+            try {
+                // 제스처 완료 시 항상 드래그 상태 초기화 확인
                 runOnJS(setIsDragging)(false);
-
-                // 부모 컴포넌트에 드래그 종료 알림
-                if (onDragStateChange) {
-                    runOnJS(onDragStateChange)(false);
-                }
+            } catch (error) {
+                console.log('드래그 종료 확인 오류:', error);
             }
         });
+
+    // 업데이트된 카테고리 색상 함수
+    const updateCategoryColor = useCallback(() => {
+        try {
+            const color = getCategoryColor();
+            categoryColorRef.value = color;
+            return color;
+        } catch (error) {
+            console.error('카테고리 색상 업데이트 중 오류:', error);
+            // 오류 발생 시 기본 색상 사용
+            return theme.colors.ui.primary;
+        }
+    }, [getCategoryColor, theme.colors.ui.primary]);
 
     // 탭 제스처 (클릭 처리)
     const tapGesture = Gesture.Tap()
         .enabled(!isDraggable)
         .onEnd(() => {
             'worklet';
-            // 사용자가 카드 탭 시 상태 토글
-            if (onPress) {
-                runOnJS(onPress)(routine.id);
+            try {
+                // 사용자가 카드 탭 시 상태 토글
+                if (onPress) {
+                    runOnJS(onPress)(routine.id);
 
-                // 클릭 시 즉시 애니메이션 시작 (낙관적 UI 업데이트)
-                if (routine.status === 'pending') {
-                    // 애니메이션 완료로 전환
-                    completionProgress.value = withTiming(1, {
-                        duration: 800,
-                        easing: Easing.bezier(0.25, 0.1, 0.25, 1)
-                    });
-
-                    // 색상 즉시 업데이트 (완료 상태로)
-                    runOnJS(setWaveColor)(theme.colors.ui.success);
-                    // 공유 값도 함께 업데이트
-                    categoryColorRef.value = theme.colors.ui.success;
-                } else {
-                    // 애니메이션 미완료로 전환
-                    completionProgress.value = withTiming(0, {
-                        duration: 300,
-                        easing: Easing.bezier(0.25, 0.1, 0.25, 1)
-                    });
-
-                    // 색상 즉시 업데이트 (미리 계산된 색상 사용)
-                    runOnJS(setWaveColor)(
-                        routine.status === 'completed'
-                            ? theme.colors.ui.success
-                            : getCategoryColor()
-                    );
-                    // 공유 값도 함께 업데이트
-                    categoryColorRef.value =
-                        routine.status === 'completed'
-                            ? theme.colors.ui.success
-                            : getCategoryColor();
+                    // 클릭 시 즉시 배경색 업데이트 (낙관적 UI 업데이트)
+                    if (routine.status === 'pending') {
+                        // 색상 즉시 업데이트 (완료 상태로)
+                        runOnJS(setCardBackgroundColor)(theme.colors.ui.success);
+                        // 공유 값도 함께 업데이트
+                        categoryColorRef.value = theme.colors.ui.success;
+                    } else {
+                        // 색상 즉시 업데이트 (기본 상태로)
+                        runOnJS(setCardBackgroundColor)(theme.colors.surface.primary);
+                        // UI 스레드에서 실행
+                        runOnJS(updateCategoryColor)();
+                    }
                 }
+            } catch (error) {
+                console.error('탭 제스처 오류:', error);
             }
         });
 
     // 제스처 결합
-    const combinedGesture = Gesture.Exclusive(dragGesture, Gesture.Simultaneous(swipeGesture, tapGesture));
+    const composedGestures = isDraggable
+        ? Gesture.Simultaneous(dragGesture, swipeGesture)
+        : Gesture.Exclusive(tapGesture, swipeGesture);
 
-    // 카드 이동 애니메이션 스타일
+    // 카드 이동 애니메이션 스타일 - 오류 처리 강화
     const cardStyle = useAnimatedStyle(() => {
         'worklet';
-        return {
-            transform: [
-                { translateX: typeof translateX.value === 'number' ? translateX.value : 0 },
-                { translateY: typeof translateY.value === 'number' ? translateY.value : 0 },
-                { scale: scale.value }
-            ],
-            zIndex: zIndex.value,
-        };
+        try {
+            return {
+                transform: [
+                    { translateX: typeof translateX.value === 'number' ? translateX.value : 0 },
+                    { translateY: typeof translateY.value === 'number' ? translateY.value : 0 },
+                    { scale: typeof scale.value === 'number' ? scale.value : 1 }
+                ],
+                zIndex: typeof zIndex.value === 'number' ? zIndex.value : 0,
+            };
+        } catch (error) {
+            // 오류 발생 시 기본 스타일 반환
+            return {
+                transform: [
+                    { translateX: 0 },
+                    { translateY: 0 },
+                    { scale: 1 }
+                ],
+                zIndex: 0,
+            };
+        }
     });
 
-    // 물결 애니메이션 스타일
-    const waveAnimationStyle = useAnimatedStyle(() => {
-        'worklet';
-        const progress = typeof completionProgress.value === 'number' ? completionProgress.value : 0;
-
-        // 물결 색상 안전하게 가져오기
-        const safeColor = categoryColorRef?.value || waveColor || theme.colors.ui.primary;
-
-        return {
-            position: 'absolute',
-            top: 0,
-            bottom: 0,
-            left: 0,
-            width: `${progress * 100}%`, // 완료 진행률에 따른 너비
-            backgroundColor: safeColor, // 안전한 색상 값 사용
-            borderRadius: 12, // 카드와 동일한 모서리 둥글기
-            opacity: 0.6 // 베이스 카드 내용이 보이도록 투명도 설정
-        };
-    });
-
-    // 완료 상태에 따른 내용 스타일
+    // 내용 스타일
     const contentStyle = useAnimatedStyle(() => {
         'worklet';
-        // 완료 상태에 따라 텍스트 색상 변경 (밝은 색으로)
-        const progress = typeof completionProgress.value === 'number' ? completionProgress.value : 0;
-        const textColorOpacity = interpolate(
-            progress,
-            [0, 1],
-            [1, 0.8] // 완료시 약간 밝게
-        );
-
         return {
-            opacity: textColorOpacity
+            // 완료 상태에서 텍스트는 더 읽기 쉽도록 유지
+            opacity: 1
         };
     });
 
@@ -445,38 +404,100 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
     // 삭제 버튼 애니메이션 스타일
     const deleteButtonStyle = useAnimatedStyle(() => {
         'worklet';
-        return {
-            backgroundColor: theme.colors.ui.error,
-            transform: [
-                {
-                    translateX: typeof translateX.value === 'number' && translateX.value < -50 ? 0 : 100
-                },
-            ],
-        };
+        try {
+            return {
+                backgroundColor: theme.colors.ui.error,
+                transform: [
+                    {
+                        translateX: typeof translateX.value === 'number' && translateX.value < -50 ? 0 : 100
+                    },
+                ],
+            };
+        } catch (error) {
+            // 오류 발생 시 기본 스타일 반환
+            return {
+                backgroundColor: theme.colors.ui.error,
+                transform: [{ translateX: 100 }],
+            };
+        }
     });
 
     // 편집 버튼 애니메이션 스타일
     const editButtonStyle = useAnimatedStyle(() => {
         'worklet';
-        return {
-            backgroundColor: theme.colors.ui.secondary,
-            transform: [
-                {
-                    translateX: typeof translateX.value === 'number' && translateX.value > 50 ? 0 : -100
-                },
-            ],
-        };
+        try {
+            return {
+                backgroundColor: theme.colors.ui.secondary,
+                transform: [
+                    {
+                        translateX: typeof translateX.value === 'number' && translateX.value > 50 ? 0 : -100
+                    },
+                ],
+            };
+        } catch (error) {
+            // 오류 발생 시 기본 스타일 반환
+            return {
+                backgroundColor: theme.colors.ui.secondary,
+                transform: [{ translateX: -100 }],
+            };
+        }
+    });
+
+    // 카드 상태가 변경될 때마다 배경색 업데이트
+    useEffect(() => {
+        try {
+            // 완료된 상태면 성공 색상으로 변경
+            if (routine.status === 'completed') {
+                setCardBackgroundColor(theme.colors.ui.success);
+                categoryColorRef.value = theme.colors.ui.success;
+            } else {
+                // 그렇지 않으면 카테고리 색상 또는 기본 색상으로 설정
+                const color = getCategoryColor();
+                setCardBackgroundColor(color);
+                categoryColorRef.value = color;
+            }
+        } catch (error) {
+            console.error('카드 상태 변경 시 배경색 업데이트 오류:', error);
+            // 오류 발생 시 기본 색상 사용
+            setCardBackgroundColor(theme.colors.surface.primary);
+            categoryColorRef.value = theme.colors.surface.primary;
+        }
+    }, [routine.status, routine.category, theme.colors]);
+
+    // 카드 애니메이션 스타일
+    const rStyle = useAnimatedStyle(() => {
+        'worklet';
+        try {
+            return {
+                transform: [
+                    { translateX: translateX.value },
+                    { translateY: translateY.value }
+                ],
+                backgroundColor: cardBackgroundColor,
+                borderColor: getBorderColor(),
+            };
+        } catch (error) {
+            // 오류 발생 시 기본 스타일 반환
+            return {
+                transform: [
+                    { translateX: 0 },
+                    { translateY: 0 }
+                ],
+                backgroundColor: theme.colors.surface.primary,
+                borderColor: theme.colors.ui.border,
+            };
+        }
     });
 
     return (
         <GestureHandlerRootView>
-            <GestureDetector gesture={combinedGesture}>
+            <GestureDetector gesture={composedGestures}>
                 <Animated.View
                     style={[
                         styles.cardContainer,
                         {
-                            backgroundColor: theme.colors.surface.primary,
-                            borderLeftColor: categoryColorRef?.value || getCategoryColor(),
+                            backgroundColor: cardBackgroundColor,
+                            borderLeftColor: getCategoryColor(),
                             borderLeftWidth: 4,
                             borderRadius: 12,
                             shadowColor: theme.type === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.1)',
@@ -490,9 +511,6 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
                         }
                     ]}
                 >
-                    {/* 물결 애니메이션 배경 */}
-                    <Animated.View style={waveAnimationStyle} />
-
                     {/* 왼쪽에 드래그 핸들 표시 (editMode가 true일 때) */}
                     {isDraggable && editMode && (
                         <DragHandle isDragging={isDragging} theme={theme} />
@@ -505,9 +523,9 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
                                 style={[
                                     styles.title,
                                     {
-                                        color: theme.colors.content.primary,
-                                        // 완료시 취소선 제거 (물결 애니메이션으로 대체)
-                                        // textDecorationLine: routine.status === 'completed' ? 'line-through' : 'none' 
+                                        color: routine.status === 'completed'
+                                            ? theme.colors.content.inverse  // 완료 시 텍스트 색상 (배경이 진해지므로 반전색)
+                                            : theme.colors.content.primary,
                                     }
                                 ]}
                                 numberOfLines={1}
@@ -519,9 +537,9 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
                                     style={[
                                         styles.description,
                                         {
-                                            color: theme.colors.content.secondary,
-                                            // 완료시 취소선 제거 (물결 애니메이션으로 대체)
-                                            // textDecorationLine: routine.status === 'completed' ? 'line-through' : 'none' 
+                                            color: routine.status === 'completed'
+                                                ? theme.colors.content.inverse  // 완료 시 텍스트 색상 (배경이 진해지므로 반전색)
+                                                : theme.colors.content.secondary,
                                         }
                                     ]}
                                     numberOfLines={1}
@@ -646,4 +664,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default RoutineCard; 
+export default React.memo(RoutineCard); 

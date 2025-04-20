@@ -1,0 +1,469 @@
+import React, { useRef, useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, PanResponder, Vibration, GestureResponderEvent, PanResponderGestureState, NativeSyntheticEvent } from 'react-native';
+import { useTheme } from '../../theme/ThemeProvider';
+
+interface Task {
+    id: string;
+    title: string;
+    description?: string;
+    status: 'pending' | 'completed';
+    category?: string;
+    dueDate?: Date;
+    priority?: 'low' | 'medium' | 'high' | 'urgent';
+    order?: number;
+}
+
+interface RoutineCardProps {
+    routine: Task;
+    onPress: (id: string) => void;
+    onDelete?: (id: string) => void;
+    onEdit?: (id: string) => void;
+    onReorder?: (id: string, newOrder: number) => void;
+    isDraggable?: boolean;
+    index?: number;
+    onDragStateChange?: (dragging: boolean) => void;
+}
+
+// 드래그 핸들 컴포넌트
+const DragHandle = ({ isDragging, theme }: { isDragging: boolean, theme: any }) => (
+    <View style={[
+        styles.dragHandle,
+        isDragging && { backgroundColor: theme.colors.background.secondary }
+    ]}>
+        <View style={[styles.dragBar, { backgroundColor: theme.colors.content.tertiary }]} />
+        <View style={[styles.dragBar, { backgroundColor: theme.colors.content.tertiary }]} />
+        <View style={[styles.dragBar, { backgroundColor: theme.colors.content.tertiary }]} />
+    </View>
+);
+
+const RoutineCard: React.FC<RoutineCardProps> = ({
+    routine,
+    onPress,
+    onDelete,
+    onEdit,
+    onReorder,
+    isDraggable = false,
+    index = 0,
+    onDragStateChange
+}) => {
+    const { theme } = useTheme();
+    const swipeAnim = useRef(new Animated.Value(0)).current;
+    const dragAnim = useRef(new Animated.ValueXY()).current;
+    const [isDragging, setIsDragging] = useState(false);
+    const initialPosition = useRef({ x: 0, y: 0 }).current;
+
+    // 컴포넌트가 마운트될 때 초기화
+    useEffect(() => {
+        return () => {
+            // 컴포넌트 언마운트시 애니메이션 상태 리셋
+            swipeAnim.setValue(0);
+            dragAnim.setValue({ x: 0, y: 0 });
+
+            // 부모 컴포넌트에 드래그 종료 알림
+            if (isDragging && onDragStateChange) {
+                onDragStateChange(false);
+            }
+        };
+    }, []);
+
+    // 드래그 상태 변경 시 부모 컴포넌트에 알림
+    useEffect(() => {
+        if (onDragStateChange) {
+            onDragStateChange(isDragging);
+        }
+    }, [isDragging, onDragStateChange]);
+
+    // 활성 상태일 때 강조 효과
+    useEffect(() => {
+        if (isDragging) {
+            // 드래그 시작시 피드백
+            Vibration.vibrate(50);
+        }
+    }, [isDragging]);
+
+    // 스와이프 제스처 구현 (편집 모드가 아닐 때만 활성화)
+    const swipePanResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => !isDraggable,
+            onMoveShouldSetPanResponder: (_, gestureState) => {
+                return !isDraggable && Math.abs(gestureState.dx) > 20 && Math.abs(gestureState.dy) < 10;
+            },
+            onPanResponderGrant: () => {
+                // 스와이프 시작 시 offset 초기화
+                swipeAnim.setOffset(0);
+                swipeAnim.setValue(0);
+            },
+            onPanResponderMove: (_, gestureState) => {
+                swipeAnim.setValue(gestureState.dx);
+            },
+            onPanResponderRelease: (_, gestureState) => {
+                if (gestureState.dx < -100 && onDelete) {
+                    Animated.timing(swipeAnim, {
+                        toValue: -500,
+                        duration: 300,
+                        useNativeDriver: true
+                    }).start(() => onDelete(routine.id));
+                } else if (gestureState.dx > 100 && onEdit) {
+                    Animated.timing(swipeAnim, {
+                        toValue: 500,
+                        duration: 300,
+                        useNativeDriver: true
+                    }).start(() => onEdit(routine.id));
+                } else {
+                    Animated.spring(swipeAnim, {
+                        toValue: 0,
+                        useNativeDriver: true,
+                        friction: 5
+                    }).start();
+                }
+            }
+        })
+    ).current;
+
+    // 드래그 제스처 구현 (편집 모드일 때만 활성화)
+    const dragPanResponder = useRef(
+        PanResponder.create({
+            // iOS에서 제스처 인식 최상위 우선 순위 확보
+            onStartShouldSetPanResponder: () => isDraggable,
+            onStartShouldSetPanResponderCapture: () => isDraggable,
+
+            // 드래그 시작 전에 움직임 감지 시 우선권 확보 - 더 낮은 임계값 적용
+            onMoveShouldSetPanResponder: (_, gestureState) => {
+                return isDraggable && (Math.abs(gestureState.dy) > 1);
+            },
+            onMoveShouldSetPanResponderCapture: (_, gestureState) => {
+                return isDraggable && (Math.abs(gestureState.dy) > 1);
+            },
+
+            // 다른 컴포넌트의 인터럽트 요청을 무조건 거부 (iOS에서 매우 중요)
+            onPanResponderTerminationRequest: () => false,
+
+            // 드래그 시작 시 호출
+            onPanResponderGrant: (_, gestureState) => {
+                if (isDraggable) {
+                    // 햅틱 피드백
+                    Vibration.vibrate(70);
+
+                    // iOS에서 문제 해결: 즉시 드래그 상태 설정 및 부모에게 통지
+                    setIsDragging(true);
+
+                    // iOS에서는 비동기로 처리되지 않도록 즉시 호출 
+                    if (onDragStateChange) {
+                        onDragStateChange(true);
+                    }
+
+                    // 초기 위치 설정
+                    initialPosition.x = 0;
+                    initialPosition.y = 0;
+
+                    // 애니메이션 값 초기화
+                    dragAnim.setValue({ x: 0, y: 0 });
+                    dragAnim.setOffset({ x: 0, y: 0 });
+                }
+            },
+
+            // 드래그 중 호출
+            onPanResponderMove: (_, gestureState) => {
+                dragAnim.setValue({ x: 0, y: gestureState.dy });
+                // iOS에서는 모든 프레임에서 드래그 상태 재확인
+                if (!isDragging && isDraggable) {
+                    setIsDragging(true);
+                    if (onDragStateChange) {
+                        onDragStateChange(true);
+                    }
+                }
+            },
+
+            // 드래그 종료 시 호출
+            onPanResponderRelease: (_, gestureState) => {
+                if (isDraggable && isDragging && onReorder) {
+                    // 이동 거리에 따라 새로운 순서 계산
+                    const cardHeight = 88; // 카드의 실제 높이에 가까운 값을 사용
+                    const moveDistance = Math.round(gestureState.dy / cardHeight);
+                    const newIndex = Math.max(0, index + moveDistance);
+
+                    console.log(`드래그 종료: 이동 거리=${gestureState.dy}, 계산된 새 인덱스=${newIndex}`);
+
+                    // 순서가 변경된 경우에만 업데이트
+                    if (newIndex !== index) {
+                        onReorder(routine.id, newIndex);
+                    }
+
+                    // 원래 위치로 애니메이션 효과와 함께 복귀
+                    Animated.spring(dragAnim, {
+                        toValue: { x: 0, y: 0 },
+                        useNativeDriver: true,
+                        friction: 5,
+                        tension: 40
+                    }).start(() => {
+                        // 반드시 애니메이션 완료 후 드래그 상태 해제
+                        setIsDragging(false);
+                        if (onDragStateChange) {
+                            onDragStateChange(false);
+                        }
+                    });
+                } else {
+                    // 드래그하지 않은 경우 즉시 상태 초기화
+                    setIsDragging(false);
+                    if (onDragStateChange) {
+                        onDragStateChange(false);
+                    }
+                    dragAnim.setValue({ x: 0, y: 0 });
+                }
+            },
+
+            // 드래그가 중단된 경우 (다른 컴포넌트에 의해 인터럽트됨)
+            onPanResponderTerminate: () => {
+                console.log('드래그 중단됨 - 상태 초기화');
+                // 드래그 상태 초기화
+                setIsDragging(false);
+                if (onDragStateChange) {
+                    onDragStateChange(false);
+                }
+
+                // 애니메이션 복원
+                Animated.spring(dragAnim, {
+                    toValue: { x: 0, y: 0 },
+                    useNativeDriver: true,
+                    friction: 5
+                }).start();
+            }
+        })
+    ).current;
+
+    // 카테고리에 따른 색상 선택
+    const getCategoryColor = () => {
+        if (!routine.category) return theme.colors.background.secondary;
+
+        switch (routine.category.toLowerCase()) {
+            case '건강':
+                return theme.colors.ui.success;
+            case '업무':
+                return theme.colors.ui.primary;
+            case '개인':
+                return theme.colors.ui.accent;
+            default:
+                return theme.colors.background.secondary;
+        }
+    };
+
+    // 편집 모드에서는 드래그 핸들러 사용, 그렇지 않으면 스와이프 핸들러 사용
+    const panHandlers = isDraggable ? dragPanResponder.panHandlers : swipePanResponder.panHandlers;
+
+    // 드래그 시작 핸들러 - 드래그 핸들을 통해 명시적으로 호출될 때
+    const startDrag = () => {
+        if (isDraggable && !isDragging) {
+            // 햅틱 피드백
+            Vibration.vibrate(70);
+
+            // 드래그 상태 활성화 (이렇게 하면 스크롤이 비활성화됨)
+            setIsDragging(true);
+
+            // 애니메이션 초기화
+            dragAnim.setValue({ x: 0, y: 0 });
+        }
+    };
+
+    return (
+        <Animated.View
+            style={[
+                styles.cardContainer,
+                {
+                    backgroundColor: routine.status === 'completed'
+                        ? `${theme.colors.ui.success}40` // 40은 약 25% 투명도
+                        : theme.colors.background.primary,
+                    borderLeftColor: getCategoryColor(),
+                    transform: [
+                        { translateX: swipeAnim },
+                        ...dragAnim.getTranslateTransform(),
+                        // 드래그 중일 때 약간 확대
+                        { scale: isDragging ? 1.05 : 1 }
+                    ],
+                    shadowOpacity: isDragging ? 0.3 : 0.1,
+                    elevation: isDragging ? 10 : 3,
+                    zIndex: isDragging ? 999 : 1,
+                    borderColor: isDragging ? theme.colors.ui.primary : 'transparent',
+                    borderWidth: isDragging ? 1 : 0
+                }
+            ]}
+            {...panHandlers}
+        >
+            <TouchableOpacity
+                style={styles.cardContent}
+                onPress={() => !isDraggable && onPress(routine.id)}
+                onLongPress={startDrag}
+                delayLongPress={200}
+                activeOpacity={0.7}
+                disabled={isDraggable && isDragging}
+            >
+                <View style={styles.titleRow}>
+                    <Text style={[styles.title, { color: theme.colors.content.primary }]}>
+                        {routine.title}
+                    </Text>
+                    {isDraggable && (
+                        <TouchableOpacity
+                            style={[
+                                styles.dragHandleContainer,
+                                isDragging && styles.dragHandleContainerActive
+                            ]}
+                            onPress={startDrag}
+                            activeOpacity={0.5}
+                            hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+                        >
+                            <DragHandle isDragging={isDragging} theme={theme} />
+                        </TouchableOpacity>
+                    )}
+                </View>
+
+                {routine.description && (
+                    <Text
+                        style={[styles.description, { color: theme.colors.content.secondary }]}
+                        numberOfLines={1}
+                    >
+                        {routine.description}
+                    </Text>
+                )}
+
+                <View style={styles.statusRow}>
+                    {routine.category && (
+                        <View
+                            style={[styles.categoryTag, { backgroundColor: getCategoryColor() }]}
+                        >
+                            <Text style={styles.categoryText}>{routine.category}</Text>
+                        </View>
+                    )}
+
+                    <View style={styles.statusIcon}>
+                        <View
+                            style={[
+                                styles.checkbox,
+                                { borderColor: theme.colors.ui.primary },
+                                routine.status === 'completed' && {
+                                    backgroundColor: theme.colors.ui.primary
+                                }
+                            ]}
+                        >
+                            {routine.status === 'completed' && (
+                                <Text style={styles.checkmark}>✓</Text>
+                            )}
+                        </View>
+                    </View>
+                </View>
+            </TouchableOpacity>
+
+            {isDraggable && (
+                <View
+                    style={[
+                        styles.dragOverlay,
+                        {
+                            opacity: isDragging ? 0.1 : 0,
+                            backgroundColor: theme.colors.ui.primary
+                        }
+                    ]}
+                    pointerEvents="none"
+                />
+            )}
+        </Animated.View>
+    );
+};
+
+const styles = StyleSheet.create({
+    cardContainer: {
+        marginVertical: 6,
+        marginHorizontal: 4,
+        borderRadius: 10,
+        borderLeftWidth: 4,
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+        overflow: 'hidden',
+        position: 'relative'
+    },
+    cardContent: {
+        padding: 12,
+    },
+    titleRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 4,
+    },
+    title: {
+        fontSize: 15,
+        fontWeight: '600',
+        flex: 1,
+    },
+    dragHandleContainer: {
+        padding: 8,
+        borderRadius: 6,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    dragHandleContainerActive: {
+        backgroundColor: 'rgba(0,0,0,0.05)',
+    },
+    dragHandle: {
+        width: 20,
+        height: 20,
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 4,
+        borderRadius: 4,
+    },
+    dragBar: {
+        width: 14,
+        height: 2,
+        borderRadius: 1,
+        marginVertical: 1,
+    },
+    description: {
+        fontSize: 13,
+        marginBottom: 8,
+    },
+    statusRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    categoryTag: {
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 10,
+    },
+    categoryText: {
+        fontSize: 11,
+        color: '#fff',
+        fontWeight: '500',
+    },
+    statusIcon: {
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    checkbox: {
+        width: 18,
+        height: 18,
+        borderRadius: 4,
+        borderWidth: 2,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    checkmark: {
+        color: '#fff',
+        fontSize: 10,
+        fontWeight: 'bold',
+    },
+    dragOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: '#000',
+        zIndex: 1,
+        pointerEvents: 'none',
+    },
+});
+
+export default RoutineCard; 
