@@ -525,7 +525,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
                                     {
                                         color: routine.status === 'completed'
                                             ? theme.colors.content.inverse  // 완료 시 텍스트 색상 (배경이 진해지므로 반전색)
-                                            : theme.colors.content.primary,
+                                            : '#FFFFFF', // 미완료 시 흰색으로 변경
                                     }
                                 ]}
                                 numberOfLines={1}
@@ -539,7 +539,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
                                         {
                                             color: routine.status === 'completed'
                                                 ? theme.colors.content.inverse  // 완료 시 텍스트 색상 (배경이 진해지므로 반전색)
-                                                : theme.colors.content.secondary,
+                                                : '#FFFFFF', // 미완료 시 흰색으로 변경
                                         }
                                     ]}
                                     numberOfLines={1}
