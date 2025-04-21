@@ -243,6 +243,13 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
         .onStart(() => {
             'worklet';
             try {
+                // 드래그 시작 시 시각적 피드백 강화
+                scale.value = withSpring(1.03, {
+                    damping: 15,
+                    stiffness: 150
+                });
+                zIndex.value = 100; // 드래그 중인 항목을 항상 상단에 표시
+
                 // 항상 드래그 상태 초기화 실행
                 runOnJS(setIsDragging)(true);
                 if (onDragStart) {
@@ -256,8 +263,10 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
         .onUpdate((e) => {
             'worklet';
             try {
-                // 드래그 중 위치 업데이트
+                // 드래그 중 위치 업데이트를 부드럽게 처리
                 translateY.value = offsetY.value + e.translationY;
+
+                // 부모 컴포넌트에 현재 위치 전달 (다른 항목들 재배치를 위해)
                 if (onDragUpdate) {
                     runOnJS(onDragUpdate)(translateY.value);
                 }
@@ -268,23 +277,47 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
         .onEnd((e) => {
             'worklet';
             try {
-                // 드래그 종료 처리
+                // 드래그 종료 시 시각적 효과 부드럽게 원복
+                scale.value = withSpring(1, {
+                    damping: 15,
+                    stiffness: 150
+                });
+
+                // 최종 위치로 부드럽게 이동
+                translateY.value = withSpring(offsetY.value, {
+                    damping: 15,
+                    stiffness: 150,
+                    overshootClamping: false
+                });
+
+                // offsetY 값 업데이트
                 offsetY.value = translateY.value;
-                // 항상 드래그 상태 초기화 함수 호출
+
+                // 드래그 상태 초기화
                 runOnJS(setIsDragging)(false);
+
+                // 종료 콜백 호출
                 if (onDragEnd) {
                     runOnJS(onDragEnd)(e.absoluteY);
                 }
+
+                // 약간의 지연 후 zIndex 원복
+                setTimeout(() => {
+                    zIndex.value = 0;
+                }, 300);
             } catch (error) {
                 console.log('드래그 종료 오류:', error);
                 // 오류 발생 시에도 상태 초기화
+                scale.value = 1;
                 runOnJS(setIsDragging)(false);
             }
         })
         .onFinalize(() => {
             'worklet';
             try {
-                // 제스처 완료 시 항상 드래그 상태 초기화 확인
+                // 제스처 완료 시 상태 초기화 확인
+                scale.value = withSpring(1);
+                zIndex.value = 0;
                 runOnJS(setIsDragging)(false);
             } catch (error) {
                 console.log('드래그 종료 확인 오류:', error);
@@ -349,6 +382,9 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
                     { scale: typeof scale.value === 'number' ? scale.value : 1 }
                 ],
                 zIndex: typeof zIndex.value === 'number' ? zIndex.value : 0,
+                shadowOpacity: isDragging ? withSpring(0.3) : withSpring(0.1),
+                shadowRadius: isDragging ? withSpring(8) : withSpring(2),
+                elevation: isDragging ? withSpring(6) : withSpring(2),
             };
         } catch (error) {
             // 오류 발생 시 기본 스타일 반환
@@ -359,6 +395,9 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
                     { scale: 1 }
                 ],
                 zIndex: 0,
+                shadowOpacity: 0.1,
+                shadowRadius: 2,
+                elevation: 2,
             };
         }
     });

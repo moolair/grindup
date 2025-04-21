@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, PanResponder, Dimensions, TouchableWithoutFeedback, Image, Vibration, FlatList } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, PanResponder, Dimensions, TouchableWithoutFeedback, Image, Vibration, FlatList, Easing } from 'react-native';
 import { useTheme } from '../../theme/ThemeProvider';
 import RoutineCard from '../../components/molecules/RoutineCard';
 
@@ -542,8 +542,73 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, o
     };
 
     // RoutineCard 컴포넌트 크기 정의
-    const CARD_HEIGHT = 60; // RoutineCard의 높이 (픽셀)
+    const CARD_HEIGHT = 70; // RoutineCard의 높이 (픽셀) - 마진 포함
     const DRAG_DELAY = 100; // 드래그 시작 지연 시간 (밀리초)
+    const ANIMATION_CONFIG = {
+        duration: 300,
+        easing: Easing.bezier(0.25, 0.1, 0.25, 1), // 부드러운 이징 함수
+    };
+
+    // 드래그 중인 항목 위치에 따라 다른 항목들 재배치
+    const updateItemsPosition = (draggedId: string, dragPosition: number) => {
+        const currentIndex = tasks.findIndex(t => t.id === draggedId);
+        if (currentIndex === -1) return;
+
+        // 현재 드래그 중인 아이템의 위치를 기준으로 새 위치 계산
+        const newIndex = calculateDragPosition(draggedId, dragPosition);
+
+        if (newIndex === currentIndex) return; // 위치 변경 없음
+
+        // 다른 항목들 위치 업데이트
+        tasks.forEach((task, index) => {
+            if (task.id === draggedId) return; // 드래그 중인 항목은 건너뜀
+
+            let offset = 0;
+
+            // 위로 이동 중인 경우 (이전 인덱스보다 작은 인덱스로 이동)
+            if (newIndex < currentIndex) {
+                if (index >= newIndex && index < currentIndex) {
+                    // 해당 범위의 항목들은 아래로 이동
+                    offset = CARD_HEIGHT;
+                }
+            }
+            // 아래로 이동 중인 경우 (이전 인덱스보다 큰 인덱스로 이동)
+            else if (newIndex > currentIndex) {
+                if (index > currentIndex && index <= newIndex) {
+                    // 해당 범위의 항목들은 위로 이동
+                    offset = -CARD_HEIGHT;
+                }
+            }
+
+            // 움직여야 하는 항목들만 애니메이션 적용
+            if (offset !== 0 && taskMoveAnimations[task.id]) {
+                Animated.timing(taskMoveAnimations[task.id], {
+                    toValue: offset,
+                    ...ANIMATION_CONFIG,
+                    useNativeDriver: true
+                }).start();
+
+                // 시각적 피드백으로 호버 효과 추가
+                if (offset !== 0) {
+                    setHoveredTaskId(index === newIndex ? task.id : null);
+                }
+            }
+        });
+    };
+
+    // 드래그 종료 후 모든 항목 원래 위치로 재설정
+    const resetItemsPosition = () => {
+        tasks.forEach(task => {
+            if (taskMoveAnimations[task.id]) {
+                Animated.timing(taskMoveAnimations[task.id], {
+                    toValue: 0,
+                    ...ANIMATION_CONFIG,
+                    useNativeDriver: true
+                }).start();
+            }
+        });
+        setHoveredTaskId(null);
+    };
 
     // 항목 위치 정렬 업데이트 함수
     const updateItemOrderAfterDrag = (draggedId: string, newPosition: number) => {
@@ -555,8 +620,40 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, o
         // 인덱스가 유효하고 변경이 있을 때만 처리
         if (currentIndex !== -1 && currentIndex !== newPosition) {
             console.log(`순서 변경: ${currentIndex} -> ${newPosition}`);
+
+            // 위치 조정 후 원래 위치로 애니메이션 리셋
+            resetItemsPosition();
+
+            // 실제 순서 변경 요청
             onReorder(draggedId, newPosition);
+
+            // 변경 성공 피드백
+            Vibration.vibrate(50);
+        } else {
+            // 위치 변경이 없어도 애니메이션 리셋
+            resetItemsPosition();
         }
+    };
+
+    // 드래그 위치 계산 함수 개선
+    const calculateDragPosition = (taskId: string, translationY: number) => {
+        // 현재 인덱스 찾기
+        const currentIndex = tasks.findIndex(t => t.id === taskId);
+        if (currentIndex === -1) return currentIndex;
+
+        // 카드의 새 위치 계산 (CARD_HEIGHT로 나누어 이동 거리 계산)
+        const moveDistance = Math.round(translationY / CARD_HEIGHT);
+        const newPosition = Math.max(0, Math.min(tasks.length - 1, currentIndex + moveDistance));
+
+        return newPosition;
+    };
+
+    // 드래그 업데이트 처리 함수 추가
+    const handleDragUpdate = (taskId: string, position: number) => {
+        if (!editMode || !isDraggingEnabled) return;
+
+        // 현재 드래그 중인 항목의 위치를 기준으로 다른 항목들 재배치
+        updateItemsPosition(taskId, position);
     };
 
     // 드래그 시작 시 처리 함수 수정
@@ -575,31 +672,23 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, o
         }, DRAG_DELAY);
     };
 
-    // 드래그 종료 시 처리 함수 추가
+    // 드래그 종료 시 처리 함수 개선
     const handleDragEnd = (taskId: string, destinationIndex: number) => {
         console.log(`드래그 종료: ${taskId} -> 위치 ${destinationIndex}`);
 
+        // 새 위치 계산
+        const currentIndex = tasks.findIndex(t => t.id === taskId);
+        const newPosition = calculateDragPosition(taskId, destinationIndex - currentIndex * CARD_HEIGHT);
+
         // 드래그 상태 초기화
         setDraggingTaskId(null);
-        setHoveredTaskId(null);
         setIsDraggingEnabled(false);
         setScrollEnabled(true);
 
-        // 순서 업데이트
-        updateItemOrderAfterDrag(taskId, destinationIndex);
-    };
-
-    // 드래그 위치 계산 함수 추가
-    const calculateDragPosition = (taskId: string, translationY: number) => {
-        // 현재 인덱스 찾기
-        const currentIndex = tasks.findIndex(t => t.id === taskId);
-        if (currentIndex === -1) return currentIndex;
-
-        // 카드의 새 위치 계산
-        const moveDistance = Math.round(translationY / CARD_HEIGHT);
-        const newPosition = Math.max(0, Math.min(tasks.length - 1, currentIndex + moveDistance));
-
-        return newPosition;
+        // 지연 후 순서 업데이트 (애니메이션 완료 대기)
+        setTimeout(() => {
+            updateItemOrderAfterDrag(taskId, newPosition);
+        }, 100);
     };
 
     // 빈 목록 확인
@@ -759,11 +848,9 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, o
                             <Text
                                 style={[
                                     styles.taskTitle,
-                                    { color: theme.colors.content.primary },
-                                    task.status === 'completed' && [
-                                        styles.completedText,
-                                        { color: theme.colors.content.tertiary }
-                                    ],
+                                    task.status === 'completed'
+                                        ? [styles.completedText, { color: theme.colors.content.tertiary }]
+                                        : { color: '#FFFFFF' }
                                 ]}
                                 numberOfLines={1}
                             >
@@ -785,7 +872,10 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, o
                     {editMode ? (
                         <TouchableOpacity
                             style={styles.doneButton}
-                            onPress={toggleEditMode}
+                            onPress={() => {
+                                resetItemsPosition(); // 편집 모드 종료 시 모든 항목 위치 초기화
+                                toggleEditMode();
+                            }}
                         >
                             <Text style={[styles.doneButtonText, { color: theme.colors.ui.primary }]}>완료</Text>
                         </TouchableOpacity>
@@ -810,7 +900,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, o
                 <FlatList
                     data={tasks}
                     keyExtractor={(item) => item.id}
-                    scrollEnabled={true}
+                    scrollEnabled={scrollEnabled.current}
                     nestedScrollEnabled={true}
                     contentContainerStyle={styles.flatListContent}
                     renderItem={({ item, index }) => (
@@ -837,6 +927,9 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, o
                                     setTimeout(() => setScrollEnabled(true), 300);
                                 }
                             }}
+                            onDragStart={() => handleDragStart(item.id)}
+                            onDragUpdate={(position) => handleDragUpdate(item.id, position)}
+                            onDragEnd={(destinationPosition) => handleDragEnd(item.id, destinationPosition)}
                         />
                     )}
                     ListEmptyComponent={
