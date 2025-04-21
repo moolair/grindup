@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, ScrollView, Alert } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useTheme } from '../../theme/ThemeProvider';
-import { ChevronLeftIcon } from '../../components/Icons';
+import { ChevronLeftIcon, DeleteIcon } from '../../components/Icons';
 import useTranslation from '../../hooks/useTranslation';
-import { addRoutine, updateRoutine, getRoutines } from '../../services/routineService';
+import { addRoutine, updateRoutine, getRoutines, deleteRoutine } from '../../services/routineService';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 
 // 요일 선택을 위한 인터페이스
@@ -173,6 +173,41 @@ const TasksScreen = () => {
     }
   };
 
+  // 루틴 삭제 핸들러
+  const handleDeleteRoutine = async () => {
+    if (!isEditMode || !route.params?.routineId) return;
+
+    // 삭제 확인 알림 표시
+    Alert.alert(
+      t('deleteRoutineTitle'),
+      t('deleteRoutineMessage'),
+      [
+        {
+          text: t('cancel'),
+          style: 'cancel',
+        },
+        {
+          text: t('delete'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const success = await deleteRoutine(route.params?.routineId as string);
+              if (success) {
+                // 삭제 성공 시 메인 화면으로 돌아가기
+                navigation.navigate('Main', { refreshRoutines: true });
+              } else {
+                console.error('루틴 삭제 실패');
+                // 에러 메시지 표시 (추후 구현)
+              }
+            } catch (error) {
+              console.error('루틴 삭제 중 오류:', error);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
       <View style={styles.header}>
@@ -182,6 +217,11 @@ const TasksScreen = () => {
         <Text style={[styles.title, { color: theme.colors.content.primary }]}>
           {isEditMode ? t('루틴 편집') : t('새 루틴 만들기')}
         </Text>
+        {isEditMode && (
+          <TouchableOpacity onPress={handleDeleteRoutine} style={styles.deleteButton}>
+            <DeleteIcon color={theme.colors.ui.error} size={24} />
+          </TouchableOpacity>
+        )}
       </View>
 
       <ScrollView style={styles.content}>
@@ -290,14 +330,21 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     padding: 16,
+    borderBottomWidth: 1,
   },
   backButton: {
-    marginRight: 16,
+    padding: 8,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '600',
+    flex: 1,
+    textAlign: 'center',
+  },
+  deleteButton: {
+    padding: 8,
   },
   content: {
     flex: 1,

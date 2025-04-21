@@ -12,7 +12,8 @@ import Animated, {
     useAnimatedReaction,
     interpolate,
     Easing,
-    SharedValue
+    SharedValue,
+    withDecay
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -118,16 +119,22 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
             : theme.type === 'dark' ? theme.colors.surface.secondary : '#FFFFFF' // 다크 모드 대응
     );
 
-    // 메모리 정리 함수 - 컴포넌트 언마운트 시 관련 리소스 해제
+    // 메모리 정리 함수 개선 - 컴포넌트 언마운트 시 관련 리소스 해제
     useEffect(() => {
         return () => {
-            // 관련 애니메이션 취소 및 공유 값 초기화
-            translateX.value = 0;
-            translateY.value = 0;
-            scale.value = 1;
-            zIndex.value = 0;
-            offsetY.value = 0;
-            initialY.value = 0;
+            // 모든 애니메이션 값을 안전하게 초기화
+            // 애니메이션 취소 및 공유 값 초기화
+            if (translateX) translateX.value = 0;
+            if (translateY) translateY.value = 0;
+            if (scale) scale.value = 1;
+            if (zIndex) zIndex.value = 0;
+            if (offsetY) offsetY.value = 0;
+            if (initialY) initialY.value = 0;
+
+            // 모든 이벤트 핸들러 참조 제거
+            if (onDragStart) onDragStart = undefined;
+            if (onDragUpdate) onDragUpdate = undefined;
+            if (onDragEnd) onDragEnd = undefined;
         };
     }, []);
 
@@ -243,84 +250,97 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
         .onStart(() => {
             'worklet';
             try {
-                // 드래그 시작 시 시각적 피드백 강화
-                scale.value = withSpring(1.03, {
-                    damping: 15,
-                    stiffness: 150
-                });
-                zIndex.value = 100; // 드래그 중인 항목을 항상 상단에 표시
+                // 드래그 시작 시, z-index 증가
+                zIndex.value = 100;
+                scale.value = withSpring(1.02, { damping: 20, stiffness: 200 });
 
-                // 항상 드래그 상태 초기화 실행
-                runOnJS(setIsDragging)(true);
+                // 부모 컴포넌트에 드래그 시작 알림
                 if (onDragStart) {
                     runOnJS(onDragStart)();
                 }
-                translateY.value = offsetY.value;
+
+                // UI 스레드에서 실행할 함수
+                runOnJS(setIsDragging)(true);
+
+                // 초기 위치 저장
+                offsetY.value = translateY.value;
             } catch (error) {
-                console.log('드래그 시작 오류:', error);
+                console.error('드래그 시작 오류:', error);
+                runOnJS(setIsDragging)(false);
             }
         })
-        .onUpdate((e) => {
+        .onUpdate((event) => {
             'worklet';
             try {
-                // 드래그 중 위치 업데이트를 부드럽게 처리
-                translateY.value = offsetY.value + e.translationY;
+                // Y축 이동 (세로 방향 정렬)
+                translateY.value = offsetY.value + event.translationY;
 
-                // 부모 컴포넌트에 현재 위치 전달 (다른 항목들 재배치를 위해)
+                // 드래그 위치 업데이트
                 if (onDragUpdate) {
                     runOnJS(onDragUpdate)(translateY.value);
                 }
             } catch (error) {
-                console.log('드래그 업데이트 오류:', error);
+                console.error('드래그 업데이트 오류:', error);
             }
         })
-        .onEnd((e) => {
+        .onEnd((event) => {
             'worklet';
             try {
-                // 드래그 종료 시 시각적 효과 부드럽게 원복
-                scale.value = withSpring(1, {
-                    damping: 15,
-                    stiffness: 150
-                });
+                // 현재 위치 값 임시 저장
+                const currentPosition = translateY.value;
 
-                // 최종 위치로 부드럽게 이동
-                translateY.value = withSpring(offsetY.value, {
-                    damping: 15,
-                    stiffness: 150,
-                    overshootClamping: false
-                });
-
-                // offsetY 값 업데이트
-                offsetY.value = translateY.value;
-
-                // 드래그 상태 초기화
-                runOnJS(setIsDragging)(false);
-
-                // 종료 콜백 호출
+                // 드래그 종료 시 위치 정보 전달 (최종 위치 값만 전달)
                 if (onDragEnd) {
-                    runOnJS(onDragEnd)(e.absoluteY);
+                    runOnJS(onDragEnd)(currentPosition);
                 }
 
-                // 약간의 지연 후 zIndex 원복
-                setTimeout(() => {
-                    zIndex.value = 0;
-                }, 300);
+                // 드래그 애니메이션을 즉시 중지하고 값을 0으로 설정
+                cancelAnimation(translateY);
+                translateY.value = 0;
+                offsetY.value = 0;
+
+                // 시각적 효과(스케일, z-index)는 유지
+                scale.value = withSpring(1, {
+                    damping: 20,
+                    stiffness: 200,
+                    mass: 0.5
+                });
+
+                zIndex.value = withTiming(0, { duration: 200 });
+
+                // UI 스레드에서 실행할 함수
+                runOnJS(setIsDragging)(false);
             } catch (error) {
-                console.log('드래그 종료 오류:', error);
-                // 오류 발생 시에도 상태 초기화
-                scale.value = 1;
+                console.error('드래그 종료 오류:', error);
+                // 오류 발생 시 모든 값 초기화
+                translateY.value = 0;
+                offsetY.value = 0;
+                scale.value = withSpring(1);
+                zIndex.value = withTiming(0);
                 runOnJS(setIsDragging)(false);
             }
         })
         .onFinalize(() => {
             'worklet';
             try {
-                // 제스처 완료 시 상태 초기화 확인
-                scale.value = withSpring(1);
-                zIndex.value = 0;
-                runOnJS(setIsDragging)(false);
+                // 모든 상황에서 애니메이션 상태 리셋 보장
+                cancelAnimation(translateY);
+                translateY.value = 0;
+                offsetY.value = 0;
+
+                if (scale.value !== 1) {
+                    scale.value = withSpring(1, { damping: 20, stiffness: 200 });
+                }
+                if (zIndex.value !== 0) {
+                    zIndex.value = withTiming(0, { duration: 300 });
+                }
+
+                // UI 스레드 작업 보장
+                if (isDragging) {
+                    runOnJS(setIsDragging)(false);
+                }
             } catch (error) {
-                console.log('드래그 종료 확인 오류:', error);
+                console.error('드래그 마무리 오류:', error);
             }
         });
 
@@ -343,7 +363,13 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
         .onEnd(() => {
             'worklet';
             try {
-                // 사용자가 카드 탭 시 상태 토글
+                // 수정 모드인 경우 편집 화면으로 이동
+                if (editMode && onEdit) {
+                    runOnJS(onEdit)(routine.id);
+                    return;
+                }
+
+                // 일반 모드에서는 사용자가 카드 탭 시 상태 토글
                 if (onPress) {
                     runOnJS(onPress)(routine.id);
 
@@ -529,6 +555,42 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
         }
     });
 
+    // 애니메이션 스타일 정의
+    const animatedStyle = useAnimatedStyle(() => {
+        return {
+            transform: [
+                { translateX: translateX.value },
+                { translateY: translateY.value },
+                { scale: scale.value }
+            ],
+            zIndex: zIndex.value,
+            backgroundColor: routine.status === 'completed'
+                ? theme.colors.ui.success
+                : theme.type === 'dark' ? theme.colors.surface.secondary : '#FFFFFF',
+        };
+    }, [routine.status, theme]); // 의존성 배열 추가하여 리렌더링 시 초기화 방지
+
+    // 컴포넌트 리렌더링 시 애니메이션 값 보존
+    useEffect(() => {
+        const status = routine.status;
+
+        // 애니메이션 값 보존 (초기화 방지)
+        if (translateY.value !== 0) {
+            offsetY.value = translateY.value;
+        }
+
+        return () => {
+            // 컴포넌트 업데이트 시에도 오프셋 보존
+            if (status === routine.status) {
+                offsetY.value = translateY.value;
+            } else {
+                // 상태가 변경된 경우 리셋
+                offsetY.value = 0;
+                translateY.value = 0;
+            }
+        };
+    }, [routine.id, routine.status]);
+
     return (
         <GestureHandlerRootView>
             <GestureDetector gesture={composedGestures}>
@@ -588,6 +650,18 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
                                 </Text>
                             )}
                         </View>
+
+                        {/* 편집 모드에서 표시되는 편집 버튼 */}
+                        {editMode && (
+                            <TouchableOpacity
+                                style={[styles.editButtonCircle, { backgroundColor: theme.colors.ui.secondary }]}
+                                onPress={handleEditPress}
+                            >
+                                <Text style={[styles.editButtonText, { color: theme.colors.content.inverse }]}>
+                                    편집
+                                </Text>
+                            </TouchableOpacity>
+                        )}
                     </Animated.View>
 
                     {/* 왼쪽으로 스와이프 시 나타나는 삭제 버튼 (오른쪽에 위치) */}
@@ -701,6 +775,23 @@ const styles = StyleSheet.create({
         height: 2,
         borderRadius: 2,
         marginVertical: 2,
+    },
+    editButtonCircle: {
+        width: 50,
+        height: 30,
+        borderRadius: 15,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 1,
+        elevation: 2,
+    },
+    editButtonText: {
+        fontSize: 12,
+        fontWeight: 'bold',
     },
 });
 
