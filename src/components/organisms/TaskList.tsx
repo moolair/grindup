@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, PanResponder, Dimensions, TouchableWithoutFeedback, Image, Vibration, FlatList, Easing } from 'react-native';
 import { useTheme } from '../../theme/ThemeProvider';
 import RoutineCard from '../../components/molecules/RoutineCard';
@@ -46,6 +46,38 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, o
     const shakeAnimations = useRef<{ [key: string]: { x: Animated.Value, y: Animated.Value } }>({}).current;
     const swipeAnimations = useRef<{ [key: string]: Animated.Value }>({}).current;
     const dragAnimations = useRef<{ [key: string]: Animated.ValueXY }>({}).current;
+
+    // 낙관적 UI 업데이트를 위한 로컬 태스크 상태 추가
+    const [localTasks, setLocalTasks] = useState<Task[]>(tasks);
+
+    // 외부에서 전달된 tasks가 변경되면 localTasks 업데이트
+    useEffect(() => {
+        // 드래그 중에는 localTasks 업데이트 방지 (중요: 드래그 중 서버 응답이 와도 무시)
+        if (!draggingTaskId) {
+            setLocalTasks(tasks);
+        }
+    }, [tasks, draggingTaskId]);
+
+    // 메모리 관리를 위한 애니메이션 정리 함수
+    const cleanupAnimations = useCallback(() => {
+        // 모든 애니메이션 중지
+        Object.values(shakeAnimations).forEach(anim => {
+            anim.x.stopAnimation();
+            anim.y.stopAnimation();
+        });
+
+        Object.values(dragAnimations).forEach(anim => {
+            anim.stopAnimation();
+        });
+
+        Object.values(swipeAnimations).forEach(anim => {
+            anim.stopAnimation();
+        });
+
+        Object.values(taskMoveAnimations).forEach(anim => {
+            anim.stopAnimation();
+        });
+    }, [shakeAnimations, dragAnimations, swipeAnimations, taskMoveAnimations]);
 
     // 스크롤 활성화 상태 관리 함수 추가
     const setScrollEnabled = (enabled: boolean) => {
@@ -175,14 +207,17 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, o
                     ]).start(({ finished }) => {
                         if (finished) {
                             // 애니메이션이 끝난 후에 강제로 0으로 설정
-                            shakeAnimations[task.id].x.setValue(0);
-                            shakeAnimations[task.id].y.setValue(0);
+                            if (shakeAnimations[task.id]) {
+                                shakeAnimations[task.id].x.setValue(0);
+                                shakeAnimations[task.id].y.setValue(0);
+                            }
                         }
                     });
                 }
 
                 // 드래그 애니메이션도 초기화
                 if (dragAnimations[task.id]) {
+                    dragAnimations[task.id].stopAnimation();
                     dragAnimations[task.id].setValue({ x: 0, y: 0 });
                 }
             });
@@ -196,21 +231,40 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, o
         // 컴포넌트 언마운트 시 모든 애니메이션 중지 및 초기화
         return () => {
             animations.forEach(anim => anim.stop());
+            cleanupAnimations();
+        };
+    }, [editMode, tasks, cleanupAnimations]);
 
-            // 모든 애니메이션 값 초기화
-            Object.values(shakeAnimations).forEach(anim => {
-                anim.x.stopAnimation();
-                anim.y.stopAnimation();
-                anim.x.setValue(0);
-                anim.y.setValue(0);
+    // 컴포넌트 언마운트 시 모든 리소스 정리
+    useEffect(() => {
+        return () => {
+            // 모든 애니메이션 정리
+            cleanupAnimations();
+
+            // 메모리 해제를 위해 모든 참조 제거
+            setDraggingTaskId(null);
+            setSwipedTaskId(null);
+            setHoveredTaskId(null);
+            setIsDraggingEnabled(false);
+
+            // 모든 애니메이션 객체 참조 정리
+            Object.keys(shakeAnimations).forEach(key => {
+                delete shakeAnimations[key];
             });
 
-            Object.values(dragAnimations).forEach(anim => {
-                anim.stopAnimation();
-                anim.setValue({ x: 0, y: 0 });
+            Object.keys(dragAnimations).forEach(key => {
+                delete dragAnimations[key];
+            });
+
+            Object.keys(swipeAnimations).forEach(key => {
+                delete swipeAnimations[key];
+            });
+
+            Object.keys(taskMoveAnimations).forEach(key => {
+                delete taskMoveAnimations[key];
             });
         };
-    }, [editMode, tasks]);
+    }, [cleanupAnimations]);
 
     // 초기 항목 위치 설정
     useEffect(() => {
@@ -396,126 +450,312 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, o
             onPanResponderMove: (_, gestureState) => {
                 if (!editMode) return;
 
-                // 스크롤 비활성화 유지 (중요)
-                setScrollEnabled(false);
+                try {
+                    // 스크롤 비활성화 유지 (중요)
+                    setScrollEnabled(false);
 
-                // Y축으로만 이동 (세로 방향 정렬)
-                dragAnimations[taskId].setValue({ x: 0, y: gestureState.dy });
-
-                // 현재 위치 계산 및 재정렬 로직
-                const currentIndex = tasks.findIndex(t => t.id === taskId);
-                if (currentIndex === -1) return;
-
-                // 모든 항목 레이아웃 정보가 있는지 확인
-                const allLayoutsAvailable = tasks.every(t => taskLayouts[t.id]);
-                if (!allLayoutsAvailable) return;
-
-                // 현재 드래그 중인 항목의 중앙 Y 위치 계산
-                const draggedItemLayout = taskLayouts[taskId];
-                const draggedItemCenter = draggedItemLayout.y + draggedItemLayout.height / 2 + gestureState.dy;
-
-                // 드래그 중인 항목이 현재 어떤 항목 위에 있는지 확인
-                let newHoveredTaskId: string | null = null;
-                let newPosition = currentIndex;
-
-                tasks.forEach((task, i) => {
-                    if (task.id === taskId) return; // 드래그 중인 항목은 건너뜀
-
-                    const layout = taskLayouts[task.id];
-                    const taskTop = layout.y;
-                    const taskBottom = taskTop + layout.height;
-
-                    // 드래그 중인 항목이 이 항목 범위 내에 있는지 확인
-                    if (draggedItemCenter >= taskTop && draggedItemCenter <= taskBottom) {
-                        newHoveredTaskId = task.id;
-                        newPosition = i;
+                    // Y축으로만 이동 (세로 방향 정렬)
+                    if (dragAnimations[taskId]) {
+                        dragAnimations[taskId].setValue({ x: 0, y: gestureState.dy });
                     }
 
-                    // 다른 항목의 이동 애니메이션 설정
-                    const moveAnim = getTaskMoveAnimation(task.id);
-                    let targetY = 0;
+                    // 현재 위치 계산 및 재정렬 로직
+                    const currentIndex = tasks.findIndex(t => t.id === taskId);
+                    if (currentIndex === -1) return;
 
-                    if (i > currentIndex && i <= newPosition) {
-                        // 드래그 아래에 있던 항목이 위로 이동
-                        targetY = -draggedItemLayout.height;
-                    } else if (i < currentIndex && i >= newPosition) {
-                        // 드래그 위에 있던 항목이 아래로 이동
-                        targetY = draggedItemLayout.height;
+                    // 모든 항목 레이아웃 정보가 있는지 확인
+                    const allLayoutsAvailable = tasks.every(t => taskLayouts[t.id]);
+                    if (!allLayoutsAvailable) return;
+
+                    // 현재 드래그 중인 항목의 중앙 Y 위치 계산
+                    const draggedItemLayout = taskLayouts[taskId];
+                    const draggedItemCenter = draggedItemLayout.y + draggedItemLayout.height / 2 + gestureState.dy;
+
+                    // 드래그 중인 항목이 현재 어떤 항목 위에 있는지 확인
+                    let newHoveredTaskId: string | null = null;
+                    let newPosition = currentIndex;
+
+                    tasks.forEach((task, i) => {
+                        if (task.id === taskId) return; // 드래그 중인 항목은 건너뜀
+
+                        const layout = taskLayouts[task.id];
+                        if (!layout) return; // 레이아웃이 없는 경우 처리
+
+                        const taskTop = layout.y;
+                        const taskBottom = taskTop + layout.height;
+
+                        // 드래그 중인 항목이 이 항목 범위 내에 있는지 확인
+                        if (draggedItemCenter >= taskTop && draggedItemCenter <= taskBottom) {
+                            newHoveredTaskId = task.id;
+                            newPosition = i;
+                        }
+
+                        // 다른 항목의 이동 애니메이션 설정
+                        const moveAnim = getTaskMoveAnimation(task.id);
+                        if (!moveAnim) return;
+
+                        let targetY = 0;
+
+                        if (i > currentIndex && i <= newPosition) {
+                            // 드래그 아래에 있던 항목이 위로 이동
+                            targetY = -draggedItemLayout.height;
+                        } else if (i < currentIndex && i >= newPosition) {
+                            // 드래그 위에 있던 항목이 아래로 이동
+                            targetY = draggedItemLayout.height;
+                        }
+
+                        Animated.spring(moveAnim, {
+                            toValue: targetY,
+                            friction: 5,
+                            useNativeDriver: true
+                        }).start();
+                    });
+
+                    // 현재 호버된 항목 업데이트
+                    setHoveredTaskId(newHoveredTaskId);
+                } catch (error) {
+                    console.error('드래그 이동 중 오류:', error);
+                    // 오류 발생 시 드래그 취소
+                    if (dragAnimations[taskId]) {
+                        dragAnimations[taskId].setValue({ x: 0, y: 0 });
                     }
-
-                    Animated.spring(moveAnim, {
-                        toValue: targetY,
-                        friction: 5,
-                        useNativeDriver: true
-                    }).start();
-                });
-
-                // 현재 호버된 항목 업데이트
-                setHoveredTaskId(newHoveredTaskId);
+                    setDraggingTaskId(null);
+                    setHoveredTaskId(null);
+                    setIsDraggingEnabled(false);
+                    setScrollEnabled(true);
+                }
             },
             onPanResponderRelease: () => {
                 if (!editMode) return;
 
-                // 원래 위치로 돌아가는 애니메이션
-                Animated.spring(dragAnimations[taskId], {
-                    toValue: { x: 0, y: 0 },
-                    friction: 5,
-                    useNativeDriver: true
-                }).start();
-
-                // 다른 항목들도 원래 위치로 되돌리기
-                Object.keys(taskMoveAnimations).forEach(id => {
-                    Animated.spring(taskMoveAnimations[id], {
-                        toValue: 0,
-                        friction: 5,
-                        useNativeDriver: true
-                    }).start();
-                });
-
-                // 현재 드래그 중인 항목의 위치 계산
-                const currentIndex = tasks.findIndex(t => t.id === taskId);
-
-                // 새 위치 계산
-                if (hoveredTaskId) {
-                    const newPosition = tasks.findIndex(t => t.id === hoveredTaskId);
-
-                    // 위치가 변경되었으면 순서 변경 이벤트 호출
-                    if (newPosition !== -1 && newPosition !== currentIndex && onReorder) {
-                        onReorder(taskId, newPosition);
+                try {
+                    // 원래 위치로 돌아가는 애니메이션
+                    if (dragAnimations[taskId]) {
+                        Animated.spring(dragAnimations[taskId], {
+                            toValue: { x: 0, y: 0 },
+                            friction: 5,
+                            useNativeDriver: true
+                        }).start();
                     }
-                }
 
-                // 드래그 종료
-                setDraggingTaskId(null);
-                setHoveredTaskId(null);
-                setIsDraggingEnabled(false);
+                    // 다른 항목들도 원래 위치로 되돌리기
+                    Object.keys(taskMoveAnimations).forEach(id => {
+                        if (taskMoveAnimations[id]) {
+                            Animated.spring(taskMoveAnimations[id], {
+                                toValue: 0,
+                                friction: 5,
+                                useNativeDriver: true
+                            }).start();
+                        }
+                    });
 
-                // 스크롤 다시 활성화
-                setScrollEnabled(true);
-            },
-            onPanResponderTerminate: () => {
-                // 드래그 작업이 중단된 경우 (예: 다른 컴포넌트가 응답자가 됨)
-                if (draggingTaskId === taskId) {
-                    // 애니메이션 초기화
-                    dragAnimations[taskId].setValue({ x: 0, y: 0 });
+                    // 현재 드래그 중인 항목의 위치 계산
+                    const currentIndex = tasks.findIndex(t => t.id === taskId);
+
+                    // 새 위치 계산
+                    if (hoveredTaskId) {
+                        const newPosition = tasks.findIndex(t => t.id === hoveredTaskId);
+
+                        // 위치가 변경되었으면 순서 변경 이벤트 호출
+                        if (newPosition !== -1 && newPosition !== currentIndex && onReorder) {
+                            onReorder(taskId, newPosition);
+                        }
+                    }
+
+                    // 드래그 종료
                     setDraggingTaskId(null);
                     setHoveredTaskId(null);
                     setIsDraggingEnabled(false);
 
                     // 스크롤 다시 활성화
                     setScrollEnabled(true);
+                } catch (error) {
+                    console.error('드래그 종료 중 오류:', error);
+                    // 오류 발생 시 모든 상태 초기화
+                    if (dragAnimations[taskId]) {
+                        dragAnimations[taskId].setValue({ x: 0, y: 0 });
+                    }
+                    setDraggingTaskId(null);
+                    setHoveredTaskId(null);
+                    setIsDraggingEnabled(false);
+                    setScrollEnabled(true);
+                }
+            },
+            onPanResponderTerminate: () => {
+                // 드래그 작업이 중단된 경우 (예: 다른 컴포넌트가 응답자가 됨)
+                if (draggingTaskId === taskId) {
+                    try {
+                        // 애니메이션 초기화
+                        if (dragAnimations[taskId]) {
+                            dragAnimations[taskId].setValue({ x: 0, y: 0 });
+                        }
+                        setDraggingTaskId(null);
+                        setHoveredTaskId(null);
+                        setIsDraggingEnabled(false);
+
+                        // 스크롤 다시 활성화
+                        setScrollEnabled(true);
+                    } catch (error) {
+                        console.error('드래그 종료 처리 중 오류:', error);
+                        setScrollEnabled(true);
+                    }
                 }
             }
         });
     };
 
-    // 삭제 버튼 클릭 처리
-    const handleDeletePress = (taskId: string) => {
-        if (onTaskDelete) {
-            onTaskDelete(taskId);
-            // 삭제 후 스와이프 상태 초기화
-            setSwipedTaskId(null);
+    // 드래그 업데이트 처리 함수 추가
+    const handleDragUpdate = (taskId: string, position: number) => {
+        if (!editMode || !isDraggingEnabled) return;
+
+        try {
+            // 현재 드래그 중인 항목의 위치를 기준으로 다른 항목들 재배치
+            updateItemsPosition(taskId, position);
+        } catch (error) {
+            console.error('드래그 업데이트 처리 중 오류:', error);
+            // 오류 발생 시 드래그 상태 초기화
+            resetItemsPosition();
         }
+    };
+
+    // 드래그 종료 시 처리 함수 개선 - 낙관적 UI 업데이트 적용
+    const handleDragEnd = (taskId: string, destinationIndex: number) => {
+        console.log(`드래그 종료: ${taskId} -> 위치 ${destinationIndex}`);
+
+        try {
+            // 새 위치 계산 - 드래그 거리 기반
+            const currentIndex = localTasks.findIndex(t => t.id === taskId);
+
+            // 현재 위치가 유효하지 않으면 종료
+            if (currentIndex === -1) {
+                resetItemsPosition();
+                setDraggingTaskId(null);
+                setHoveredTaskId(null);
+                setIsDraggingEnabled(false);
+                setScrollEnabled(true);
+                return;
+            }
+
+            // 카드 높이와 드래그 거리 기반으로 새 위치 계산
+            const currentTask = localTasks[currentIndex];
+            const currentLayout = taskLayouts[currentTask.id];
+            const cardHeight = currentLayout?.height || 70;
+
+            // 목표 위치 계산 (이동 거리와 속도를 모두 고려)
+            const deltaY = destinationIndex;
+            const moveCount = Math.round(deltaY / cardHeight);
+
+            // 위치 계산을 더 정확하게 수정
+            let newPosition = currentIndex;
+
+            if (Math.abs(moveCount) > 0) {
+                // 드래그 방향에 따라 위치 조정
+                newPosition = Math.max(0, Math.min(localTasks.length - 1, currentIndex + moveCount));
+            }
+
+            // 실제 위치 변경이 있는 경우에만 처리
+            if (currentIndex !== newPosition) {
+                // 1. 드래그 상태 먼저 초기화하여 UI가 깨지지 않게 함
+                setDraggingTaskId(null);
+                setHoveredTaskId(null);
+                setIsDraggingEnabled(false);
+                setScrollEnabled(true);
+
+                // 2. 모든 애니메이션 값 초기화 - 오버랩 방지를 위한 중요 단계
+                Object.keys(taskMoveAnimations).forEach(id => {
+                    if (taskMoveAnimations[id]) {
+                        // 애니메이션을 즉시 중지하고 값을 0으로 설정
+                        taskMoveAnimations[id].stopAnimation();
+                        taskMoveAnimations[id].setValue(0);
+                    }
+                });
+
+                Object.keys(dragAnimations).forEach(id => {
+                    if (dragAnimations[id]) {
+                        dragAnimations[id].stopAnimation();
+                        dragAnimations[id].setValue({ x: 0, y: 0 });
+                    }
+                });
+
+                // 3. 순서 업데이트 완료 후 진동 피드백
+                Vibration.vibrate(50);
+
+                // 4. 낙관적 UI 업데이트: 로컬 상태에서 순서 변경
+                const updatedTasks = [...localTasks];
+                const movedTask = updatedTasks.splice(currentIndex, 1)[0];
+                updatedTasks.splice(newPosition, 0, movedTask);
+                setLocalTasks(updatedTasks);
+
+                // 5. 실제 데이터 업데이트는 약간 지연시켜 수행
+                if (onReorder) {
+                    setTimeout(() => {
+                        onReorder(taskId, newPosition);
+                    }, 50);
+                }
+            } else {
+                // 위치 변경이 없어도 상태와 애니메이션 초기화
+                resetItemsPosition();
+                setDraggingTaskId(null);
+                setHoveredTaskId(null);
+                setIsDraggingEnabled(false);
+                setScrollEnabled(true);
+            }
+        } catch (error) {
+            console.error('드래그 종료 처리 중 오류:', error);
+            // 오류 발생 시 모든 상태 초기화
+            resetItemsPosition();
+            setDraggingTaskId(null);
+            setHoveredTaskId(null);
+            setIsDraggingEnabled(false);
+            setScrollEnabled(true);
+        }
+    };
+
+    // 탭 처리 함수 개선 - 낙관적 UI 업데이트 적용
+    const handleTaskPress = (taskId: string) => {
+        if (editMode) return;
+
+        // 현재 태스크 찾기
+        const taskIndex = localTasks.findIndex(t => t.id === taskId);
+        if (taskIndex === -1) return;
+
+        const task = localTasks[taskIndex];
+
+        // 낙관적 UI 업데이트: 로컬 상태에서 먼저 상태 변경
+        const updatedTasks = [...localTasks];
+        updatedTasks[taskIndex] = {
+            ...task,
+            status: task.status === 'completed' ? 'pending' : 'completed'
+        };
+
+        // 상태 변경 완료 후 진동 피드백
+        Vibration.vibrate(20);
+
+        // 로컬 상태 먼저 업데이트 (즉시 UI 반영)
+        setLocalTasks(updatedTasks);
+
+        // 실제 데이터 업데이트
+        onTaskPress(taskId);
+    };
+
+    // 삭제 버튼 클릭 처리 개선 - 낙관적 UI 업데이트 적용
+    const handleDeletePress = (taskId: string) => {
+        if (!onTaskDelete) return;
+
+        // 진동 피드백
+        Vibration.vibrate(30);
+
+        // 낙관적 UI 업데이트: 로컬 상태에서 먼저 항목 제거
+        const updatedTasks = localTasks.filter(t => t.id !== taskId);
+        setLocalTasks(updatedTasks);
+
+        // 스와이프 상태 초기화
+        setSwipedTaskId(null);
+
+        // 실제 데이터 업데이트는 약간 지연시켜 수행
+        setTimeout(() => {
+            onTaskDelete(taskId);
+        }, 100);
     };
 
     // 편집 버튼 클릭 처리
@@ -597,18 +837,29 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, o
     };
 
     // 드래그 종료 후 모든 항목 원래 위치로 재설정
-    const resetItemsPosition = () => {
-        tasks.forEach(task => {
-            if (taskMoveAnimations[task.id]) {
-                Animated.timing(taskMoveAnimations[task.id], {
-                    toValue: 0,
-                    ...ANIMATION_CONFIG,
-                    useNativeDriver: true
-                }).start();
+    const resetItemsPosition = useCallback(() => {
+        // 먼저 모든 애니메이션 중지
+        Object.keys(taskMoveAnimations).forEach(id => {
+            if (taskMoveAnimations[id]) {
+                taskMoveAnimations[id].stopAnimation();
             }
         });
-        setHoveredTaskId(null);
-    };
+
+        // 그 다음 값을 0으로 설정
+        Object.keys(taskMoveAnimations).forEach(id => {
+            if (taskMoveAnimations[id]) {
+                taskMoveAnimations[id].setValue(0);
+            }
+        });
+
+        // 드래그 애니메이션도 초기화
+        Object.keys(dragAnimations).forEach(id => {
+            if (dragAnimations[id]) {
+                dragAnimations[id].stopAnimation();
+                dragAnimations[id].setValue({ x: 0, y: 0 });
+            }
+        });
+    }, [taskMoveAnimations, dragAnimations]);
 
     // 항목 위치 정렬 업데이트 함수
     const updateItemOrderAfterDrag = (draggedId: string, newPosition: number) => {
@@ -638,22 +889,25 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, o
     // 드래그 위치 계산 함수 개선
     const calculateDragPosition = (taskId: string, translationY: number) => {
         // 현재 인덱스 찾기
-        const currentIndex = tasks.findIndex(t => t.id === taskId);
+        const currentIndex = localTasks.findIndex(t => t.id === taskId);
         if (currentIndex === -1) return currentIndex;
 
-        // 카드의 새 위치 계산 (CARD_HEIGHT로 나누어 이동 거리 계산)
-        const moveDistance = Math.round(translationY / CARD_HEIGHT);
-        const newPosition = Math.max(0, Math.min(tasks.length - 1, currentIndex + moveDistance));
+        // 모든 태스크의 레이아웃 정보가 있는지 확인
+        if (!taskLayouts[taskId]) {
+            return currentIndex;
+        }
+
+        // 카드의 높이 기준으로 이동 거리 계산
+        const cardHeight = taskLayouts[taskId].height || 70;
+
+        // 이동 거리에 따른 새 위치 계산 (더 부드러운 단계 변화)
+        const moveDistance = Math.round(translationY / cardHeight);
+        let newPosition = currentIndex + moveDistance;
+
+        // 범위 제한
+        newPosition = Math.max(0, Math.min(localTasks.length - 1, newPosition));
 
         return newPosition;
-    };
-
-    // 드래그 업데이트 처리 함수 추가
-    const handleDragUpdate = (taskId: string, position: number) => {
-        if (!editMode || !isDraggingEnabled) return;
-
-        // 현재 드래그 중인 항목의 위치를 기준으로 다른 항목들 재배치
-        updateItemsPosition(taskId, position);
     };
 
     // 드래그 시작 시 처리 함수 수정
@@ -670,25 +924,6 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, o
             setIsDraggingEnabled(true);
             setScrollEnabled(false);
         }, DRAG_DELAY);
-    };
-
-    // 드래그 종료 시 처리 함수 개선
-    const handleDragEnd = (taskId: string, destinationIndex: number) => {
-        console.log(`드래그 종료: ${taskId} -> 위치 ${destinationIndex}`);
-
-        // 새 위치 계산
-        const currentIndex = tasks.findIndex(t => t.id === taskId);
-        const newPosition = calculateDragPosition(taskId, destinationIndex - currentIndex * CARD_HEIGHT);
-
-        // 드래그 상태 초기화
-        setDraggingTaskId(null);
-        setIsDraggingEnabled(false);
-        setScrollEnabled(true);
-
-        // 지연 후 순서 업데이트 (애니메이션 완료 대기)
-        setTimeout(() => {
-            updateItemOrderAfterDrag(taskId, newPosition);
-        }, 100);
     };
 
     // 빈 목록 확인
@@ -898,7 +1133,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, o
 
             <View style={styles.listContainer}>
                 <FlatList
-                    data={tasks}
+                    data={localTasks}
                     keyExtractor={(item) => item.id}
                     scrollEnabled={scrollEnabled.current}
                     nestedScrollEnabled={true}
@@ -906,7 +1141,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, o
                     renderItem={({ item, index }) => (
                         <RoutineCard
                             routine={item}
-                            onPress={onTaskPress}
+                            onPress={handleTaskPress}
                             onDelete={onTaskDelete}
                             onEdit={onTaskEdit}
                             onReorder={(id, newOrder) => {
