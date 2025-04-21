@@ -115,7 +115,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
     const [cardBackgroundColor, setCardBackgroundColor] = useState(
         routine.status === 'completed'
             ? theme.colors.ui.success
-            : theme.colors.surface.primary
+            : '#FFFFFF' // 미완료 시 흰색으로 변경
     );
 
     // 메모리 정리 함수 - 컴포넌트 언마운트 시 관련 리소스 해제
@@ -321,8 +321,8 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
                         // 공유 값도 함께 업데이트
                         categoryColorRef.value = theme.colors.ui.success;
                     } else {
-                        // 색상 즉시 업데이트 (기본 상태로)
-                        runOnJS(setCardBackgroundColor)(theme.colors.surface.primary);
+                        // 색상 즉시 업데이트 (미완료 상태로 - 흰색)
+                        runOnJS(setCardBackgroundColor)('#FFFFFF');
                         // UI 스레드에서 실행
                         runOnJS(updateCategoryColor)();
                     }
@@ -451,15 +451,14 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
                 setCardBackgroundColor(theme.colors.ui.success);
                 categoryColorRef.value = theme.colors.ui.success;
             } else {
-                // 그렇지 않으면 카테고리 색상 또는 기본 색상으로 설정
-                const color = getCategoryColor();
-                setCardBackgroundColor(color);
-                categoryColorRef.value = color;
+                // 미완료 시 흰색으로 변경
+                setCardBackgroundColor('#FFFFFF');
+                categoryColorRef.value = getCategoryColor();
             }
         } catch (error) {
             console.error('카드 상태 변경 시 배경색 업데이트 오류:', error);
-            // 오류 발생 시 기본 색상 사용
-            setCardBackgroundColor(theme.colors.surface.primary);
+            // 오류 발생 시 흰색 사용
+            setCardBackgroundColor('#FFFFFF');
             categoryColorRef.value = theme.colors.surface.primary;
         }
     }, [routine.status, routine.category, theme.colors]);
@@ -483,8 +482,8 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
                     { translateX: 0 },
                     { translateY: 0 }
                 ],
-                backgroundColor: theme.colors.surface.primary,
-                borderColor: theme.colors.ui.border,
+                backgroundColor: '#FFFFFF',
+                borderColor: theme.colors.border.light,
             };
         }
     });
