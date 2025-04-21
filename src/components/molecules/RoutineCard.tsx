@@ -115,7 +115,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
     const [cardBackgroundColor, setCardBackgroundColor] = useState(
         routine.status === 'completed'
             ? theme.colors.ui.success
-            : '#FFFFFF' // 미완료 시 흰색으로 변경
+            : theme.type === 'dark' ? theme.colors.surface.secondary : '#FFFFFF' // 다크 모드 대응
     );
 
     // 메모리 정리 함수 - 컴포넌트 언마운트 시 관련 리소스 해제
@@ -321,8 +321,9 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
                         // 공유 값도 함께 업데이트
                         categoryColorRef.value = theme.colors.ui.success;
                     } else {
-                        // 색상 즉시 업데이트 (미완료 상태로 - 흰색)
-                        runOnJS(setCardBackgroundColor)('#FFFFFF');
+                        // 색상 즉시 업데이트 (미완료 상태로)
+                        const bgColor = theme.type === 'dark' ? theme.colors.surface.secondary : '#FFFFFF';
+                        runOnJS(setCardBackgroundColor)(bgColor);
                         // UI 스레드에서 실행
                         runOnJS(updateCategoryColor)();
                     }
@@ -451,17 +452,18 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
                 setCardBackgroundColor(theme.colors.ui.success);
                 categoryColorRef.value = theme.colors.ui.success;
             } else {
-                // 미완료 시 흰색으로 변경
-                setCardBackgroundColor('#FFFFFF');
+                // 미완료 시 다크 모드에 따라 배경색 설정
+                const bgColor = theme.type === 'dark' ? theme.colors.surface.secondary : '#FFFFFF';
+                setCardBackgroundColor(bgColor);
                 categoryColorRef.value = getCategoryColor();
             }
         } catch (error) {
             console.error('카드 상태 변경 시 배경색 업데이트 오류:', error);
-            // 오류 발생 시 흰색 사용
-            setCardBackgroundColor('#FFFFFF');
+            // 오류 발생 시 기본 색상 사용
+            setCardBackgroundColor(theme.type === 'dark' ? theme.colors.surface.secondary : '#FFFFFF');
             categoryColorRef.value = theme.colors.surface.primary;
         }
-    }, [routine.status, routine.category, theme.colors]);
+    }, [routine.status, routine.category, theme.colors, theme.type]);
 
     // 카드 애니메이션 스타일
     const rStyle = useAnimatedStyle(() => {
@@ -482,7 +484,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
                     { translateX: 0 },
                     { translateY: 0 }
                 ],
-                backgroundColor: '#FFFFFF',
+                backgroundColor: theme.type === 'dark' ? theme.colors.surface.secondary : '#FFFFFF',
                 borderColor: theme.colors.border.light,
             };
         }
@@ -524,7 +526,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
                                     {
                                         color: routine.status === 'completed'
                                             ? theme.colors.content.inverse  // 완료 시 텍스트 색상 (배경이 진해지므로 반전색)
-                                            : '#000000', // 미완료 시 검정색으로 변경
+                                            : theme.type === 'dark' ? '#FFFFFF' : '#000000', // 다크 모드에 따른 텍스트 색상
                                     }
                                 ]}
                                 numberOfLines={1}
@@ -538,7 +540,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
                                         {
                                             color: routine.status === 'completed'
                                                 ? theme.colors.content.inverse  // 완료 시 텍스트 색상 (배경이 진해지므로 반전색)
-                                                : '#000000', // 미완료 시 검정색으로 변경
+                                                : theme.type === 'dark' ? '#FFFFFF' : '#000000', // 다크 모드에 따른 텍스트 색상
                                         }
                                     ]}
                                     numberOfLines={1}
