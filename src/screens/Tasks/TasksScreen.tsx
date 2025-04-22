@@ -151,6 +151,7 @@ const TasksScreen = () => {
         order: Date.now(), // 순서는 현재 시간으로 설정 (새 루틴인 경우에만 적용)
         completed: isEditMode ? Boolean((routine as any).completed) : false,
         category: routine.color, // 선택한 색상을 카테고리 필드에 저장
+        color: routine.color, // 색상 필드에도 직접 저장
       };
 
       let savedRoutine;

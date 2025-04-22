@@ -24,6 +24,7 @@ const routineToTask = (routine: Routine): Task => {
     description: routine.description,
     status: routine.completed ? 'completed' : 'pending',
     category: routine.category,
+    color: routine.color,
   };
 };
 

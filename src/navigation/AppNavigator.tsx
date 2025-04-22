@@ -19,6 +19,7 @@ export interface Task {
   description?: string;
   status: 'pending' | 'completed';
   category?: string;
+  color?: string;
 }
 
 // Stack Navigator 타입 정의

@@ -26,6 +26,7 @@ interface Task {
     dueDate?: Date;
     priority?: 'low' | 'medium' | 'high' | 'urgent';
     order?: number;
+    color?: string;
 }
 
 interface RoutineCardProps {
@@ -74,6 +75,11 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
 
     // 분류 색상 가져오기 (각 루틴 분류마다 다른 색상)
     const getCategoryColor = useCallback(() => {
+        // 루틴에 직접 color 속성이 있으면 그 값을 우선적으로 사용
+        if (routine.color) {
+            return routine.color;
+        }
+
         switch (routine.category) {
             case 'health':
                 return theme.colors.ui.success;
@@ -92,7 +98,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
                     ? theme.colors.ui.success
                     : theme.colors.ui.primary;
         }
-    }, [routine.category, routine.status, theme.colors.ui]);
+    }, [routine.category, routine.status, routine.color, theme.colors.ui]);
 
     // Reanimated shared values
     const translateX = useSharedValue(0);
@@ -375,12 +381,13 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
 
                     // 클릭 시 즉시 배경색 업데이트 (낙관적 UI 업데이트)
                     if (routine.status === 'pending') {
-                        // 색상 즉시 업데이트 (완료 상태로)
-                        runOnJS(setCardBackgroundColor)(theme.colors.ui.success);
+                        // 완료 상태로 변경 시 사용자 지정 색상 또는 성공 색상 사용
+                        const completedColor = routine.color || theme.colors.ui.success;
+                        runOnJS(setCardBackgroundColor)(completedColor);
                         // 공유 값도 함께 업데이트
-                        categoryColorRef.value = theme.colors.ui.success;
+                        categoryColorRef.value = completedColor;
                     } else {
-                        // 색상 즉시 업데이트 (미완료 상태로)
+                        // 미완료 상태로 변경 시 테마에 따른 기본 배경색 사용
                         const bgColor = theme.type === 'dark' ? theme.colors.surface.secondary : '#FFFFFF';
                         runOnJS(setCardBackgroundColor)(bgColor);
                         // UI 스레드에서 실행
@@ -512,12 +519,12 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
     // 카드 상태가 변경될 때마다 배경색 업데이트
     useEffect(() => {
         try {
-            // 완료된 상태면 성공 색상으로 변경
+            // 완료된 상태면 사용자가 지정한 색상으로 변경
             if (routine.status === 'completed') {
-                setCardBackgroundColor(theme.colors.ui.success);
-                categoryColorRef.value = theme.colors.ui.success;
+                setCardBackgroundColor(routine.color || theme.colors.ui.success);
+                categoryColorRef.value = routine.color || theme.colors.ui.success;
             } else {
-                // 미완료 시 다크 모드에 따라 배경색 설정
+                // 미완료 시 다크 모드에 따라 배경색 설정 (항상 흰색/다크 테마 색상)
                 const bgColor = theme.type === 'dark' ? theme.colors.surface.secondary : '#FFFFFF';
                 setCardBackgroundColor(bgColor);
                 categoryColorRef.value = getCategoryColor();
@@ -528,7 +535,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
             setCardBackgroundColor(theme.type === 'dark' ? theme.colors.surface.secondary : '#FFFFFF');
             categoryColorRef.value = theme.colors.surface.primary;
         }
-    }, [routine.status, routine.category, theme.colors, theme.type]);
+    }, [routine.status, routine.category, routine.color, theme.colors, theme.type]);
 
     // 카드 애니메이션 스타일
     const rStyle = useAnimatedStyle(() => {
@@ -539,7 +546,9 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
                     { translateX: translateX.value },
                     { translateY: translateY.value }
                 ],
-                backgroundColor: cardBackgroundColor,
+                backgroundColor: routine.status === 'completed'
+                    ? routine.color || theme.colors.ui.success
+                    : theme.type === 'dark' ? theme.colors.surface.secondary : '#FFFFFF',
                 borderColor: getBorderColor(),
             };
         } catch (error) {
@@ -565,10 +574,10 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
             ],
             zIndex: zIndex.value,
             backgroundColor: routine.status === 'completed'
-                ? theme.colors.ui.success
+                ? routine.color || theme.colors.ui.success
                 : theme.type === 'dark' ? theme.colors.surface.secondary : '#FFFFFF',
         };
-    }, [routine.status, theme]); // 의존성 배열 추가하여 리렌더링 시 초기화 방지
+    }, [routine.status, routine.color, theme]);
 
     // 컴포넌트 리렌더링 시 애니메이션 값 보존
     useEffect(() => {
@@ -598,7 +607,9 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
                     style={[
                         styles.cardContainer,
                         {
-                            backgroundColor: cardBackgroundColor,
+                            backgroundColor: routine.status === 'completed'
+                                ? routine.color || theme.colors.ui.success
+                                : theme.type === 'dark' ? theme.colors.surface.secondary : '#FFFFFF',
                             borderLeftColor: getCategoryColor(),
                             borderLeftWidth: 4,
                             borderRadius: 12,

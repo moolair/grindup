@@ -9,6 +9,7 @@ export interface Routine {
     description?: string;
     completed: boolean;
     category?: string;
+    color?: string;
     order: number;
     createdAt: string; // ISO date string
     lastResetAt: string; // ISO date string (last time routines were reset)

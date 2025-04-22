@@ -9,6 +9,7 @@ interface Task {
     description?: string;
     status: 'pending' | 'completed';
     category?: string;
+    color?: string;
     dueDate?: Date;
     priority?: 'low' | 'medium' | 'high' | 'urgent';
     order?: number;
