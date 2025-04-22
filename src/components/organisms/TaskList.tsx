@@ -22,13 +22,14 @@ interface TaskListProps {
     onTaskEdit?: (taskId: string) => void;
     onReorder?: (taskId: string, newOrder: number) => void;
     headerTitle?: string;
+    onEditModeChange?: (editMode: boolean) => void;
 }
 
 const { width } = Dimensions.get('window');
 const DELETE_BUTTON_WIDTH = 70; // 삭제 버튼 너비
 const EDIT_BUTTON_WIDTH = 70; // 편집 버튼 너비
 
-const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, onTaskEdit, onReorder, headerTitle }) => {
+const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, onTaskEdit, onReorder, headerTitle, onEditModeChange }) => {
     const { theme } = useTheme();
     const [swipedTaskId, setSwipedTaskId] = useState<string | null>(null);
     const [editMode, setEditMode] = useState(false);
@@ -315,7 +316,13 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, o
 
     // 편집 모드 토글
     const toggleEditMode = () => {
-        setEditMode(prev => !prev);
+        const newEditMode = !editMode;
+        setEditMode(newEditMode);
+
+        // 부모 컴포넌트에 편집 모드 변경 알림 (즉시 실행)
+        if (onEditModeChange) {
+            onEditModeChange(newEditMode);
+        }
     };
 
     // 드래그 핸들 수정
@@ -359,6 +366,11 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, o
     const handleBackgroundPress = () => {
         if (editMode) {
             setEditMode(false);
+
+            // 부모 컴포넌트에 편집 모드 변경 알림
+            if (onEditModeChange) {
+                onEditModeChange(false);
+            }
         }
     };
 
@@ -1110,7 +1122,11 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, o
                             style={styles.doneButton}
                             onPress={() => {
                                 resetItemsPosition(); // 편집 모드 종료 시 모든 항목 위치 초기화
-                                toggleEditMode();
+                                // 상태 변경 전에 부모에게 알림
+                                if (onEditModeChange) {
+                                    onEditModeChange(false);
+                                }
+                                setEditMode(false);
                             }}
                         >
                             <Text style={[styles.doneButtonText, { color: theme.colors.ui.primary }]}>완료</Text>
@@ -1118,7 +1134,13 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, o
                     ) : (
                         <TouchableOpacity
                             style={styles.editButton}
-                            onPress={() => setEditMode(true)}
+                            onPress={() => {
+                                // 상태 변경 전에 부모에게 알림
+                                if (onEditModeChange) {
+                                    onEditModeChange(true);
+                                }
+                                setEditMode(true);
+                            }}
                         >
                             <Text style={[styles.editButtonText, { color: theme.colors.ui.primary }]}>수정</Text>
                         </TouchableOpacity>

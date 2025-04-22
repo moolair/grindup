@@ -44,15 +44,28 @@ interface RoutineCardProps {
     onDragEnd?: (position: number) => void;
 }
 
+// HEX 색상을 RGBA로 변환하는 유틸리티 함수
+const hexToRgba = (hex: string, alpha: number): string => {
+    // 색상 코드에서 # 제거
+    const sanitizedHex = hex.replace('#', '');
+
+    // 짧은 형식 (예: #ABC) 처리
+    const r = parseInt(sanitizedHex.length === 3 ? sanitizedHex[0] + sanitizedHex[0] : sanitizedHex.substring(0, 2), 16);
+    const g = parseInt(sanitizedHex.length === 3 ? sanitizedHex[1] + sanitizedHex[1] : sanitizedHex.substring(2, 4), 16);
+    const b = parseInt(sanitizedHex.length === 3 ? sanitizedHex[2] + sanitizedHex[2] : sanitizedHex.substring(4, 6), 16);
+
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
 // 드래그 핸들 컴포넌트
 const DragHandle = ({ isDragging, theme }: { isDragging: boolean, theme: any }) => (
     <View style={[
         styles.dragHandle,
         isDragging && { backgroundColor: theme.colors.background.secondary }
     ]}>
-        <View style={[styles.dragBar, { backgroundColor: theme.colors.content.tertiary }]} />
-        <View style={[styles.dragBar, { backgroundColor: theme.colors.content.tertiary }]} />
-        <View style={[styles.dragBar, { backgroundColor: theme.colors.content.tertiary }]} />
+        <View style={[styles.dragBar, { backgroundColor: theme.colors.content.secondary }]} />
+        <View style={[styles.dragBar, { backgroundColor: theme.colors.content.secondary }]} />
+        <View style={[styles.dragBar, { backgroundColor: theme.colors.content.secondary }]} />
     </View>
 );
 
@@ -86,13 +99,13 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
             case 'work':
                 return theme.colors.ui.primary;
             case 'personal':
-                return theme.colors.ui.accent;
+                return theme.colors.ui.primary;
             case 'study':
                 return theme.colors.ui.secondary;
             case 'fitness':
                 return theme.colors.ui.success;
             case 'social':
-                return theme.colors.ui.accent;
+                return theme.colors.ui.primary;
             default:
                 return routine.status === 'completed'
                     ? theme.colors.ui.success
@@ -121,8 +134,10 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
     // 카드 배경색 업데이트
     const [cardBackgroundColor, setCardBackgroundColor] = useState(
         routine.status === 'completed'
-            ? theme.colors.ui.success
-            : theme.type === 'dark' ? theme.colors.surface.secondary : '#FFFFFF' // 다크 모드 대응
+            ? routine.color || theme.colors.ui.success
+            : routine.color
+                ? hexToRgba(routine.color, 0.2) // 색상이 있을 경우 투명도 적용
+                : (theme.type === 'dark' ? theme.colors.surface.secondary : '#FFFFFF')
     );
 
     // 메모리 정리 함수 개선 - 컴포넌트 언마운트 시 관련 리소스 해제
@@ -351,7 +366,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
         });
 
     // 업데이트된 카테고리 색상 함수
-    const updateCategoryColor = useCallback(() => {
+    const updateCategoryColor = useCallback((): string => {
         try {
             const color = getCategoryColor();
             categoryColorRef.value = color;
@@ -387,9 +402,13 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
                         // 공유 값도 함께 업데이트
                         categoryColorRef.value = completedColor;
                     } else {
-                        // 미완료 상태로 변경 시 테마에 따른 기본 배경색 사용
-                        const bgColor = theme.type === 'dark' ? theme.colors.surface.secondary : '#FFFFFF';
-                        runOnJS(setCardBackgroundColor)(bgColor);
+                        // 미완료 상태로 변경 시 색상에 투명도 적용 또는 기본 배경색 사용
+                        if (routine.color) {
+                            runOnJS(setCardBackgroundColor)(hexToRgba(routine.color, 0.2));
+                        } else {
+                            const bgColor = theme.type === 'dark' ? theme.colors.surface.secondary : '#FFFFFF';
+                            runOnJS(setCardBackgroundColor)(bgColor);
+                        }
                         // UI 스레드에서 실행
                         runOnJS(updateCategoryColor)();
                     }
@@ -460,124 +479,12 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
         }
     };
 
-    // 카드 왼쪽 테두리 색상
-    const getBorderColor = () => {
-        return routine.status === 'completed'
-            ? theme.colors.ui.success
-            : getCategoryColor();
-    };
-
     // 상태가 변경될 때마다 공유 값 업데이트
     useEffect(() => {
-        categoryColorRef.value = routine.status === 'completed'
+        categoryColorRef.value = routine.color || (routine.status === 'completed'
             ? theme.colors.ui.success
-            : getCategoryColor();
-    }, [routine.status, routine.category]);
-
-    // 삭제 버튼 애니메이션 스타일
-    const deleteButtonStyle = useAnimatedStyle(() => {
-        'worklet';
-        try {
-            return {
-                backgroundColor: theme.colors.ui.error,
-                transform: [
-                    {
-                        translateX: typeof translateX.value === 'number' && translateX.value < -50 ? 0 : 100
-                    },
-                ],
-            };
-        } catch (error) {
-            // 오류 발생 시 기본 스타일 반환
-            return {
-                backgroundColor: theme.colors.ui.error,
-                transform: [{ translateX: 100 }],
-            };
-        }
-    });
-
-    // 편집 버튼 애니메이션 스타일
-    const editButtonStyle = useAnimatedStyle(() => {
-        'worklet';
-        try {
-            return {
-                backgroundColor: theme.colors.ui.secondary,
-                transform: [
-                    {
-                        translateX: typeof translateX.value === 'number' && translateX.value > 50 ? 0 : -100
-                    },
-                ],
-            };
-        } catch (error) {
-            // 오류 발생 시 기본 스타일 반환
-            return {
-                backgroundColor: theme.colors.ui.secondary,
-                transform: [{ translateX: -100 }],
-            };
-        }
-    });
-
-    // 카드 상태가 변경될 때마다 배경색 업데이트
-    useEffect(() => {
-        try {
-            // 완료된 상태면 사용자가 지정한 색상으로 변경
-            if (routine.status === 'completed') {
-                setCardBackgroundColor(routine.color || theme.colors.ui.success);
-                categoryColorRef.value = routine.color || theme.colors.ui.success;
-            } else {
-                // 미완료 시 다크 모드에 따라 배경색 설정 (항상 흰색/다크 테마 색상)
-                const bgColor = theme.type === 'dark' ? theme.colors.surface.secondary : '#FFFFFF';
-                setCardBackgroundColor(bgColor);
-                categoryColorRef.value = getCategoryColor();
-            }
-        } catch (error) {
-            console.error('카드 상태 변경 시 배경색 업데이트 오류:', error);
-            // 오류 발생 시 기본 색상 사용
-            setCardBackgroundColor(theme.type === 'dark' ? theme.colors.surface.secondary : '#FFFFFF');
-            categoryColorRef.value = theme.colors.surface.primary;
-        }
-    }, [routine.status, routine.category, routine.color, theme.colors, theme.type]);
-
-    // 카드 애니메이션 스타일
-    const rStyle = useAnimatedStyle(() => {
-        'worklet';
-        try {
-            return {
-                transform: [
-                    { translateX: translateX.value },
-                    { translateY: translateY.value }
-                ],
-                backgroundColor: routine.status === 'completed'
-                    ? routine.color || theme.colors.ui.success
-                    : theme.type === 'dark' ? theme.colors.surface.secondary : '#FFFFFF',
-                borderColor: getBorderColor(),
-            };
-        } catch (error) {
-            // 오류 발생 시 기본 스타일 반환
-            return {
-                transform: [
-                    { translateX: 0 },
-                    { translateY: 0 }
-                ],
-                backgroundColor: theme.type === 'dark' ? theme.colors.surface.secondary : '#FFFFFF',
-                borderColor: theme.colors.border.light,
-            };
-        }
-    });
-
-    // 애니메이션 스타일 정의
-    const animatedStyle = useAnimatedStyle(() => {
-        return {
-            transform: [
-                { translateX: translateX.value },
-                { translateY: translateY.value },
-                { scale: scale.value }
-            ],
-            zIndex: zIndex.value,
-            backgroundColor: routine.status === 'completed'
-                ? routine.color || theme.colors.ui.success
-                : theme.type === 'dark' ? theme.colors.surface.secondary : '#FFFFFF',
-        };
-    }, [routine.status, routine.color, theme]);
+            : theme.colors.ui.primary);
+    }, [routine.status, routine.category, routine.color]);
 
     // 컴포넌트 리렌더링 시 애니메이션 값 보존
     useEffect(() => {
@@ -609,9 +516,9 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
                         {
                             backgroundColor: routine.status === 'completed'
                                 ? routine.color || theme.colors.ui.success
-                                : theme.type === 'dark' ? theme.colors.surface.secondary : '#FFFFFF',
-                            borderLeftColor: getCategoryColor(),
-                            borderLeftWidth: 4,
+                                : routine.color
+                                    ? hexToRgba(routine.color, 0.2) // 색상이 있을 경우 투명도 적용
+                                    : (theme.type === 'dark' ? theme.colors.surface.secondary : '#FFFFFF'),
                             borderRadius: 12,
                             shadowColor: theme.type === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.1)',
                         },
@@ -679,12 +586,20 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
                     <Animated.View
                         style={[
                             styles.rightActionContainer,
-                            deleteButtonStyle
+                            {
+                                backgroundColor: editMode ? theme.colors.ui.error : theme.colors.ui.success,
+                                transform: [
+                                    { translateX: translateX.value < -50 ? 0 : 100 }
+                                ]
+                            }
                         ]}
                     >
-                        <TouchableOpacity onPress={handleDeletePress} style={styles.actionButton}>
+                        <TouchableOpacity
+                            onPress={editMode ? handleDeletePress : () => onPress(routine.id)}
+                            style={styles.actionButton}
+                        >
                             <Text style={[styles.actionText, { color: theme.colors.content.inverse }]}>
-                                삭제
+                                {editMode ? '삭제' : '완료'}
                             </Text>
                         </TouchableOpacity>
                     </Animated.View>
@@ -693,7 +608,12 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
                     <Animated.View
                         style={[
                             styles.leftActionContainer,
-                            editButtonStyle
+                            {
+                                backgroundColor: theme.colors.ui.secondary,
+                                transform: [
+                                    { translateX: translateX.value > 50 ? 0 : -100 }
+                                ]
+                            }
                         ]}
                     >
                         <TouchableOpacity onPress={handleEditPress} style={styles.actionButton}>

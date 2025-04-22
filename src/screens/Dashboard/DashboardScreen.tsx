@@ -40,6 +40,9 @@ const DashboardScreen = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const contributionGraphRef = useRef<ContributionGraphHandle>(null);
 
+  // 수정 모드 상태 추가
+  const [isEditMode, setIsEditMode] = useState(false);
+
   // Undo 기능을 위한 상태 관리
   const [deletedRoutine, setDeletedRoutine] = useState<Routine | null>(null);
   const [showUndoMessage, setShowUndoMessage] = useState(false);
@@ -86,42 +89,9 @@ const DashboardScreen = () => {
     }
   }, []);
 
-  // 루틴 상태 변경 구독 설정
-  const setupRoutineListeners = useCallback(() => {
-    // 기존 리스너 해제
-    unsubscribeRoutineListenersRef.current.forEach(unsubscribe => unsubscribe());
-    unsubscribeRoutineListenersRef.current = [];
-
-    // 완료 상태 변경 리스너 등록
-    const unsubscribeComplete = routineService.addRoutineStateListener('complete', () => {
-      console.log('루틴 완료 상태 변경 감지됨 - 데이터 새로고침');
-      loadRoutines();
-    });
-
-    // 업데이트 리스너 등록
-    const unsubscribeUpdate = routineService.addRoutineStateListener('update', () => {
-      console.log('루틴 업데이트 감지됨 - 데이터 새로고침');
-      loadRoutines();
-    });
-
-    // 리셋 리스너 등록
-    const unsubscribeReset = routineService.addRoutineStateListener('reset', () => {
-      console.log('루틴 리셋 감지됨 - 데이터 새로고침');
-      loadRoutines();
-    });
-
-    // 리스너 해제 함수 저장
-    unsubscribeRoutineListenersRef.current = [
-      unsubscribeComplete,
-      unsubscribeUpdate,
-      unsubscribeReset
-    ];
-  }, [loadRoutines]);
-
   // 컴포넌트 마운트 시 루틴 로드 및 리스너 설정
   useEffect(() => {
     loadRoutines();
-    setupRoutineListeners();
 
     // route.params에 refreshRoutines가 있으면 루틴 새로고침
     if (route.params?.refreshRoutines) {
@@ -159,7 +129,7 @@ const DashboardScreen = () => {
       unsubscribeRoutineListenersRef.current.forEach(unsubscribe => unsubscribe());
       unsubscribeRoutineListenersRef.current = [];
     };
-  }, [loadRoutines, setupRoutineListeners, route.params?.refreshRoutines]);
+  }, [loadRoutines, navigation, route.params?.refreshRoutines]);
 
   const handleDayPress = (date: Date, count: number) => {
     console.log(`선택한 날짜: ${date.toLocaleDateString()}, 완료한 작업: ${count}개`);
@@ -415,6 +385,12 @@ const DashboardScreen = () => {
     return `${t('greeting')}`;
   };
 
+  // 수정 모드 토글 핸들러 추가
+  const handleEditModeToggle = (editMode: boolean) => {
+    console.log('수정 모드 변경됨:', editMode);
+    setIsEditMode(editMode);
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
       <View style={styles.header}>
@@ -440,17 +416,20 @@ const DashboardScreen = () => {
             onTaskEdit={handleRoutineEdit}
             onReorder={handleRoutineReorder}
             headerTitle={t('todayRoutineHeader')}
+            onEditModeChange={handleEditModeToggle}
           />
         </View>
       </View>
 
-      {/* 플로팅 액션 버튼 추가 */}
-      <FloatingActionButton
-        icon="plus"
-        color={theme.colors.content.inverse}
-        backgroundColor={theme.colors.ui.primary}
-        onPress={handleCreateRoutine}
-      />
+      {/* 플로팅 액션 버튼 - 수정 모드가 아닐 때만 표시 */}
+      {!isEditMode && (
+        <FloatingActionButton
+          icon="plus"
+          color={theme.colors.content.inverse}
+          backgroundColor={theme.colors.ui.primary}
+          onPress={handleCreateRoutine}
+        />
+      )}
 
       {/* Undo 메시지 */}
       {showUndoMessage && (
