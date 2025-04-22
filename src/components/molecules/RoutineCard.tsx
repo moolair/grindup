@@ -514,54 +514,43 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
     return (
         <GestureHandlerRootView>
             <GestureDetector gesture={composedGestures}>
-                <Animated.View
-                    style={[
-                        styles.cardContainer,
-                        {
-                            backgroundColor: routine.status === 'completed'
-                                ? routine.color || theme.colors.ui.success
-                                : routine.color
-                                    ? hexToRgba(routine.color, 0.2) // 색상이 있을 경우 투명도 적용
-                                    : (theme.type === 'dark' ? theme.colors.surface.secondary : '#FFFFFF'),
-                            borderRadius: 12,
-                            shadowColor: theme.type === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.1)',
-                        },
-                        cardStyle,
-                        isDragging && {
-                            elevation: 5,
-                            shadowOpacity: 0.3,
-                            shadowRadius: 10,
-                            shadowOffset: { width: 0, height: 5 }
-                        }
-                    ]}
-                >
-                    {/* 왼쪽에 드래그 핸들 표시 (editMode가 true일 때) */}
-                    {isDraggable && editMode && (
-                        <GestureDetector gesture={dragGesture}>
-                            <DragHandle isDragging={isDragging} theme={theme} />
-                        </GestureDetector>
-                    )}
+                <View collapsable={false}>
+                    <Animated.View
+                        style={[
+                            styles.cardContainer,
+                            {
+                                backgroundColor: routine.status === 'completed'
+                                    ? routine.color || theme.colors.ui.success
+                                    : routine.color
+                                        ? hexToRgba(routine.color, 0.2) // 색상이 있을 경우 투명도 적용
+                                        : (theme.type === 'dark' ? theme.colors.surface.secondary : '#FFFFFF'),
+                                borderRadius: 12,
+                                shadowColor: theme.type === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.1)',
+                            },
+                            cardStyle,
+                            isDragging && {
+                                elevation: 5,
+                                shadowOpacity: 0.3,
+                                shadowRadius: 10,
+                                shadowOffset: { width: 0, height: 5 }
+                            }
+                        ]}
+                    >
+                        {/* 왼쪽에 드래그 핸들 표시 (editMode가 true일 때) */}
+                        {isDraggable && editMode && (
+                            <GestureDetector gesture={dragGesture}>
+                                <View collapsable={false}>
+                                    <DragHandle isDragging={isDragging} theme={theme} />
+                                </View>
+                            </GestureDetector>
+                        )}
 
-                    {/* 카드 컨텐츠 */}
-                    <Animated.View style={[styles.content, contentStyle]}>
-                        <View style={styles.textContainer}>
-                            <Text
-                                style={[
-                                    styles.title,
-                                    {
-                                        color: routine.status === 'completed'
-                                            ? theme.colors.content.inverse  // 완료 시 텍스트 색상 (배경이 진해지므로 반전색)
-                                            : theme.type === 'dark' ? '#FFFFFF' : '#000000', // 다크 모드에 따른 텍스트 색상
-                                    }
-                                ]}
-                                numberOfLines={1}
-                            >
-                                {routine.title}
-                            </Text>
-                            {routine.description && (
+                        {/* 카드 컨텐츠 */}
+                        <Animated.View style={[styles.content, contentStyle]}>
+                            <View style={styles.textContainer}>
                                 <Text
                                     style={[
-                                        styles.description,
+                                        styles.title,
                                         {
                                             color: routine.status === 'completed'
                                                 ? theme.colors.content.inverse  // 완료 시 텍스트 색상 (배경이 진해지므로 반전색)
@@ -570,65 +559,80 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
                                     ]}
                                     numberOfLines={1}
                                 >
-                                    {routine.description}
+                                    {routine.title}
                                 </Text>
-                            )}
-                        </View>
+                                {routine.description && (
+                                    <Text
+                                        style={[
+                                            styles.description,
+                                            {
+                                                color: routine.status === 'completed'
+                                                    ? theme.colors.content.inverse  // 완료 시 텍스트 색상 (배경이 진해지므로 반전색)
+                                                    : theme.type === 'dark' ? '#FFFFFF' : '#000000', // 다크 모드에 따른 텍스트 색상
+                                            }
+                                        ]}
+                                        numberOfLines={1}
+                                    >
+                                        {routine.description}
+                                    </Text>
+                                )}
+                            </View>
 
-                        {/* 편집 모드에서 표시되는 편집 버튼 */}
-                        {editMode && (
+                            {/* 편집 모드에서 표시되는 편집 버튼 */}
+                            {editMode && (
+                                <TouchableOpacity
+                                    style={[styles.editButtonCircle, { backgroundColor: theme.colors.ui.secondary }]}
+                                    onPress={handleEditPress}
+                                >
+                                    <Text style={[styles.editButtonText, { color: theme.colors.content.inverse }]}>
+                                        편집
+                                    </Text>
+                                </TouchableOpacity>
+                            )}
+                        </Animated.View>
+
+                        {/* 왼쪽으로 스와이프 시 나타나는 삭제 버튼 (오른쪽에 위치) */}
+                        <Animated.View
+                            style={[
+                                styles.rightActionContainer,
+                                {
+                                    backgroundColor: editMode ? theme.colors.ui.error : theme.colors.ui.success,
+                                    transform: [
+                                        { translateX: translateX.value < -50 ? 0 : 100 }
+                                    ]
+                                }
+                            ]}
+                        >
                             <TouchableOpacity
-                                style={[styles.editButtonCircle, { backgroundColor: theme.colors.ui.secondary }]}
-                                onPress={handleEditPress}
+                                onPress={editMode ? handleDeletePress : () => onPress(routine.id)}
+                                style={styles.actionButton}
                             >
-                                <Text style={[styles.editButtonText, { color: theme.colors.content.inverse }]}>
+                                <Text style={[styles.actionText, { color: theme.colors.content.inverse }]}>
+                                    {editMode ? '삭제' : '완료'}
+                                </Text>
+                            </TouchableOpacity>
+                        </Animated.View>
+
+                        {/* 오른쪽으로 스와이프 시 나타나는 편집 버튼 (왼쪽에 위치) */}
+                        <Animated.View
+                            style={[
+                                styles.leftActionContainer,
+                                {
+                                    backgroundColor: theme.colors.ui.secondary,
+                                    transform: [
+                                        { translateX: translateX.value > 50 ? 0 : -100 }
+                                    ]
+                                }
+                            ]}
+                        >
+                            <TouchableOpacity onPress={handleEditPress} style={styles.actionButton}>
+                                <Text style={[styles.actionText, { color: theme.colors.content.inverse }]}>
                                     편집
                                 </Text>
                             </TouchableOpacity>
-                        )}
+                        </Animated.View>
                     </Animated.View>
-
-                    {/* 왼쪽으로 스와이프 시 나타나는 삭제 버튼 (오른쪽에 위치) */}
-                    <Animated.View
-                        style={[
-                            styles.rightActionContainer,
-                            {
-                                backgroundColor: editMode ? theme.colors.ui.error : theme.colors.ui.success,
-                                transform: [
-                                    { translateX: translateX.value < -50 ? 0 : 100 }
-                                ]
-                            }
-                        ]}
-                    >
-                        <TouchableOpacity
-                            onPress={editMode ? handleDeletePress : () => onPress(routine.id)}
-                            style={styles.actionButton}
-                        >
-                            <Text style={[styles.actionText, { color: theme.colors.content.inverse }]}>
-                                {editMode ? '삭제' : '완료'}
-                            </Text>
-                        </TouchableOpacity>
-                    </Animated.View>
-
-                    {/* 오른쪽으로 스와이프 시 나타나는 편집 버튼 (왼쪽에 위치) */}
-                    <Animated.View
-                        style={[
-                            styles.leftActionContainer,
-                            {
-                                backgroundColor: theme.colors.ui.secondary,
-                                transform: [
-                                    { translateX: translateX.value > 50 ? 0 : -100 }
-                                ]
-                            }
-                        ]}
-                    >
-                        <TouchableOpacity onPress={handleEditPress} style={styles.actionButton}>
-                            <Text style={[styles.actionText, { color: theme.colors.content.inverse }]}>
-                                편집
-                            </Text>
-                        </TouchableOpacity>
-                    </Animated.View>
-                </Animated.View>
+                </View>
             </GestureDetector>
         </GestureHandlerRootView>
     );
