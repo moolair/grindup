@@ -61,7 +61,11 @@ const hexToRgba = (hex: string, alpha: number): string => {
 const DragHandle = ({ isDragging, theme }: { isDragging: boolean, theme: any }) => (
     <View style={[
         styles.dragHandle,
-        isDragging && { backgroundColor: theme.colors.background.secondary }
+        {
+            backgroundColor: isDragging
+                ? theme.colors.background.secondary
+                : theme.type === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)'
+        }
     ]}>
         <View style={[styles.dragBar, { backgroundColor: theme.colors.content.secondary }]} />
         <View style={[styles.dragBar, { backgroundColor: theme.colors.content.secondary }]} />
@@ -420,7 +424,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
 
     // 제스처 결합
     const composedGestures = isDraggable
-        ? Gesture.Simultaneous(dragGesture, swipeGesture)
+        ? Gesture.Exclusive(swipeGesture)
         : Gesture.Exclusive(tapGesture, swipeGesture);
 
     // 카드 이동 애니메이션 스타일 - 오류 처리 강화
@@ -533,7 +537,9 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
                 >
                     {/* 왼쪽에 드래그 핸들 표시 (editMode가 true일 때) */}
                     {isDraggable && editMode && (
-                        <DragHandle isDragging={isDragging} theme={theme} />
+                        <GestureDetector gesture={dragGesture}>
+                            <DragHandle isDragging={isDragging} theme={theme} />
+                        </GestureDetector>
                     )}
 
                     {/* 카드 컨텐츠 */}

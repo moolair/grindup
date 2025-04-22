@@ -335,6 +335,8 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, o
             setScrollEnabled(false);
             setIsDraggingEnabled(true);
 
+            console.log('드래그 핸들러 터치됨:', taskId);
+
             // 약간 지연시켜 다른 터치 이벤트보다 우선순위 부여
             setTimeout(() => {
                 startDragging(taskId);
@@ -956,7 +958,8 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, o
         const shakeAnim = getShakeAnimation(task.id);
         const moveAnim = getTaskMoveAnimation(task.id);
         const panResponder = createPanResponder(task.id);
-        const dragResponder = createDragResponder(task.id, index);
+
+        // 핸들러용 드래그 제스처는 별도로 만들지 않고, handleDragHandlePress로 처리
 
         // 흔들리는 애니메이션 스타일
         const shakeStyle = {
@@ -1035,7 +1038,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, o
 
                 {/* 스와이프 가능한 항목 */}
                 <Animated.View
-                    {...(editMode ? dragResponder.panHandlers : panResponder.panHandlers)}
+                    {...(editMode ? null : panResponder.panHandlers)} // 수정 모드에서는 카드 body의 panResponder를 제거
                     style={[
                         styles.taskWrapper,
                         {
@@ -1068,9 +1071,8 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, o
                             task.status === 'completed' && styles.completedTask
                         ]}
                         onPress={() => !editMode && onTaskPress(task.id)}
-                        onLongPress={() => editMode ? handleDragHandlePress(task.id) : handleLongPress(task.id)}
-                        delayLongPress={300}
-                        disabled={draggingTaskId !== null}
+                        // onLongPress를 제거하여 카드를 길게 눌러도 드래그가 시작되지 않도록 함
+                        disabled={draggingTaskId !== null || editMode}
                     >
                         {editMode && (
                             <TouchableOpacity
