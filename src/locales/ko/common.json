@@ -36,7 +36,8 @@
         "continue": "계속",
         "submit": "제출",
         "refresh": "새로고침",
-        "skip": "건너뛰기"
+        "skip": "건너뛰기",
+        "done": "완료"
     },
     "common": {
         "loading": "로딩 중...",

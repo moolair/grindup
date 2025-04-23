@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Vibration, GestureResponderEvent, PanResponderGestureState, NativeSyntheticEvent } from 'react-native';
 import { useTheme } from '../../theme/ThemeProvider';
+import { useTranslation } from 'react-i18next';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -88,6 +89,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
     onDragEnd
 }) => {
     const { theme } = useTheme();
+    const { t } = useTranslation('common');
     const [isDragging, setIsDragging] = useState(false);
 
     // 분류 색상 가져오기 (각 루틴 분류마다 다른 색상)
@@ -585,7 +587,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
                                     onPress={handleEditPress}
                                 >
                                     <Text style={[styles.editButtonText, { color: theme.colors.content.inverse }]}>
-                                        편집
+                                        {t('actions.edit')}
                                     </Text>
                                 </TouchableOpacity>
                             )}
@@ -608,7 +610,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
                                 style={styles.actionButton}
                             >
                                 <Text style={[styles.actionText, { color: theme.colors.content.inverse }]}>
-                                    {editMode ? '삭제' : '완료'}
+                                    {editMode ? t('actions.delete') : t('actions.complete')}
                                 </Text>
                             </TouchableOpacity>
                         </Animated.View>
@@ -627,7 +629,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
                         >
                             <TouchableOpacity onPress={handleEditPress} style={styles.actionButton}>
                                 <Text style={[styles.actionText, { color: theme.colors.content.inverse }]}>
-                                    편집
+                                    {t('actions.edit')}
                                 </Text>
                             </TouchableOpacity>
                         </Animated.View>

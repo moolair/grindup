@@ -8,7 +8,8 @@
         "tasks": "Tasks",
         "analytics": "Analytics",
         "profile": "Profile",
-        "settings": "Settings"
+        "settings": "Settings",
+        "done": "Done"
     },
     "actions": {
         "save": "Save",
@@ -22,7 +23,8 @@
         "search": "Search",
         "filter": "Filter",
         "sort": "Sort",
-        "viewAll": "View All"
+        "viewAll": "View All",
+        "done": "Done"
     },
     "common": {
         "today": "Today",

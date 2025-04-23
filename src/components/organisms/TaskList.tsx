@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, PanResponder, Dimensions, TouchableWithoutFeedback, Image, Vibration, FlatList, Easing } from 'react-native';
 import { useTheme } from '../../theme/ThemeProvider';
 import RoutineCard from '../../components/molecules/RoutineCard';
+import { useTranslation } from 'react-i18next';
 
 interface Task {
     id: string;
@@ -31,6 +32,7 @@ const EDIT_BUTTON_WIDTH = 70; // 편집 버튼 너비
 
 const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, onTaskEdit, onReorder, headerTitle, onEditModeChange }) => {
     const { theme } = useTheme();
+    const { t } = useTranslation('common');
     const [swipedTaskId, setSwipedTaskId] = useState<string | null>(null);
     const [editMode, setEditMode] = useState(false);
     const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
@@ -1131,7 +1133,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, o
                                 setEditMode(false);
                             }}
                         >
-                            <Text style={[styles.doneButtonText, { color: theme.colors.ui.primary }]}>완료</Text>
+                            <Text style={[styles.doneButtonText, { color: theme.colors.ui.primary }]}>{t('actions.done')}</Text>
                         </TouchableOpacity>
                     ) : (
                         <TouchableOpacity
@@ -1144,7 +1146,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, o
                                 setEditMode(true);
                             }}
                         >
-                            <Text style={[styles.editButtonText, { color: theme.colors.ui.primary }]}>수정</Text>
+                            <Text style={[styles.editButtonText, { color: theme.colors.ui.primary }]}>{t('actions.edit')}</Text>
                         </TouchableOpacity>
                     )}
                 </View>
