@@ -9,7 +9,15 @@ import AnalyticsScreen from '../screens/Analytics/AnalyticsScreen';
 import ProfileScreen from '../screens/Profile/ProfileScreen';
 import SettingsScreen from '../screens/Settings/SettingsScreen';
 
-const Tab = createBottomTabNavigator();
+// 탭 네비게이터 파라미터 타입 정의
+export type TabParamList = {
+  Dashboard: { dashboardColor?: string };
+  Analytics: { analyticsColor?: string };
+  Profile: { profileColor?: string };
+  Settings: { settingsColor?: string };
+};
+
+const Tab = createBottomTabNavigator<TabParamList>();
 
 const TabNavigator = () => {
   const { theme } = useTheme();
@@ -83,7 +91,7 @@ const TabNavigator = () => {
   );
 };
 
-// 사용하지 않는 styles 삭제
+// 스타일 정의 (빈 객체로 유지)
 const styles = StyleSheet.create({});
 
 export default TabNavigator; 

@@ -304,6 +304,7 @@ export const createDefaultRoutines = async (): Promise<void> => {
                 description: '30분 간단한 스트레칭',
                 completed: false,
                 category: '건강',
+                color: '#00B894', // success 색상 명시적 지정
                 order: 0
             },
             {
@@ -311,13 +312,15 @@ export const createDefaultRoutines = async (): Promise<void> => {
                 description: '오늘의 중요 작업 3가지 선정',
                 completed: false,
                 category: '업무',
+                color: '#3366FF', // primary 색상 명시적 지정
                 order: 1
             },
             {
                 title: '하루 일기 쓰기',
                 description: '오늘 있었던 일과 감정 기록',
                 completed: false,
-                category: '개인',
+                category: '업무', // '개인'에서 '업무'로 변경
+                color: '#3366FF', // primary 색상 명시적 지정
                 order: 2
             }
         ];
