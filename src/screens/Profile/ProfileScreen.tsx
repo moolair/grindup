@@ -20,6 +20,16 @@ const ProfileScreen = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isUpdatingName, setIsUpdatingName] = useState(false);
 
+  // 사용자의 인증 방식 확인 (이메일/비밀번호 또는 소셜 로그인)
+  const isPasswordAuthProvider = user?.providerData?.some(
+    provider => provider.providerId === 'password'
+  );
+
+  // 소셜 로그인 여부 확인 (Google, Apple)
+  const isSocialAuthProvider = user?.providerData?.some(
+    provider => provider.providerId === 'google.com' || provider.providerId === 'apple.com'
+  );
+
   const handleChangeName = async () => {
     if (!newName.trim()) {
       Alert.alert('오류', '이름을 입력해주세요.');
@@ -106,12 +116,17 @@ const ProfileScreen = () => {
         >
           <Text style={[styles.menuText, { color: theme.colors.content.primary }]}>{t('menu.changeName')}</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.menuItem, { borderBottomColor: theme.colors.border.light }]}
-          onPress={() => setPasswordModalVisible(true)}
-        >
-          <Text style={[styles.menuText, { color: theme.colors.content.primary }]}>{t('menu.changePassword')}</Text>
-        </TouchableOpacity>
+
+        {/* 이메일/비밀번호 사용자에게만 비밀번호 변경 옵션 표시 */}
+        {isPasswordAuthProvider && !isSocialAuthProvider && (
+          <TouchableOpacity
+            style={[styles.menuItem, { borderBottomColor: theme.colors.border.light }]}
+            onPress={() => setPasswordModalVisible(true)}
+          >
+            <Text style={[styles.menuText, { color: theme.colors.content.primary }]}>{t('menu.changePassword')}</Text>
+          </TouchableOpacity>
+        )}
+
         <TouchableOpacity
           style={[styles.menuItem, styles.logoutItem, { borderBottomColor: theme.colors.border.light }]}
           onPress={handleLogout}
@@ -163,57 +178,59 @@ const ProfileScreen = () => {
         </View>
       </Modal>
 
-      {/* Change Password Modal */}
-      <Modal
-        visible={isPasswordModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setPasswordModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <Text style={[styles.modalTitle, { color: theme.colors.content.primary }]}>{t('modal.changePassword.title')}</Text>
-            <TextInput
-              style={styles.input}
-              value={currentPassword}
-              onChangeText={setCurrentPassword}
-              placeholder={t('modal.changePassword.currentPassword')}
-              placeholderTextColor={theme.colors.content.tertiary}
-              secureTextEntry
-            />
-            <TextInput
-              style={styles.input}
-              value={newPassword}
-              onChangeText={setNewPassword}
-              placeholder={t('modal.changePassword.newPassword')}
-              placeholderTextColor={theme.colors.content.tertiary}
-              secureTextEntry
-            />
-            <TextInput
-              style={styles.input}
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              placeholder={t('modal.changePassword.confirmPassword')}
-              placeholderTextColor={theme.colors.content.tertiary}
-              secureTextEntry
-            />
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setPasswordModalVisible(false)}
-              >
-                <Text style={{ color: theme.colors.content.secondary }}>{t('modal.changePassword.cancel')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.saveButton, { backgroundColor: theme.colors.ui.primary }]}
-                onPress={handleChangePassword}
-              >
-                <Text style={{ color: theme.colors.content.inverse }}>{t('modal.changePassword.save')}</Text>
-              </TouchableOpacity>
+      {/* Change Password Modal - 이메일/비밀번호 사용자에게만 표시 */}
+      {isPasswordAuthProvider && !isSocialAuthProvider && (
+        <Modal
+          visible={isPasswordModalVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setPasswordModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <Text style={[styles.modalTitle, { color: theme.colors.content.primary }]}>{t('modal.changePassword.title')}</Text>
+              <TextInput
+                style={styles.input}
+                value={currentPassword}
+                onChangeText={setCurrentPassword}
+                placeholder={t('modal.changePassword.currentPassword')}
+                placeholderTextColor={theme.colors.content.tertiary}
+                secureTextEntry
+              />
+              <TextInput
+                style={styles.input}
+                value={newPassword}
+                onChangeText={setNewPassword}
+                placeholder={t('modal.changePassword.newPassword')}
+                placeholderTextColor={theme.colors.content.tertiary}
+                secureTextEntry
+              />
+              <TextInput
+                style={styles.input}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                placeholder={t('modal.changePassword.confirmPassword')}
+                placeholderTextColor={theme.colors.content.tertiary}
+                secureTextEntry
+              />
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.cancelButton]}
+                  onPress={() => setPasswordModalVisible(false)}
+                >
+                  <Text style={{ color: theme.colors.content.secondary }}>{t('modal.changePassword.cancel')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.saveButton, { backgroundColor: theme.colors.ui.primary }]}
+                  onPress={handleChangePassword}
+                >
+                  <Text style={{ color: theme.colors.content.inverse }}>{t('modal.changePassword.save')}</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 };
