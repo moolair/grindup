@@ -11,6 +11,7 @@ import useTranslation from '../../hooks/useTranslation';
 import { useAuth } from '../../context/AuthContext';
 import * as routineService from '../../services/routineService';
 import { Routine } from '../../services/routineService';
+import i18n from '../../i18n';
 
 // 타입 정의
 type DashboardScreenNavigationProp = StackNavigationProp<RootStackParamList>;
@@ -35,7 +36,7 @@ const DashboardScreen = () => {
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [routineTasks, setRoutineTasks] = useState<Task[]>([]);
   const [refreshing, setRefreshing] = useState(false);
-  const { t } = useTranslation('dashboard');
+  const { t, i18n } = useTranslation('dashboard');
   const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const contributionGraphRef = useRef<ContributionGraphHandle>(null);
@@ -380,7 +381,10 @@ const DashboardScreen = () => {
   // 그렇지 않으면 기본 "안녕하세요," 인사말 사용
   const getGreeting = () => {
     if (user?.displayName) {
-      return `${t('greeting')} ${user.displayName}님!`;
+      // 언어가 한국어인 경우에만 '님' 추가
+      const isKorean = i18n.language === 'ko';
+      const suffix = isKorean ? '님' : '';
+      return `${t('greeting')} ${user.displayName}${suffix}!`;
     }
     return `${t('greeting')}`;
   };
