@@ -1101,8 +1101,8 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, o
                                 style={[
                                     styles.taskTitle,
                                     task.status === 'completed'
-                                        ? [styles.completedText, { color: theme.colors.content.tertiary }]
-                                        : { color: '#FFFFFF' }
+                                        ? [styles.completedText, { color: theme.colors.content.primary }]
+                                        : { color: theme.colors.content.primary }
                                 ]}
                                 numberOfLines={1}
                             >
@@ -1395,6 +1395,11 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0, 0, 0, 0.05)',
         borderWidth: 1,
         borderColor: 'rgba(0, 0, 0, 0.1)',
+    },
+    shadowText: {
+        textShadowColor: 'rgba(0, 0, 0, 0.75)',
+        textShadowOffset: { width: 0.5, height: 0.5 },
+        textShadowRadius: 1,
     },
 });
 

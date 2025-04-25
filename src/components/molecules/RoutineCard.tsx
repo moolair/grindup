@@ -554,9 +554,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
                                     style={[
                                         styles.title,
                                         {
-                                            color: routine.status === 'completed'
-                                                ? theme.colors.content.inverse  // 완료 시 텍스트 색상 (배경이 진해지므로 반전색)
-                                                : theme.type === 'dark' ? '#FFFFFF' : '#000000', // 다크 모드에 따른 텍스트 색상
+                                            color: theme.colors.content.primary  // 완료/미완료 모두 어두운색 텍스트
                                         }
                                     ]}
                                     numberOfLines={1}
@@ -568,9 +566,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({
                                         style={[
                                             styles.description,
                                             {
-                                                color: routine.status === 'completed'
-                                                    ? theme.colors.content.inverse  // 완료 시 텍스트 색상 (배경이 진해지므로 반전색)
-                                                    : theme.type === 'dark' ? '#FFFFFF' : '#000000', // 다크 모드에 따른 텍스트 색상
+                                                color: theme.colors.content.primary  // 완료/미완료 모두 어두운색 텍스트
                                             }
                                         ]}
                                         numberOfLines={1}
@@ -735,6 +731,11 @@ const styles = StyleSheet.create({
     editButtonText: {
         fontSize: 12,
         fontWeight: 'bold',
+    },
+    shadowText: {
+        textShadowColor: 'rgba(0, 0, 0, 0.75)',
+        textShadowOffset: { width: 0.5, height: 0.5 },
+        textShadowRadius: 1,
     },
 });
 
