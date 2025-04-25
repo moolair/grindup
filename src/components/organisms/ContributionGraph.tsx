@@ -415,7 +415,10 @@ const ContributionGraph = forwardRef<ContributionGraphHandle, ContributionGraphP
                             scrollEventThrottle={16}
                             onScroll={handleMonthScroll}
                             style={styles.monthScrollView}
-                            contentContainerStyle={{ width: totalGraphWidth }}
+                            contentContainerStyle={{
+                                width: totalGraphWidth,
+                                paddingLeft: 0 // 패딩 조정
+                            }}
                         >
                             {monthLabels.map((item, index) => (
                                 <Text
@@ -504,6 +507,7 @@ const styles = StyleSheet.create({
     },
     graphLayout: {
         flexDirection: 'row',
+        alignItems: 'flex-start', // 요소들을 상단에 정렬
     },
     labelColumn: {
         width: DAY_LABEL_WIDTH,
