@@ -3,6 +3,12 @@ import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
 import { removeCompletionData, updateContributionLevel } from './firebase/contributions';
 
+export interface DayOption {
+    id: string;
+    label: string;
+    selected: boolean;
+}
+
 export interface Routine {
     id: string;
     title: string;
@@ -11,12 +17,24 @@ export interface Routine {
     category?: string;
     color?: string;
     order: number;
+    days?: DayOption[];
     createdAt: string; // ISO date string
     lastResetAt: string; // ISO date string (last time routines were reset)
 }
 
-const STORAGE_KEY = 'app_routines';
-const LAST_RESET_KEY = 'routines_last_reset';
+// 사용자별 저장소 키 생성
+const getUserStorageKey = (): string => {
+    const user = auth().currentUser;
+    const userId = user ? user.uid : 'default';
+    return `app_routines_${userId}`;
+};
+
+// 사용자별 리셋 키 생성
+const getUserResetKey = (): string => {
+    const user = auth().currentUser;
+    const userId = user ? user.uid : 'default';
+    return `routines_last_reset_${userId}`;
+};
 
 // 오늘 자정의 시간을 얻는 함수
 export const getMidnightTonight = (): Date => {
@@ -37,7 +55,7 @@ export const getMidnightToday = (): Date => {
 // 루틴 리셋이 필요한지 체크
 export const shouldResetRoutines = async (): Promise<boolean> => {
     try {
-        const lastResetStr = await AsyncStorage.getItem(LAST_RESET_KEY);
+        const lastResetStr = await AsyncStorage.getItem(getUserResetKey());
         if (!lastResetStr) return true;
 
         const lastReset = new Date(lastResetStr);
@@ -105,8 +123,8 @@ export const resetRoutines = async (): Promise<void> => {
             lastResetAt: new Date().toISOString()
         }));
 
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(resetRoutines));
-        await AsyncStorage.setItem(LAST_RESET_KEY, new Date().toISOString());
+        await AsyncStorage.setItem(getUserStorageKey(), JSON.stringify(resetRoutines));
+        await AsyncStorage.setItem(getUserResetKey(), new Date().toISOString());
 
         console.log('루틴 리셋 완료:', new Date().toISOString());
 
@@ -120,7 +138,7 @@ export const resetRoutines = async (): Promise<void> => {
 // 모든 루틴 가져오기
 export const getRoutines = async (): Promise<Routine[]> => {
     try {
-        const data = await AsyncStorage.getItem(STORAGE_KEY);
+        const data = await AsyncStorage.getItem(getUserStorageKey());
         return data ? JSON.parse(data) : [];
     } catch (error) {
         console.error('루틴 조회 중 오류:', error);
@@ -141,7 +159,7 @@ export const addRoutine = async (routine: Omit<Routine, 'id' | 'createdAt' | 'la
         };
 
         const updatedRoutines = [...routines, newRoutine];
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedRoutines));
+        await AsyncStorage.setItem(getUserStorageKey(), JSON.stringify(updatedRoutines));
 
         return newRoutine;
     } catch (error) {
@@ -161,7 +179,7 @@ export const updateRoutine = async (id: string, updates: Partial<Routine>): Prom
         const updatedRoutine = { ...routines[index], ...updates };
         routines[index] = updatedRoutine;
 
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(routines));
+        await AsyncStorage.setItem(getUserStorageKey(), JSON.stringify(routines));
 
         // 업데이트 이벤트 알림
         notifyRoutineStateChange('update');
@@ -199,23 +217,29 @@ export const toggleRoutineCompletion = async (id: string): Promise<Routine | nul
 
         // 상태 변경 적용
         routines[index] = updatedRoutine;
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(routines));
+        await AsyncStorage.setItem(getUserStorageKey(), JSON.stringify(routines));
         console.log(`루틴 상태 저장 완료: ${updatedRoutine.completed}`);
 
-        // Firebase 데이터 처리
-        if (newState) {
-            // 완료로 변경된 경우 - Firebase에 데이터 추가
-            console.log('Firebase에 완료 데이터 추가 시작');
-            await updateFirebaseContribution();
-        } else {
-            // 미완료로 변경된 경우 - Firebase에서 데이터 삭제
-            console.log('Firebase에서 완료 데이터 삭제 시작');
-            const today = new Date();
-            await removeCompletionData(id, today);
-        }
-
-        // 완료 상태 변경 이벤트 알림
+        // 완료 상태 변경 이벤트 알림 (로컬 상태 업데이트는 완료됨)
         notifyRoutineStateChange('complete');
+
+        // Firebase 데이터 처리 (별도 try-catch로 감싸서 실패해도 루틴 상태 업데이트는 유지)
+        try {
+            if (newState) {
+                // 완료로 변경된 경우 - Firebase에 데이터 추가
+                console.log('Firebase에 완료 데이터 추가 시작');
+                await updateFirebaseContribution();
+            } else {
+                // 미완료로 변경된 경우 - Firebase에서 데이터 삭제
+                console.log('Firebase에서 완료 데이터 삭제 시작');
+                const today = new Date();
+                const result = await removeCompletionData(id, today);
+                console.log('Firebase 데이터 삭제 결과:', result ? '성공' : '실패');
+            }
+        } catch (firebaseError) {
+            // Firebase 관련 오류는 로그만 남기고 루틴 상태 업데이트에는 영향을 주지 않음
+            console.error('Firebase 데이터 처리 중 오류 (루틴 상태는 정상 업데이트됨):', firebaseError);
+        }
 
         return updatedRoutine;
     } catch (error) {
@@ -252,7 +276,7 @@ const updateFirebaseContribution = async (): Promise<void> => {
         const taskDocData = {
             userId: user.uid,
             status: 'completed',
-            completedAt: new Date(),
+            completedAt: firestore.FieldValue.serverTimestamp(),
             title: '루틴 완료',
             type: 'routine',
             dateString: todayFormatted
@@ -282,7 +306,7 @@ export const deleteRoutine = async (id: string): Promise<boolean> => {
         const routines = await getRoutines();
         const updatedRoutines = routines.filter(r => r.id !== id);
 
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedRoutines));
+        await AsyncStorage.setItem(getUserStorageKey(), JSON.stringify(updatedRoutines));
         return true;
     } catch (error) {
         console.error('루틴 삭제 중 오류:', error);

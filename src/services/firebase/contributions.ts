@@ -155,9 +155,6 @@ export const getWeeklyContributions = async (weeks: number = 8): Promise<{ date:
 /**
  * 루틴 완료 상태가 변경될 때 Firebase의 기존 데이터를 삭제합니다.
  * 이렇게 하면 완료 → 미완료로 변경 시 기여 그래프에서 삭제됩니다.
- * 
- * Note: Firebase v22에서는 batch() 대신 writeBatch()를 사용해야 합니다.
- * 현재 버전에서는 batch()를 사용하되, v22로 업그레이드 시 writeBatch()로 변경해야 합니다.
  */
 export const removeCompletionData = async (routineId: string, date: Date): Promise<boolean> => {
     try {
@@ -194,36 +191,53 @@ export const removeCompletionData = async (routineId: string, date: Date): Promi
             // 문서가 없으면 처리 필요 없음
             if (querySnapshot.empty) {
                 console.log('삭제할 문서가 없습니다.');
-                return false;
+                return true; // 삭제할 문서가 없는 경우도 성공으로 처리
             }
 
-            // 문서가 있으면 삭제 (v21에서는 batch, v22에서는 writeBatch 사용)
-            // Firebase v22로 업그레이드 시 아래 줄을 교체:
-            // const batch = firestore().writeBatch();
-            const batch = firestore().batch();
+            // 문서가 있으면 삭제
+            const writeBatch = firestore().batch();
             let count = 0;
 
             querySnapshot.forEach((doc) => {
                 console.log(`삭제할 문서 ID: ${doc.id}`);
-                batch.delete(doc.ref);
+                writeBatch.delete(doc.ref);
                 count++;
             });
 
             // 일괄 삭제 실행
-            await batch.commit();
+            await writeBatch.commit();
             console.log(`${count}개의 문서 삭제 완료`);
 
             // 문서 삭제 후 기여도 레벨 업데이트
-            await updateContributionLevel(date);
-            console.log('기여도 레벨 업데이트 완료');
+            try {
+                await updateContributionLevel(date);
+                console.log('기여도 레벨 업데이트 완료');
+            } catch (levelError) {
+                // 기여도 레벨 업데이트 실패는 문서 삭제에 영향을 주지 않음
+                console.error('기여도 레벨 업데이트 실패:', levelError);
+            }
 
             return true;
-        } catch (error) {
-            console.error('문서 삭제 중 오류:', error);
+        } catch (queryError) {
+            console.error('Firebase 문서 쿼리/삭제 중 오류:', queryError);
+
+            // 오류 정보 자세히 로깅
+            if (queryError instanceof Error) {
+                console.error('오류 메시지:', queryError.message);
+                console.error('오류 스택:', queryError.stack);
+            }
+
             return false;
         }
     } catch (error) {
         console.error('루틴 완료 데이터 삭제 중 오류:', error);
+
+        // 오류 정보 자세히 로깅
+        if (error instanceof Error) {
+            console.error('오류 메시지:', error.message);
+            console.error('오류 스택:', error.stack);
+        }
+
         return false;
     }
 };
@@ -248,50 +262,69 @@ export const updateContributionLevel = async (date: Date = new Date()): Promise<
         console.log(`날짜 ${dateString}의 기여도 레벨 업데이트 시작`);
 
         // 해당 날짜의 완료된 작업 수 가져오기
-        const completedCount = await getContributionsForDate(date);
-        console.log(`완료된 작업 수: ${completedCount}`);
+        let completedCount = 0;
+        try {
+            completedCount = await getContributionsForDate(date);
+            console.log(`완료된 작업 수: ${completedCount}`);
+        } catch (countError) {
+            console.error('완료된 작업 수 조회 중 오류:', countError);
+            // 오류 발생 시 기본값 사용
+        }
 
         // 레벨 계산 (0: 없음, 1-4: 완료 개수에 따른 색상 강도)
         let level = 0;
         if (completedCount === 1) level = 1;
         else if (completedCount <= 3) level = 2;
         else if (completedCount <= 6) level = 3;
-        else level = 4;
+        else if (completedCount > 6) level = 4;
 
         console.log(`계산된 색상 레벨: ${level}`);
 
-        // userContributions/{userId}/dates/{dateString} 문서 업데이트 또는 생성
-        const userContribRef = firestore()
-            .collection('userContributions')
-            .doc(user.uid)
-            .collection('dates')
-            .doc(dateString);
+        try {
+            // userContributions/{userId}/dates/{dateString} 문서 업데이트 또는 생성
+            const userContribRef = firestore()
+                .collection('userContributions')
+                .doc(user.uid)
+                .collection('dates')
+                .doc(dateString);
 
-        // 문서 존재 여부 확인
-        const docSnapshot = await userContribRef.get();
+            // 문서 존재 여부 확인
+            const docSnapshot = await userContribRef.get();
 
-        if (docSnapshot.exists) {
-            // 기존 문서 업데이트
-            await userContribRef.update({
-                count: completedCount,
-                level: level,
-                lastUpdated: firestore.FieldValue.serverTimestamp()
-            });
-            console.log(`기존 기여도 문서 업데이트 완료`);
-        } else {
-            // 새 문서 생성
-            await userContribRef.set({
-                count: completedCount,
-                level: level,
-                date: dateString,
-                lastUpdated: firestore.FieldValue.serverTimestamp()
-            });
-            console.log(`새 기여도 문서 생성 완료`);
+            if (docSnapshot.exists) {
+                // 기존 문서 업데이트
+                await userContribRef.update({
+                    count: completedCount,
+                    level: level,
+                    lastUpdated: firestore.FieldValue.serverTimestamp()
+                });
+                console.log(`기존 기여도 문서 업데이트 완료`);
+            } else {
+                // 새 문서 생성
+                await userContribRef.set({
+                    count: completedCount,
+                    level: level,
+                    date: dateString,
+                    lastUpdated: firestore.FieldValue.serverTimestamp()
+                });
+                console.log(`새 기여도 문서 생성 완료`);
+            }
+        } catch (firestoreError) {
+            console.error('Firestore 문서 업데이트/생성 중 오류:', firestoreError);
+            if (firestoreError instanceof Error) {
+                console.error('오류 메시지:', firestoreError.message);
+                console.error('오류 스택:', firestoreError.stack);
+            }
+            return false;
         }
 
         return true;
     } catch (error) {
         console.error('기여도 레벨 업데이트 중 오류:', error);
+        if (error instanceof Error) {
+            console.error('오류 메시지:', error.message);
+            console.error('오류 스택:', error.stack);
+        }
         return false;
     }
 };

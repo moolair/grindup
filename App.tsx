@@ -20,6 +20,13 @@ import i18next, { initI18n } from './src/i18n';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { I18nextProvider } from 'react-i18next';
 import { AuthProvider } from './src/context/AuthContext';
+import { LogBox } from 'react-native';
+
+// 특정 경고 무시
+LogBox.ignoreLogs([
+  '{}',  // 빈 객체 관련 경고 무시
+  "[Reanimated] Trying to access the 'value' property"  // Reanimated 경고 무시
+]);
 
 function App(): React.JSX.Element {
   // 앱 초기화 효과

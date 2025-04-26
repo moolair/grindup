@@ -14,7 +14,17 @@ import { AppRegistry, LogBox } from 'react-native';
 import App from './App';
 import { name as appName } from './app.json';
 
-// Fabric 관련 경고 무시
-LogBox.ignoreLogs(['Sending `onAnimatedValueUpdate` with no listeners registered']);
+// 경고 무시
+LogBox.ignoreLogs([
+    'Sending `onAnimatedValueUpdate` with no listeners registered',
+    // Firebase 관련 경고 무시
+    'deprecated property provided will be removed in the next major release',
+    'AsyncStorage has been extracted from react-native core',
+    'Method "batch" is deprecated',
+    // Reanimated 관련 경고 무시
+    "[Reanimated] Trying to access the 'value' property",
+    // 탭 제스처 오류 무시
+    "{}"
+]);
 
 AppRegistry.registerComponent(appName, () => App);
