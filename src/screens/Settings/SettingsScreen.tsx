@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, Switch, TouchableOpacity, ScrollView, Modal, Button } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useTheme } from '../../theme/ThemeProvider';
@@ -6,6 +6,10 @@ import { useNavigation, NavigationProp, ParamListBase, CommonActions } from '@re
 import useTranslation from '../../hooks/useTranslation';
 import { PlusIcon, ChevronRightIcon } from '../../components/Icons';
 import { Platform } from 'react-native';
+// 필요한 타입만 import
+import { NotificationType } from '../../services/notificationService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import PushNotificationIOS from '@react-native-community/push-notification-ios';
 
 // Android에서만 DateTimePicker를 사용
 let DateTimePicker: any = null;
@@ -37,6 +41,60 @@ const SettingsScreen = () => {
   const [tempEndMinute, setTempEndMinute] = useState('00');
   const [tempEndAmPm, setTempEndAmPm] = useState('PM');
 
+  // 컴포넌트 마운트 시 알림 설정 로드
+  useEffect(() => {
+    const loadNotificationSettings = async () => {
+      try {
+        console.log('알림 설정 로드 시작');
+
+        // 기본 설정값 직접 설정
+        setRoutineStartReminder(true);
+        setRoutineEndReminder(true);
+
+        // 시간 기본값 설정
+        const defaultStartTime = new Date();
+        defaultStartTime.setHours(8, 0, 0, 0);
+        setRoutineStartTime(defaultStartTime);
+
+        const defaultEndTime = new Date();
+        defaultEndTime.setHours(21, 0, 0, 0);
+        setRoutineEndTime(defaultEndTime);
+
+        // 이후 비동기적으로 설정 시도
+        try {
+          // 알림 설정 불러오기
+          const settingsJson = await AsyncStorage.getItem('notification_settings');
+          if (settingsJson) {
+            const settings = JSON.parse(settingsJson);
+            setRoutineStartReminder(settings.routineStartReminder ?? true);
+            setRoutineEndReminder(settings.routineEndReminder ?? true);
+          }
+
+          // 알림 시간 불러오기
+          const timesJson = await AsyncStorage.getItem('notification_times');
+          if (timesJson) {
+            const times = JSON.parse(timesJson);
+            if (times[NotificationType.ROUTINE_START]) {
+              setRoutineStartTime(new Date(times[NotificationType.ROUTINE_START]));
+            }
+            if (times[NotificationType.ROUTINE_END]) {
+              setRoutineEndTime(new Date(times[NotificationType.ROUTINE_END]));
+            }
+          }
+        } catch (innerError) {
+          console.error('알림 설정 상세 로드 오류:', innerError);
+          // 기본값은 이미 설정되어 있으므로 오류가 발생해도 계속 진행
+        }
+
+        console.log('알림 설정 로드 완료');
+      } catch (error) {
+        console.error('알림 설정 로드 오류:', error);
+      }
+    };
+
+    loadNotificationSettings();
+  }, []);
+
   const navigateToLanguageSettings = () => {
     navigation.dispatch(
       CommonActions.navigate({
@@ -45,17 +103,47 @@ const SettingsScreen = () => {
     );
   };
 
-  const onStartTimeChange = (event: any, selectedDate?: Date) => {
+  const onStartTimeChange = async (event: any, selectedDate?: Date) => {
     setShowStartTimePicker(false); // 항상 피커를 닫습니다
     if (selectedDate) {
       setRoutineStartTime(selectedDate);
+      // 알림 시간 저장
+      try {
+        // 기존 시간 불러오기
+        const timesJson = await AsyncStorage.getItem('notification_times');
+        const times = timesJson ? JSON.parse(timesJson) : {};
+
+        // 새 시간 저장
+        times[NotificationType.ROUTINE_START] = selectedDate.toISOString();
+        await AsyncStorage.setItem('notification_times', JSON.stringify(times));
+        console.log('시작 알림 시간 저장됨:', selectedDate);
+
+        // 실제 알림 스케줄링은 로직 단순화를 위해 생략 (앱 재시작시 적용)
+      } catch (error) {
+        console.error('시작 알림 시간 저장 오류:', error);
+      }
     }
   };
 
-  const onEndTimeChange = (event: any, selectedDate?: Date) => {
+  const onEndTimeChange = async (event: any, selectedDate?: Date) => {
     setShowEndTimePicker(false); // 항상 피커를 닫습니다
     if (selectedDate) {
       setRoutineEndTime(selectedDate);
+      // 알림 시간 저장
+      try {
+        // 기존 시간 불러오기
+        const timesJson = await AsyncStorage.getItem('notification_times');
+        const times = timesJson ? JSON.parse(timesJson) : {};
+
+        // 새 시간 저장
+        times[NotificationType.ROUTINE_END] = selectedDate.toISOString();
+        await AsyncStorage.setItem('notification_times', JSON.stringify(times));
+        console.log('미완료 알림 시간 저장됨:', selectedDate);
+
+        // 실제 알림 스케줄링은 로직 단순화를 위해 생략 (앱 재시작시 적용)
+      } catch (error) {
+        console.error('미완료 알림 시간 저장 오류:', error);
+      }
     }
   };
 
@@ -87,7 +175,7 @@ const SettingsScreen = () => {
     setShowEndTimePicker(true);
   };
 
-  const saveStartTime = () => {
+  const saveStartTime = async () => {
     // 시작 시간 저장 (iOS)
     let hours = parseInt(tempHour);
     if (tempAmPm === 'PM' && hours < 12) {
@@ -102,9 +190,23 @@ const SettingsScreen = () => {
 
     setRoutineStartTime(newDate);
     setShowStartTimePicker(false);
+
+    // 알림 시간 저장
+    try {
+      // 기존 시간 불러오기
+      const timesJson = await AsyncStorage.getItem('notification_times');
+      const times = timesJson ? JSON.parse(timesJson) : {};
+
+      // 새 시간 저장
+      times[NotificationType.ROUTINE_START] = newDate.toISOString();
+      await AsyncStorage.setItem('notification_times', JSON.stringify(times));
+      console.log('시작 알림 시간 저장됨:', newDate);
+    } catch (error) {
+      console.error('시작 알림 시간 저장 오류:', error);
+    }
   };
 
-  const saveEndTime = () => {
+  const saveEndTime = async () => {
     // 종료 시간 저장 (iOS)
     let hours = parseInt(tempEndHour);
     if (tempEndAmPm === 'PM' && hours < 12) {
@@ -119,6 +221,56 @@ const SettingsScreen = () => {
 
     setRoutineEndTime(newDate);
     setShowEndTimePicker(false);
+
+    // 알림 시간 저장
+    try {
+      // 기존 시간 불러오기
+      const timesJson = await AsyncStorage.getItem('notification_times');
+      const times = timesJson ? JSON.parse(timesJson) : {};
+
+      // 새 시간 저장
+      times[NotificationType.ROUTINE_END] = newDate.toISOString();
+      await AsyncStorage.setItem('notification_times', JSON.stringify(times));
+      console.log('미완료 알림 시간 저장됨:', newDate);
+    } catch (error) {
+      console.error('미완료 알림 시간 저장 오류:', error);
+    }
+  };
+
+  const handleRoutineStartReminderToggle = async (value: boolean) => {
+    setRoutineStartReminder(value);
+    try {
+      // 설정 저장
+      const settingsJson = await AsyncStorage.getItem('notification_settings');
+      const settings = settingsJson ? JSON.parse(settingsJson) : {
+        routineStartReminder: true,
+        routineEndReminder: true
+      };
+
+      settings.routineStartReminder = value;
+      await AsyncStorage.setItem('notification_settings', JSON.stringify(settings));
+      console.log('시작 알림 설정 저장됨:', value);
+    } catch (error) {
+      console.error('알림 설정 저장 오류:', error);
+    }
+  };
+
+  const handleRoutineEndReminderToggle = async (value: boolean) => {
+    setRoutineEndReminder(value);
+    try {
+      // 설정 저장
+      const settingsJson = await AsyncStorage.getItem('notification_settings');
+      const settings = settingsJson ? JSON.parse(settingsJson) : {
+        routineStartReminder: true,
+        routineEndReminder: true
+      };
+
+      settings.routineEndReminder = value;
+      await AsyncStorage.setItem('notification_settings', JSON.stringify(settings));
+      console.log('미완료 알림 설정 저장됨:', value);
+    } catch (error) {
+      console.error('알림 설정 저장 오류:', error);
+    }
   };
 
   const formatTime = (date: Date) => {
@@ -152,7 +304,7 @@ const SettingsScreen = () => {
             <Text style={[styles.settingLabel, { color: theme.colors.content.primary }]}>{t('notifications.routine.startReminder')}</Text>
             <Switch
               value={routineStartReminder}
-              onValueChange={setRoutineStartReminder}
+              onValueChange={handleRoutineStartReminderToggle}
               trackColor={{ false: theme.colors.content.disabled, true: theme.colors.ui.primary }}
               thumbColor={routineStartReminder ? theme.colors.content.inverse : '#f4f3f4'}
             />
@@ -177,7 +329,7 @@ const SettingsScreen = () => {
             <Text style={[styles.settingLabel, { color: theme.colors.content.primary }]}>{t('notifications.routine.endReminder')}</Text>
             <Switch
               value={routineEndReminder}
-              onValueChange={setRoutineEndReminder}
+              onValueChange={handleRoutineEndReminderToggle}
               trackColor={{ false: theme.colors.content.disabled, true: theme.colors.ui.primary }}
               thumbColor={routineEndReminder ? theme.colors.content.inverse : '#f4f3f4'}
             />
@@ -233,6 +385,39 @@ const SettingsScreen = () => {
               thumbColor={soundEnabled ? theme.colors.content.inverse : '#f4f3f4'}
             />
           </View>
+
+          {/* 알림 테스트 버튼 */}
+          <TouchableOpacity
+            style={[styles.testButton, { backgroundColor: theme.colors.ui.primary }]}
+            onPress={() => {
+              // 간단한 로컬 알림 테스트
+              try {
+                console.log("로컬 알림 테스트 시작");
+
+                // 3초 후에 알림 발송
+                setTimeout(() => {
+                  if (Platform.OS === 'ios') {
+                    PushNotificationIOS.presentLocalNotification({
+                      alertTitle: '알림 테스트',
+                      alertBody: '알림이 정상적으로 작동하고 있습니다.',
+                      soundName: 'default',
+                    });
+                  } else {
+                    // Android 알림 (필요한 경우 구현)
+                    console.log("Android 알림 테스트 - 구현 필요");
+                  }
+                }, 3000);
+
+                console.log("알림 테스트 요청 완료 - 3초 후 알림이 표시됩니다.");
+              } catch (error) {
+                console.error("알림 테스트 오류:", error);
+              }
+            }}
+          >
+            <Text style={[styles.testButtonText, { color: theme.colors.content.inverse }]}>
+              알림 테스트
+            </Text>
+          </TouchableOpacity>
         </View>
 
         <View style={[styles.section, { borderBottomColor: theme.colors.border.light }]}>
@@ -547,7 +732,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 8,
     fontWeight: '500',
-  }
+  },
+  testButton: {
+    marginTop: 16,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  testButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
 });
 
 export default SettingsScreen; 

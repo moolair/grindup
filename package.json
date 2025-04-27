@@ -13,6 +13,7 @@
     "@invertase/react-native-apple-authentication": "^2.4.1",
     "@react-native-async-storage/async-storage": "^2.1.2",
     "@react-native-community/datetimepicker": "^8.3.0",
+    "@react-native-community/push-notification-ios": "^1.11.0",
     "@react-native-firebase/analytics": "^21.14.0",
     "@react-native-firebase/app": "^21.14.0",
     "@react-native-firebase/auth": "^21.14.0",
@@ -32,12 +33,14 @@
     "react-native-gesture-handler": "^2.24.0",
     "react-native-localize": "^3.4.1",
     "react-native-paper": "^5.13.1",
+    "react-native-push-notification": "^8.1.1",
     "react-native-reanimated": "^3.17.3",
     "react-native-safe-area-context": "^5.4.0",
     "react-native-screens": "^4.10.0",
     "react-native-splash-screen": "^3.3.0",
     "react-native-svg": "^15.11.2",
-    "react-native-vector-icons": "^10.2.0"
+    "react-native-vector-icons": "^10.2.0",
+    "strict-event-emitter": "^0.5.1"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
@@ -52,6 +55,7 @@
     "@react-native/typescript-config": "0.78.1",
     "@types/jest": "^29.5.13",
     "@types/react": "^19.0.0",
+    "@types/react-native-push-notification": "^8.1.4",
     "@types/react-native-vector-icons": "^6.4.18",
     "@types/react-test-renderer": "^19.0.0",
     "eslint": "^8.19.0",

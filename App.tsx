@@ -21,12 +21,58 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { I18nextProvider } from 'react-i18next';
 import { AuthProvider } from './src/context/AuthContext';
 import { LogBox } from 'react-native';
+import { Platform } from 'react-native';
+// 알림 라이브러리 직접 사용
+import PushNotification from 'react-native-push-notification';
+import PushNotificationIOS from '@react-native-community/push-notification-ios';
 
 // 특정 경고 무시
 LogBox.ignoreLogs([
   '{}',  // 빈 객체 관련 경고 무시
   "[Reanimated] Trying to access the 'value' property"  // Reanimated 경고 무시
 ]);
+
+// 알림 초기 설정 함수
+const setupNotifications = () => {
+  try {
+    // PushNotification 설정
+    PushNotification.configure({
+      onRegister: function (token) {
+        console.log('알림 토큰:', token);
+      },
+      onNotification: function (notification) {
+        console.log('알림 수신:', notification);
+        // iOS에서는 추가 완료 콜백 필요
+        notification.finish(PushNotificationIOS.FetchResult.NoData);
+      },
+      onRegistrationError: function (err) {
+        console.error('알림 등록 오류:', err);
+      },
+      popInitialNotification: true,
+      requestPermissions: true,
+    });
+
+    // Android용 알림 채널 생성
+    if (Platform.OS === 'android') {
+      PushNotification.createChannel(
+        {
+          channelId: 'routine-reminders',
+          channelName: '루틴 알림',
+          channelDescription: '루틴 시작 및 미완료 알림을 위한 채널',
+          playSound: true,
+          soundName: 'default',
+          importance: 4,
+          vibrate: true,
+        },
+        (created) => console.log(`알림 채널 생성 ${created ? '성공' : '실패'}`)
+      );
+    }
+
+    console.log('알림 모듈 초기화 완료');
+  } catch (error) {
+    console.error('알림 모듈 초기화 오류:', error);
+  }
+};
 
 function App(): React.JSX.Element {
   // 앱 초기화 효과
@@ -79,6 +125,15 @@ function App(): React.JSX.Element {
 
         } catch (error) {
           console.error('Google SignIn 설정 중 오류:', error);
+        }
+
+        // 알림 서비스 초기화
+        try {
+          console.log('[App] 알림 서비스 초기화 시작...');
+          setupNotifications();
+          console.log('[App] 알림 서비스 초기화 완료');
+        } catch (notificationError) {
+          console.error('[App] 알림 서비스 초기화 오류:', notificationError);
         }
 
         // Firebase 앱 상태는 src/services/firebase/index.ts에서 이미 확인 및 초기화됨
