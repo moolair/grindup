@@ -390,25 +390,12 @@ const SettingsScreen = () => {
           <TouchableOpacity
             style={[styles.testButton, { backgroundColor: theme.colors.ui.primary }]}
             onPress={() => {
-              // 간단한 로컬 알림 테스트
+              // notificationService의 테스트 함수 사용
               try {
-                console.log("로컬 알림 테스트 시작");
-
-                // 3초 후에 알림 발송
-                setTimeout(() => {
-                  if (Platform.OS === 'ios') {
-                    PushNotificationIOS.presentLocalNotification({
-                      alertTitle: '알림 테스트',
-                      alertBody: '알림이 정상적으로 작동하고 있습니다.',
-                      soundName: 'default',
-                    });
-                  } else {
-                    // Android 알림 (필요한 경우 구현)
-                    console.log("Android 알림 테스트 - 구현 필요");
-                  }
-                }, 3000);
-
-                console.log("알림 테스트 요청 완료 - 3초 후 알림이 표시됩니다.");
+                console.log("알림 테스트 시작");
+                import('../../services/notificationService').then(module => {
+                  module.testLocalNotification();
+                });
               } catch (error) {
                 console.error("알림 테스트 오류:", error);
               }

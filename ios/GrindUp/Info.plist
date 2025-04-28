@@ -68,6 +68,10 @@
 	</array>
 	<key>NSUserNotificationUsageDescription</key>
 	<string>루틴 알림을 받기 위해 알림 권한이 필요합니다.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<!-- 애플 로그인 설정 -->
 	<key>CFBundleURLTypes</key>
 	<array>

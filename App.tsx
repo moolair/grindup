@@ -35,6 +35,19 @@ LogBox.ignoreLogs([
 // 알림 초기 설정 함수
 const setupNotifications = () => {
   try {
+    // iOS에서 명시적으로 알림 권한 요청
+    if (Platform.OS === 'ios') {
+      PushNotificationIOS.requestPermissions({
+        alert: true,
+        badge: true,
+        sound: true,
+      }).then((permissions) => {
+        console.log('iOS 알림 권한 상태:', permissions);
+      }).catch(error => {
+        console.error('iOS 알림 권한 요청 오류:', error);
+      });
+    }
+
     // PushNotification 설정
     PushNotification.configure({
       onRegister: function (token) {
