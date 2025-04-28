@@ -72,6 +72,8 @@
 	<array>
 		<string>remote-notification</string>
 	</array>
+	<key>NSNotificationsUsageDescription</key>
+	<string>루틴 알림을 받기 위한 권한이 필요합니다.</string>
 	<!-- 애플 로그인 설정 -->
 	<key>CFBundleURLTypes</key>
 	<array>

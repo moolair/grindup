@@ -37,14 +37,41 @@ const setupNotifications = () => {
   try {
     // iOS에서 명시적으로 알림 권한 요청
     if (Platform.OS === 'ios') {
-      PushNotificationIOS.requestPermissions({
-        alert: true,
-        badge: true,
-        sound: true,
-      }).then((permissions) => {
-        console.log('iOS 알림 권한 상태:', permissions);
-      }).catch(error => {
-        console.error('iOS 알림 권한 요청 오류:', error);
+      // iOS 알림 설정
+      PushNotificationIOS.checkPermissions(permissions => {
+        console.log('현재 알림 권한 상태:', permissions);
+
+        // 권한이 없으면 요청
+        PushNotificationIOS.requestPermissions({
+          alert: true,
+          badge: true,
+          sound: true,
+          critical: true, // 중요 알림 권한 요청
+        }).then((newPermissions) => {
+          console.log('iOS 알림 권한 상태:', newPermissions);
+
+          // 앱 포그라운드에서 알림 표시 설정 (iOS 14 이상)
+          try {
+            if (PushNotificationIOS.setNotificationCategories) {
+              console.log('포그라운드 알림 표시 설정 시도');
+              // @ts-ignore - TypeScript 정의와 실제 구현의 차이
+              PushNotificationIOS.setNotificationCategories([
+                {
+                  id: 'routine',
+                  actions: [{
+                    id: 'open',
+                    title: '열기',
+                    options: { foreground: true }
+                  }]
+                }
+              ]);
+            }
+          } catch (e) {
+            console.error('포그라운드 알림 설정 오류:', e);
+          }
+        }).catch(error => {
+          console.error('iOS 알림 권한 요청 오류:', error);
+        });
       });
     }
 
