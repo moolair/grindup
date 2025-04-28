@@ -7,7 +7,7 @@ import useTranslation from '../../hooks/useTranslation';
 import { PlusIcon, ChevronRightIcon } from '../../components/Icons';
 import { Platform } from 'react-native';
 // 필요한 타입만 import
-import { NotificationType } from '../../services/notificationService';
+import { NotificationType, testLocalNotification } from '../../services/notificationService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import PushNotificationIOS from '@react-native-community/push-notification-ios';
 
@@ -390,12 +390,10 @@ const SettingsScreen = () => {
           <TouchableOpacity
             style={[styles.testButton, { backgroundColor: theme.colors.ui.primary }]}
             onPress={() => {
-              // notificationService의 테스트 함수 사용
+              // 직접 import한 함수 사용
               try {
                 console.log("알림 테스트 시작");
-                import('../../services/notificationService').then(module => {
-                  module.testLocalNotification();
-                });
+                testLocalNotification();
               } catch (error) {
                 console.error("알림 테스트 오류:", error);
               }
