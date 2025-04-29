@@ -25,6 +25,8 @@ import { Platform } from 'react-native';
 // 알림 라이브러리 직접 사용
 import PushNotification from 'react-native-push-notification';
 import PushNotificationIOS from '@react-native-community/push-notification-ios';
+// 경로 수정
+import { initializeNotifications } from './src/services/NotificationService';
 
 // 특정 경고 무시
 LogBox.ignoreLogs([
@@ -35,57 +37,17 @@ LogBox.ignoreLogs([
 // 알림 초기 설정 함수
 const setupNotifications = () => {
   try {
-    console.log('알림 설정 초기화 시작...');
-
-    // PushNotification 기본 설정
-    PushNotification.configure({
-      onRegister: function (token) {
-        console.log('알림 토큰:', token);
-      },
-      onNotification: function (notification) {
-        console.log('알림 수신:', notification);
-        // iOS에서는 추가 완료 콜백 필요
-        notification.finish(PushNotificationIOS.FetchResult.NoData);
-      },
-      onRegistrationError: function (err) {
-        console.error('알림 등록 오류:', err);
-      },
-      popInitialNotification: true,
-      requestPermissions: true, // 권한 자동 요청
-    });
-
-    // Android용 알림 채널 생성
-    if (Platform.OS === 'android') {
-      PushNotification.createChannel(
-        {
-          channelId: 'routine-reminders',
-          channelName: '루틴 알림',
-          channelDescription: '루틴 시작 및 미완료 알림을 위한 채널',
-          playSound: true,
-          soundName: 'default',
-          importance: 4,
-          vibrate: true,
-        },
-        (created) => console.log(`알림 채널 생성 ${created ? '성공' : '실패'}`)
-      );
-    }
-
-    // iOS에서 별도로 권한 요청
-    if (Platform.OS === 'ios') {
-      setTimeout(() => {
-        PushNotificationIOS.requestPermissions()
-          .then(permissions => {
-            console.log('iOS 알림 권한 상태:', permissions);
-          })
-          .catch(error => {
-            console.error('iOS 알림 권한 요청 오류:', error);
-          });
-      }, 1000); // 약간 지연시켜 요청
-    }
-
-    console.log('알림 모듈 초기화 완료');
+    console.log('[App] 알림 서비스 초기화...');
+    // NotificationService의 함수 호출
+    initializeNotifications()
+      .then(() => {
+        console.log('[App] 알림 서비스 초기화 완료');
+      })
+      .catch(error => {
+        console.error('[App] 알림 서비스 초기화 오류:', error);
+      });
   } catch (error) {
-    console.error('알림 모듈 초기화 오류:', error);
+    console.error('[App] 알림 모듈 초기화 오류:', error);
   }
 };
 

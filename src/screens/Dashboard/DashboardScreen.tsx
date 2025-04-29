@@ -26,6 +26,7 @@ const routineToTask = (routine: Routine): Task => {
     status: routine.completed ? 'completed' : 'pending',
     category: routine.category,
     color: routine.color,
+    days: routine.days,
   };
 };
 
@@ -57,6 +58,7 @@ const DashboardScreen = () => {
   const loadRoutines = useCallback(async () => {
     try {
       setRefreshing(true);
+      console.log('루틴 로드 시작 - 현재 사용자:', user?.uid || '로그인 안됨');
 
       // 루틴 리셋 필요한지 확인
       const needsReset = await routineService.shouldResetRoutines();
@@ -88,7 +90,7 @@ const DashboardScreen = () => {
     } finally {
       setRefreshing(false);
     }
-  }, []);
+  }, [user?.uid]);
 
   // 컴포넌트 마운트 시 루틴 로드 및 리스너 설정
   useEffect(() => {
@@ -130,7 +132,15 @@ const DashboardScreen = () => {
       unsubscribeRoutineListenersRef.current.forEach(unsubscribe => unsubscribe());
       unsubscribeRoutineListenersRef.current = [];
     };
-  }, [loadRoutines, navigation, route.params?.refreshRoutines]);
+  }, [loadRoutines, navigation, route.params?.refreshRoutines, user?.uid]);
+
+  // 사용자 상태 변경 시 루틴 다시 로드
+  useEffect(() => {
+    if (user) {
+      console.log('사용자 변경 감지됨, 루틴 다시 로드:', user.uid);
+      loadRoutines();
+    }
+  }, [user, loadRoutines]);
 
   const handleDayPress = (date: Date, count: number) => {
     console.log(`선택한 날짜: ${date.toLocaleDateString()}, 완료한 작업: ${count}개`);

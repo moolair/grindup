@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, Switch, TouchableOpacity, ScrollView, Modal, Button } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, Switch, TouchableOpacity, ScrollView, Modal, Button, Alert } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useNavigation, NavigationProp, ParamListBase, CommonActions } from '@react-navigation/native';
 import useTranslation from '../../hooks/useTranslation';
 import { PlusIcon, ChevronRightIcon } from '../../components/Icons';
 import { Platform } from 'react-native';
-// 필요한 타입만 import
-import { NotificationType, testLocalNotification } from '../../services/notificationService';
+// 필요한 타입만 import - 대문자 파일명으로 수정
+import { NotificationType, testLocalNotification } from '../../services/NotificationService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import PushNotificationIOS from '@react-native-community/push-notification-ios';
 
@@ -389,13 +389,66 @@ const SettingsScreen = () => {
           {/* 알림 테스트 버튼 */}
           <TouchableOpacity
             style={[styles.testButton, { backgroundColor: theme.colors.ui.primary }]}
-            onPress={() => {
+            onPress={async () => {
               // 직접 import한 함수 사용
               try {
                 console.log("알림 테스트 시작");
+
+                // iOS에서는 먼저 권한 확인 및 요청
+                if (Platform.OS === 'ios') {
+                  try {
+                    // 권한 요청
+                    const authStatus = await PushNotificationIOS.requestPermissions({
+                      alert: true,
+                      badge: true,
+                      sound: true,
+                    });
+                    console.log('iOS 알림 권한 상태:', authStatus);
+
+                    if (!authStatus.alert) {
+                      Alert.alert(
+                        '알림 권한 필요',
+                        '알림을 표시하려면 알림 권한이 필요합니다. 설정 앱에서 알림 권한을 활성화해주세요.',
+                        [{ text: '확인', style: 'default' }]
+                      );
+                      return;
+                    }
+                  } catch (error) {
+                    console.error('알림 권한 요청 오류:', error);
+                  }
+                }
+
+                // 기본 알림 테스트
                 testLocalNotification();
+
+                // 테스트용 Badge 설정
+                if (Platform.OS === 'ios') {
+                  PushNotificationIOS.setApplicationIconBadgeNumber(1);
+                }
+
+                // 미완료 루틴 알림 테스트 (예시 데이터)
+                // 4초 후에 실행하여 이전 알림과 겹치지 않도록 함
+                setTimeout(() => {
+                  const sampleIncompleteRoutines = [
+                    '아침 운동',
+                    '독서',
+                    '명상'
+                  ];
+
+                  import('../../services/NotificationService').then(module => {
+                    module.showIncompleteRoutinesNotification(sampleIncompleteRoutines);
+                  });
+                }, 4000);
+
+                // 성공 메시지
+                Alert.alert(
+                  '알림 테스트',
+                  '알림이 발송되었습니다. 2초 및 4초 후에 시스템 알림을 확인해보세요. 잠금 화면에서도 확인 가능합니다.',
+                  [{ text: '확인', style: 'default' }]
+                );
               } catch (error) {
                 console.error("알림 테스트 오류:", error);
+                Alert.alert('오류 발생', '알림 테스트 중 오류가 발생했습니다: ' + error);
               }
             }}
           >

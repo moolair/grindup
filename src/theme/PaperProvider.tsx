@@ -1,6 +1,12 @@
 import React from 'react';
-import { Provider as PaperProvider, MD3LightTheme, MD3DarkTheme } from 'react-native-paper';
+import { Provider as PaperProvider, MD3LightTheme, MD3DarkTheme, configureFonts } from 'react-native-paper';
 import { useTheme } from './ThemeProvider';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+
+// 커스텀 폰트 설정
+const fontConfig = {
+    fontFamily: 'System',
+};
 
 // GrindUp 색상을 Paper 테마에 적용한 커스텀 테마
 const createPaperTheme = (type: 'light' | 'dark', colors: any) => {
@@ -20,6 +26,7 @@ const createPaperTheme = (type: 'light' | 'dark', colors: any) => {
             onSurface: colors.content.primary,
         },
         roundness: 12,
+        fonts: configureFonts({ config: fontConfig }),
     };
 };
 
@@ -31,7 +38,12 @@ export const AppPaperProvider = ({ children }: { children: React.ReactNode }) =>
     const paperTheme = createPaperTheme(theme.type, theme.colors);
 
     return (
-        <PaperProvider theme={paperTheme}>
+        <PaperProvider
+            theme={paperTheme}
+            settings={{
+                icon: props => <MaterialCommunityIcons {...props} />,
+            }}
+        >
             {children}
         </PaperProvider>
     );
