@@ -20,13 +20,12 @@ import i18next, { initI18n } from './src/i18n';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { I18nextProvider } from 'react-i18next';
 import { AuthProvider } from './src/context/AuthContext';
-import { LogBox } from 'react-native';
-import { Platform } from 'react-native';
+import { LogBox, Platform } from 'react-native';
 // 알림 라이브러리 직접 사용
 import PushNotification from 'react-native-push-notification';
 import PushNotificationIOS from '@react-native-community/push-notification-ios';
-// 경로 수정
-import { initializeNotifications } from './src/services/NotificationService';
+// NotificationService 임포트 수정
+import NotificationService from './src/services/NotificationService';
 
 // 특정 경고 무시
 LogBox.ignoreLogs([
@@ -38,8 +37,8 @@ LogBox.ignoreLogs([
 const setupNotifications = () => {
   try {
     console.log('[App] 알림 서비스 초기화...');
-    // NotificationService의 함수 호출
-    initializeNotifications()
+    // NotificationService 인스턴스 사용
+    NotificationService.initializeNotifications()
       .then(() => {
         console.log('[App] 알림 서비스 초기화 완료');
       })
