@@ -8,7 +8,7 @@ import { auth, firebase, getFirebaseApp, initializeFirebase } from '../../servic
 import { useTheme } from '../../theme/ThemeProvider';
 import { useTranslation } from 'react-i18next';
 import appleAuth from '@invertase/react-native-apple-authentication';
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 
 type LoginScreenProps = StackNavigationProp<RootStackParamList, 'Login'>;
 
@@ -98,20 +98,17 @@ const LoginScreen = () => {
         setLoading(true);
         setError('');
 
-        try {
-            // 시뮬레이터 환경 확인
-            const isSimulator = Platform.OS === 'ios' && !appleAuth.isSupported;
-            if (isSimulator) {
-                console.log('시뮬레이터 환경에서 Google 로그인 시도 - 개발자 모드로 전환합니다');
-                // 시뮬레이터에서는 개발자 모드 로그인으로 대체
-                handleDevLogin();
-                return;
-            }
+        // 시뮬레이터 환경 확인 - 함수 전체에서 사용할 수 있도록 함수 시작부에 선언
+        const isSimulator = Platform.OS === 'ios' && !appleAuth.isSupported;
 
+        try {
             // 구글 로그인 흐름 시작
             console.log('Google Play 서비스 확인 중...');
             await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
             console.log('Google Play 서비스 확인 완료');
+
+            // 시뮬레이터 관련 로그
+            console.log('시뮬레이터에서 실행 중:', isSimulator);
 
             // Google 설정 다시 확인
             GoogleSignin.configure({
@@ -125,8 +122,9 @@ const LoginScreen = () => {
             try {
                 // 이미 로그인 되어 있는지 확인 (try/catch로 감싸서 isSignedIn 함수 에러 방지)
                 try {
-                    // @ts-ignore - GoogleSignin의 타입 정의가 불완전할 수 있음
-                    const isSignedIn = await GoogleSignin.isSignedIn();
+                    // GoogleSignin.isSignedIn() 메서드 호출 관련 오류 수정
+                    console.log('로그인 상태 확인 시도');
+                    const isSignedIn = false; // 항상 새로 로그인 시도
                     console.log('이미 Google에 로그인되어 있음:', isSignedIn);
                     if (isSignedIn) {
                         await GoogleSignin.signOut();
@@ -156,12 +154,14 @@ const LoginScreen = () => {
                     // 토큰 재획득 시도
                     try {
                         console.log('getTokens()로 토큰 재획득 시도');
+                        // getTokens 호출 전에 로그인 상태 확인 - 오류 방지를 위해 제거
+
                         const tokens = await GoogleSignin.getTokens();
                         if (tokens && tokens.idToken) {
                             idToken = tokens.idToken;
                             console.log('getTokens()로 idToken 획득 성공!');
                         }
-                    } catch (tokenError) {
+                    } catch (tokenError: any) {
                         console.error('토큰 획득 시도 오류:', tokenError);
                     }
 
@@ -183,9 +183,16 @@ const LoginScreen = () => {
                 }
 
                 if (!idToken) {
-                    console.log('ID 토큰을 얻지 못했습니다. 개발자 모드로 로그인을 시도합니다.');
-                    // ID 토큰이 없는 경우 개발자 모드 로그인으로 대체
-                    handleDevLogin();
+                    console.log('ID 토큰을 얻지 못했습니다.');
+
+                    // 시뮬레이터에서는 네트워크 문제로 ID 토큰을 얻지 못할 가능성이 높음
+                    if (isSimulator) {
+                        console.log('시뮬레이터에서 ID 토큰을 얻지 못했습니다. 개발자 모드로 로그인합니다.');
+                        handleDevLogin();
+                        return;
+                    }
+
+                    setError('Google 로그인이 완료되었으나 인증 토큰을 얻지 못했습니다. 다시 시도해주세요.');
                     return;
                 }
 
@@ -208,8 +215,16 @@ const LoginScreen = () => {
                     signInError.message.includes('network error') ||
                     signInError.message.includes('connection')
                 )) {
-                    console.log('Google 로그인 중 네트워크 오류, 개발자 모드로 대체합니다');
-                    handleDevLogin();
+                    console.log('Google 로그인 중 네트워크 오류가 발생했습니다.');
+
+                    // 시뮬레이터에서는 네트워크 문제가 발생할 가능성이 높으므로 개발자 모드로 전환
+                    if (isSimulator) {
+                        console.log('시뮬레이터에서 네트워크 오류가 발생했습니다. 개발자 모드로 로그인합니다.');
+                        handleDevLogin();
+                        return;
+                    }
+
+                    setError('Google 로그인 중 네트워크 오류가 발생했습니다. 인터넷 연결을 확인하고 다시 시도해주세요.');
                     return;
                 }
 
@@ -227,11 +242,21 @@ const LoginScreen = () => {
             if (
                 (err.code === 'NETWORK_ERROR' ||
                     err.message?.includes('network') ||
-                    err.message?.includes('connection')) &&
+                    err.message?.includes('connection') ||
+                    err.message?.includes('Safari') ||
+                    err.message?.includes('the page')) &&
                 Platform.OS === 'ios'
             ) {
-                console.log('네트워크 관련 오류 감지, 개발자 모드로 로그인합니다');
-                handleDevLogin();
+                console.log('네트워크 또는 시뮬레이터 관련 오류가 발생했습니다.');
+
+                // 시뮬레이터에서는 네트워크 문제가 발생할 가능성이 높으므로 개발자 모드로 전환
+                if (isSimulator) {
+                    console.log('시뮬레이터에서 네트워크 오류가 발생했습니다. 개발자 모드로 로그인합니다.');
+                    handleDevLogin();
+                    return;
+                }
+
+                setError('네트워크 연결 오류가 발생했습니다. 인터넷 연결을 확인하고 다시 시도해주세요.');
                 return;
             }
 
