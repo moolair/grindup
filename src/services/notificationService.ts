@@ -1,7 +1,7 @@
 import { Platform, Alert, Linking } from "react-native";
 import PushNotificationIOS from '@react-native-community/push-notification-ios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import PushNotification, { Importance } from 'react-native-push-notification';
+import PushNotification from 'react-native-push-notification';
 
 export enum NotificationType {
   ROUTINE_START = "routine_start",
@@ -9,334 +9,239 @@ export enum NotificationType {
   INCOMPLETE_ROUTINES = "incomplete_routines"
 }
 
-// 채널 ID 상수 정의
 const CHANNEL_ID = 'routine-reminders';
 
-// 테스트용 알림 (시스템 알림 표시)
-export const testLocalNotification = async () => {
-  try {
-    console.log('알림 테스트 시작');
+class NotificationService {
+  private static instance: NotificationService;
+  private isInitialized = false;
 
-    // iOS 권한 확인
-    if (Platform.OS === 'ios') {
-      const authStatus = await PushNotificationIOS.checkPermissions();
-      console.log('iOS 알림 권한 상태:', authStatus);
+  private constructor() { }
 
-      if (!authStatus.alert) {
-        const newStatus = await PushNotificationIOS.requestPermissions({
-          alert: true,
-          badge: true,
-          sound: true,
-          critical: true,
-        });
-        console.log('새로운 iOS 알림 권한 상태:', newStatus);
-
-        if (!newStatus.alert) {
-          Alert.alert(
-            '알림 권한 필요',
-            '알림을 표시하려면 설정 앱에서 알림 권한을 허용해주세요.',
-            [
-              {
-                text: '설정으로 이동',
-                onPress: () => {
-                  if (Platform.OS === 'ios') {
-                    Linking.openURL('app-settings:');
-                  }
-                }
-              },
-              { text: '취소', style: 'cancel' }
-            ]
-          );
-          return;
-        }
-      }
+  public static getInstance(): NotificationService {
+    if (!NotificationService.instance) {
+      NotificationService.instance = new NotificationService();
     }
+    return NotificationService.instance;
+  }
 
-    // 앱 내 알림
-    Alert.alert("알림 테스트", "시스템 알림을 발송합니다!");
+  public async initializeNotifications(): Promise<void> {
+    if (this.isInitialized) return;
 
-    // 테스트 알림 1 - 기본
-    const notificationId = `test-${Date.now()}`;
-    if (Platform.OS === 'ios') {
-      console.log('iOS 알림 테스트 1 발송');
-      await PushNotificationIOS.addNotificationRequest({
-        id: notificationId,
-        title: 'GrindUp 알림 테스트 1',
-        body: '이 알림이 보이나요? 👋',
-        sound: 'default',
-        threadId: 'test-notifications',
-      });
-    }
+    try {
+      console.log('[NotificationService] 알림 서비스 초기화 시작...');
 
-    // 테스트 알림 2 - 지연
-    setTimeout(async () => {
-      console.log('지연된 알림 테스트 발송');
       if (Platform.OS === 'ios') {
-        await PushNotificationIOS.addNotificationRequest({
-          id: `${notificationId}-delayed`,
-          title: 'GrindUp 알림 테스트 2',
-          body: '2초 후 알림입니다! 🎉',
-          sound: 'default',
-          threadId: 'test-notifications',
+        // iOS 알림 설정
+        PushNotificationIOS.addEventListener('register', (token) => {
+          console.log('[NotificationService] Push 알림 토큰:', token);
         });
-      }
 
-      // 크로스 플랫폼 알림
-      PushNotification.localNotification({
-        channelId: CHANNEL_ID,
-        title: 'GrindUp 알림 테스트 3',
-        message: '통합 라이브러리 테스트입니다! ✨',
-        playSound: true,
-        soundName: 'default',
-        importance: Importance.HIGH,
-        priority: 'high',
-        smallIcon: 'ic_notification',
-        largeIcon: 'ic_launcher',
-        bigText: '이것은 확장된 알림 내용입니다. 알림을 길게 누르면 더 많은 내용을 볼 수 있습니다.',
-        subText: '알림 테스트',
-        color: '#FF0000',
-      });
-    }, 2000);
+        PushNotificationIOS.addEventListener('registrationError', (error) => {
+          console.log('[NotificationService] Push 알림 등록 오류:', error);
+        });
 
-    console.log('알림 테스트 발송 완료');
-  } catch (error) {
-    console.error('알림 테스트 중 오류 발생:', error);
-    Alert.alert('오류', '알림 테스트 중 문제가 발생했습니다.');
-  }
-};
+        PushNotificationIOS.addEventListener('notification', (notification) => {
+          console.log('[NotificationService] 알림 수신:', notification);
+          notification.finish(PushNotificationIOS.FetchResult.NoData);
+        });
 
-// 미완료 루틴 알림 표시 - 수정
-export const showIncompleteRoutinesNotification = async (routineNames: string[]) => {
-  if (!routineNames || routineNames.length === 0) return;
+        PushNotificationIOS.addEventListener('localNotification', (notification) => {
+          console.log('[NotificationService] 로컬 알림 수신:', notification);
+        });
 
-  console.log('Showing notification for incomplete routines:', routineNames);
-
-  // 알림 메시지 생성
-  const title = 'You have not completed routines';
-  const message = routineNames.length === 1
-    ? `You need to complete: ${routineNames[0]}`
-    : `You need to complete: ${routineNames.join(', ')}`;
-
-  try {
-    // iOS 전용 알림 처리
-    if (Platform.OS === 'ios') {
-      console.log('iOS: 알림 권한 확인 중...');
-      const authStatus = await PushNotificationIOS.checkPermissions();
-      console.log('iOS: 알림 권한 상태 -', authStatus);
-
-      if (!authStatus.alert) {
-        console.log('iOS: 알림 권한 요청 중...');
-        await PushNotificationIOS.requestPermissions({
+        // 권한 요청
+        const authStatus = await PushNotificationIOS.requestPermissions({
           alert: true,
           badge: true,
           sound: true,
-          critical: true,
         });
+
+        console.log('[NotificationService] iOS 알림 권한 상태:', authStatus);
+      } else {
+        // Android 알림
+        PushNotification.configure({
+          onRegister: (token) => {
+            console.log('[NotificationService] Android 토큰 등록:', token);
+          },
+          onNotification: (notification) => {
+            console.log('[NotificationService] Android 알림 수신:', notification);
+            // @ts-ignore - Android에서는 매개변수 없이도 동작함
+            notification.finish();
+          },
+          onAction: (notification) => {
+            console.log('[NotificationService] Android 알림 액션:', notification);
+          },
+          onRegistrationError: (error) => {
+            console.log('[NotificationService] Android 등록 오류:', error);
+          },
+          permissions: {
+            alert: true,
+            badge: true,
+            sound: true,
+          },
+          popInitialNotification: true,
+          requestPermissions: true,
+        });
+
+        // Android 채널 생성
+        PushNotification.createChannel(
+          {
+            channelId: CHANNEL_ID,
+            channelName: '루틴 알림',
+            channelDescription: '루틴 관련 알림',
+            playSound: true,
+            soundName: 'default',
+            importance: 4,
+            vibrate: true,
+          },
+          (created) => console.log(`[NotificationService] 알림 채널 생성됨: ${created}`)
+        );
       }
 
-      // iOS 알림 전송 - 방법 1
-      const notificationId = `incomplete-routines-${Date.now()}`;
-      console.log('iOS: 알림 전송 시도 (addNotificationRequest) - ID:', notificationId);
-
-      await PushNotificationIOS.addNotificationRequest({
-        id: notificationId,
-        title: title,
-        body: message,
-        sound: 'default',
-        threadId: 'incomplete-routines',
-        userInfo: {
-          type: NotificationType.INCOMPLETE_ROUTINES,
-          routineNames,
-          id: notificationId
-        }
-      });
-
-      // iOS 알림 전송 - 방법 2 (백업)
-      console.log('iOS: 백업 알림 전송 시도 (presentLocalNotification)');
-      PushNotificationIOS.presentLocalNotification({
-        alertTitle: title,
-        alertBody: message,
-        applicationIconBadgeNumber: routineNames.length,
-        category: 'incomplete-routines',
-        userInfo: {
-          type: NotificationType.INCOMPLETE_ROUTINES,
-          routineNames,
-          id: notificationId
-        }
-      });
-
-      // 배지 업데이트
-      await PushNotificationIOS.setApplicationIconBadgeNumber(routineNames.length);
+      this.isInitialized = true;
+      console.log('[NotificationService] 알림 서비스 초기화 완료');
+    } catch (error) {
+      console.error('[NotificationService] 알림 서비스 초기화 실패:', error);
+      throw error;
     }
-
-    // 크로스 플랫폼 알림 (Android/iOS 공통)
-    console.log(`${Platform.OS}: 크로스 플랫폼 알림 전송 시도`);
-    PushNotification.localNotification({
-      channelId: CHANNEL_ID,
-      title: title,
-      message: message,
-      playSound: true,
-      soundName: 'default',
-      importance: Importance.HIGH,
-      priority: 'high',
-      vibrate: true,
-      vibration: 300,
-      smallIcon: 'ic_notification',
-      largeIcon: 'ic_launcher',
-      bigText: message,  // 긴 텍스트 지원
-      subText: 'Incomplete Routines',  // 추가 설명
-      color: '#FF0000',  // 알림 색상
-      visibility: 'public',
-      userInfo: {
-        type: NotificationType.INCOMPLETE_ROUTINES,
-        routineNames
-      }
-    });
-
-    console.log(`${Platform.OS}: 알림 전송 완료`);
-  } catch (error) {
-    console.error('알림 전송 중 오류 발생:', error);
   }
-};
 
-// 알림 초기화 함수 수정
-export const initializeNotifications = async (): Promise<void> => {
-  console.log("알림 서비스 초기화 중...");
+  public async sendTestNotification() {
+    try {
+      console.log('[NotificationService] 테스트 알림 발송 시작...');
+      const hasPermission = await this.requestPermissions();
 
-  try {
-    // iOS 권한 초기 설정
-    if (Platform.OS === 'ios') {
-      console.log('iOS: 초기 권한 요청');
-      const authStatus = await PushNotificationIOS.requestPermissions({
-        alert: true,
-        badge: true,
-        sound: true,
-        critical: true,
-        provisional: true // 임시 권한 요청 추가
-      });
-      console.log('iOS: 초기 알림 권한 상태 -', authStatus);
+      if (!hasPermission) {
+        console.log('[NotificationService] 알림 권한이 없습니다.');
+        Alert.alert(
+          '알림 권한 필요',
+          '알림을 보내려면 설정에서 알림 권한을 허용해주세요.',
+          [
+            { text: '설정으로 이동', onPress: () => Linking.openSettings() },
+            { text: '취소' }
+          ]
+        );
+        return;
+      }
 
-      // 현재 배지 초기화
-      await PushNotificationIOS.setApplicationIconBadgeNumber(0);
-    }
+      if (Platform.OS === 'ios') {
+        // iOS 알림 테스트
+        console.log('[NotificationService] iOS 테스트 알림 발송 중...');
 
-    // PushNotification 설정
-    PushNotification.configure({
-      onRegister: function (token) {
-        console.log('알림 토큰:', token);
-      },
-      onNotification: function (notification) {
-        console.log('알림 수신:', notification);
+        // 배지 초기화
+        PushNotificationIOS.setApplicationIconBadgeNumber(0);
 
-        if (Platform.OS === 'ios') {
-          notification.finish(PushNotificationIOS.FetchResult.NoData);
-        }
-      },
-      onRegistrationError: function (err) {
-        console.error('알림 등록 오류:', err);
-      },
-      permissions: {
-        alert: true,
-        badge: true,
-        sound: true,
-        critical: true,
-        provisional: true
-      },
-      popInitialNotification: true,
-      requestPermissions: true,
-    });
+        // iOS 13 이상에서는 addNotificationRequest 사용
+        PushNotificationIOS.addNotificationRequest({
+          id: `test-${Date.now()}`,
+          title: 'GrindUp 알림 테스트',
+          body: '알림이 잘 작동하나요? 👋',
+          sound: 'default',
+          badge: 1,
+          userInfo: {
+            type: 'test'
+          }
+        });
 
-    // Android 채널 생성
-    if (Platform.OS === 'android') {
-      PushNotification.createChannel(
-        {
+        console.log('[NotificationService] iOS 알림 발송 완료');
+      } else {
+        // Android 알림
+        console.log('[NotificationService] Android 테스트 알림 발송 중...');
+
+        PushNotification.localNotification({
           channelId: CHANNEL_ID,
-          channelName: '루틴 알림',
-          channelDescription: '루틴 관련 모든 알림',
+          title: 'GrindUp 알림 테스트',
+          message: '알림이 잘 작동하나요? 👋',
           playSound: true,
           soundName: 'default',
-          importance: Importance.HIGH,
-          vibrate: true,
-        },
-        (created) => console.log(`알림 채널 생성 ${created ? '성공' : '실패'}`)
-      );
+          importance: 'high',
+          priority: 'high',
+        });
+
+        console.log('[NotificationService] Android 알림 발송 완료');
+      }
+    } catch (error) {
+      console.error('[NotificationService] 테스트 알림 발송 실패:', error);
+      throw error;
     }
-
-    console.log('알림 서비스 초기화 완료');
-  } catch (error) {
-    console.error('알림 서비스 초기화 중 오류:', error);
   }
-};
 
-// 저장된 알림 설정 가져오기
-export const getNotificationSettings = async (): Promise<{ [key: string]: boolean }> => {
-  try {
-    const settings = await AsyncStorage.getItem('notification_settings');
-    return settings ? JSON.parse(settings) : {
-      routineStartReminder: true,
-      routineEndReminder: true
-    };
-  } catch (error) {
-    console.error('알림 설정 불러오기 오류:', error);
-    return {
-      routineStartReminder: true,
-      routineEndReminder: true
-    };
-  }
-};
-
-// 알림 설정 저장하기
-export const saveNotificationSettings = async (settings: { [key: string]: boolean }): Promise<void> => {
-  try {
-    await AsyncStorage.setItem('notification_settings', JSON.stringify(settings));
-  } catch (error) {
-    console.error('알림 설정 저장 오류:', error);
-  }
-};
-
-// 알림 시간 저장하기
-export const saveNotificationTime = async (type: NotificationType, time: Date): Promise<void> => {
-  try {
-    let times = await getNotificationTimes();
-    times[type] = time.toISOString();
-    await AsyncStorage.setItem('notification_times', JSON.stringify(times));
-  } catch (error) {
-    console.error('알림 시간 저장 오류:', error);
-  }
-};
-
-// 저장된 알림 시간 가져오기
-export const getNotificationTimes = async (): Promise<{ [key: string]: string }> => {
-  try {
-    const times = await AsyncStorage.getItem('notification_times');
-    if (times) {
-      return JSON.parse(times);
+  public async requestPermissions(): Promise<boolean> {
+    try {
+      if (Platform.OS === 'ios') {
+        const authStatus = await PushNotificationIOS.requestPermissions({
+          alert: true,
+          badge: true,
+          sound: true,
+        });
+        return authStatus.alert ?? false;
+      } else {
+        const permissions = await PushNotification.requestPermissions();
+        return permissions.alert ?? false;
+      }
+    } catch (error) {
+      console.error('[NotificationService] 알림 권한 요청 실패:', error);
+      return false;
     }
-
-    // 기본값 설정
-    const defaultStartTime = new Date();
-    defaultStartTime.setHours(8, 0, 0, 0);
-
-    const defaultEndTime = new Date();
-    defaultEndTime.setHours(21, 0, 0, 0);
-
-    return {
-      [NotificationType.ROUTINE_START]: defaultStartTime.toISOString(),
-      [NotificationType.ROUTINE_END]: defaultEndTime.toISOString()
-    };
-  } catch (error) {
-    console.error('알림 시간 불러오기 오류:', error);
-
-    // 오류 시 기본값 반환
-    const defaultStartTime = new Date();
-    defaultStartTime.setHours(8, 0, 0, 0);
-
-    const defaultEndTime = new Date();
-    defaultEndTime.setHours(21, 0, 0, 0);
-
-    return {
-      [NotificationType.ROUTINE_START]: defaultStartTime.toISOString(),
-      [NotificationType.ROUTINE_END]: defaultEndTime.toISOString()
-    };
   }
-};
+
+  public showIncompleteRoutinesNotification(routineNames: string[]) {
+    if (!routineNames || routineNames.length === 0) return;
+
+    try {
+      const title = '완료되지 않은 루틴이 있습니다';
+      const message = `완료해야 할 루틴: ${routineNames.join(', ')}`;
+
+      if (Platform.OS === 'ios') {
+        PushNotificationIOS.addNotificationRequest({
+          id: `incomplete-${Date.now()}`,
+          title: title,
+          body: message,
+          sound: 'default',
+          badge: routineNames.length
+        });
+      } else {
+        PushNotification.localNotification({
+          channelId: CHANNEL_ID,
+          title: title,
+          message: message,
+          playSound: true,
+          soundName: 'default',
+          importance: 'high',
+          priority: 'high',
+          number: routineNames.length
+        });
+      }
+
+      console.log('[NotificationService] 미완료 루틴 알림 발송:', routineNames);
+    } catch (error) {
+      console.error('[NotificationService] 미완료 루틴 알림 발송 중 오류:', error);
+    }
+  }
+
+  public async saveNotificationSettings(settings: { [key: string]: boolean }): Promise<void> {
+    try {
+      await AsyncStorage.setItem('notification_settings', JSON.stringify(settings));
+    } catch (error) {
+      console.error('[NotificationService] 알림 설정 저장 오류:', error);
+    }
+  }
+
+  public async getNotificationSettings(): Promise<{ [key: string]: boolean }> {
+    try {
+      const settings = await AsyncStorage.getItem('notification_settings');
+      return settings ? JSON.parse(settings) : {
+        routineStartReminder: true,
+        routineEndReminder: true
+      };
+    } catch (error) {
+      console.error('[NotificationService] 알림 설정 불러오기 오류:', error);
+      return {
+        routineStartReminder: true,
+        routineEndReminder: true
+      };
+    }
+  }
+}
+
+export default NotificationService.getInstance();
