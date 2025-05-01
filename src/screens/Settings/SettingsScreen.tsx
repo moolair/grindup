@@ -7,7 +7,7 @@ import useTranslation from '../../hooks/useTranslation';
 import { PlusIcon, ChevronRightIcon } from '../../components/Icons';
 import { Platform } from 'react-native';
 // 필요한 타입만 import - 대문자 파일명으로 수정
-import { NotificationType, testLocalNotification } from '../../services/NotificationService';
+import NotificationService, { NotificationType } from '../../services/NotificationService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import PushNotificationIOS from '@react-native-community/push-notification-ios';
 
@@ -419,7 +419,7 @@ const SettingsScreen = () => {
                 }
 
                 // 기본 알림 테스트
-                testLocalNotification();
+                NotificationService.sendTestNotification();
 
                 // 테스트용 Badge 설정
                 if (Platform.OS === 'ios') {
@@ -435,9 +435,7 @@ const SettingsScreen = () => {
                     '명상'
                   ];
 
-                  import('../../services/NotificationService').then(module => {
-                    module.showIncompleteRoutinesNotification(sampleIncompleteRoutines);
-                  });
+                  NotificationService.showIncompleteRoutinesNotification(sampleIncompleteRoutines);
                 }, 4000);
 
                 // 성공 메시지
