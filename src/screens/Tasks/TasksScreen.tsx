@@ -36,14 +36,14 @@ const TasksScreen = () => {
 
   // 색상 옵션
   const colorOptions: ColorOption[] = [
-    { id: 'default', name: '기본', value: theme.colors.ui.primary },
-    { id: 'red', name: '빨강', value: '#FF6B6B' },
-    { id: 'orange', name: '주황', value: '#FFA86B' },
-    { id: 'yellow', name: '노랑', value: '#FFDE6B' },
-    { id: 'green', name: '초록', value: '#6BFF8B' },
-    { id: 'blue', name: '파랑', value: '#6B9CFF' },
-    { id: 'purple', name: '보라', value: '#B96BFF' },
-    { id: 'pink', name: '분홍', value: '#FF6BC1' },
+    { id: 'default', name: t('colorOptions.default'), value: theme.colors.ui.primary },
+    { id: 'red', name: t('colorOptions.red'), value: '#FF6B6B' },
+    { id: 'orange', name: t('colorOptions.orange'), value: '#FFA86B' },
+    { id: 'yellow', name: t('colorOptions.yellow'), value: '#FFDE6B' },
+    { id: 'green', name: t('colorOptions.green'), value: '#6BFF8B' },
+    { id: 'blue', name: t('colorOptions.blue'), value: '#6B9CFF' },
+    { id: 'purple', name: t('colorOptions.purple'), value: '#B96BFF' },
+    { id: 'pink', name: t('colorOptions.pink'), value: '#FF6BC1' },
   ];
 
   // 초기 요일 선택 상태
@@ -213,18 +213,22 @@ const TasksScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
+      <View style={[styles.header, { borderBottomColor: theme.colors.border.light }]}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={handleBackPress}
+        >
           <ChevronLeftIcon color={theme.colors.content.primary} size={24} />
         </TouchableOpacity>
         <Text style={[styles.title, { color: theme.colors.content.primary }]}>
-          {isEditMode ? t('루틴 편집') : t('새 루틴 만들기')}
+          {isEditMode ? t('editRoutine') : t('createRoutine')}
         </Text>
         {isEditMode && (
           <TouchableOpacity onPress={handleDeleteRoutine} style={styles.deleteButton}>
             <DeleteIcon color={theme.colors.ui.error} size={24} />
           </TouchableOpacity>
         )}
+        {!isEditMode && <View style={styles.deleteButton} />}
       </View>
 
       <ScrollView style={styles.content}>
@@ -292,7 +296,7 @@ const TasksScreen = () => {
 
         {/* 카드 색상 선택 */}
         <View style={styles.inputContainer}>
-          <Text style={[styles.inputLabel, { color: theme.colors.content.primary }]}>카드 색상</Text>
+          <Text style={[styles.inputLabel, { color: theme.colors.content.primary }]}>{t('cardColor')}</Text>
           <View style={styles.colorContainer}>
             {colorOptions.map(color => (
               <TouchableOpacity
@@ -319,7 +323,7 @@ const TasksScreen = () => {
         onPress={handleSaveRoutine}
       >
         <Text style={[styles.createButtonText, { color: theme.colors.content.inverse }]}>
-          {isEditMode ? t('편집 완료') : t('루틴 생성')}
+          {isEditMode ? t('editComplete') : t('createButton')}
         </Text>
       </TouchableOpacity>
     </SafeAreaView>
@@ -333,21 +337,19 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
   },
   backButton: {
-    padding: 8,
+    marginRight: 16,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
-    flex: 1,
-    textAlign: 'center',
+    fontSize: 20,
+    fontWeight: 'bold',
   },
   deleteButton: {
     padding: 8,
+    width: 40,
   },
   content: {
     flex: 1,

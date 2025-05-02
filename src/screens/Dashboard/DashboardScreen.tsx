@@ -60,6 +60,19 @@ const DashboardScreen = () => {
       setRefreshing(true);
       console.log('루틴 로드 시작 - 현재 사용자:', user?.uid || '로그인 안됨');
 
+      // 로그인 상태일 경우 마이그레이션 확인
+      if (user) {
+        // 데이터가 로드되기 전에 마이그레이션이 필요한지 확인
+        try {
+          console.log('로그인 상태 확인됨, 데이터 마이그레이션 확인...');
+          // migrateRoutinesOnLogin은 자체적으로 user가 있는지 확인하므로 여기서는 별도 검사 불필요
+          await routineService.migrateRoutinesOnLogin();
+        } catch (migrationError) {
+          console.error('데이터 마이그레이션 확인 중 오류:', migrationError);
+          // 마이그레이션 실패해도 계속 진행
+        }
+      }
+
       // 루틴 리셋 필요한지 확인
       const needsReset = await routineService.shouldResetRoutines();
       if (needsReset) {

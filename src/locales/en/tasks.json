@@ -105,6 +105,9 @@
         "changeDueDate": "Change Due Date"
     },
     "createRoutine": "Create Routine",
+    "editRoutine": "Edit Routine",
+    "editComplete": "Complete Editing",
+    "cardColor": "Card Color",
     "title": "Title",
     "titlePlaceholder": "Enter routine title",
     "description": "Description",
@@ -118,6 +121,16 @@
         "fri": "Fri",
         "sat": "Sat",
         "sun": "Sun"
+    },
+    "colorOptions": {
+        "default": "Default",
+        "red": "Red",
+        "orange": "Orange",
+        "yellow": "Yellow",
+        "green": "Green",
+        "blue": "Blue",
+        "purple": "Purple",
+        "pink": "Pink"
     },
     "reminderSettings": "Reminder Settings",
     "createButton": "Create Routine"
