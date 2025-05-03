@@ -209,7 +209,20 @@ const TasksScreen = () => {
               const success = await deleteRoutine(route.params?.routineId as string);
               if (success) {
                 // 삭제 성공 시 메인 화면으로 돌아가기
-                navigation.navigate('Main', { refreshRoutines: true });
+                // Main 화면으로 돌아간 후 Dashboard 탭으로 이동
+                navigation.reset({
+                  index: 0,
+                  routes: [
+                    {
+                      name: 'Main',
+                      params: { refreshRoutines: true },
+                      state: {
+                        routes: [{ name: 'Dashboard' }],
+                        index: 0
+                      }
+                    }
+                  ],
+                });
               } else {
                 console.error('루틴 삭제 실패');
                 // 에러 메시지 표시 (추후 구현)
