@@ -168,9 +168,21 @@ const TasksScreen = () => {
         console.log('생성된 루틴:', savedRoutine);
       }
 
-      // 메인 화면으로 돌아가기 (홈 화면)
-      // refreshRoutines를 true로 설정하여 대시보드에서 루틴 목록을 새로고침하도록 함
-      navigation.navigate('Main', { refreshRoutines: true });
+      // Main 화면으로 돌아간 후 Dashboard 탭으로 이동
+      // 변경: Main 대신 명시적으로 Dashboard 탭으로 이동
+      navigation.reset({
+        index: 0,
+        routes: [
+          {
+            name: 'Main',
+            params: { refreshRoutines: true },
+            state: {
+              routes: [{ name: 'Dashboard' }],
+              index: 0
+            }
+          }
+        ],
+      });
     } catch (error) {
       console.error(`루틴 ${isEditMode ? '업데이트' : '생성'} 중 오류:`, error);
     }
