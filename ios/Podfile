@@ -14,9 +14,10 @@ prepare_react_native_project!
 $FirebaseSDKVersion = '11.11.0'
 
 install! 'cocoapods', :deterministic_uuids => false
-use_frameworks! :linkage => :static
 
 target 'GrindUp' do
+  use_frameworks! :linkage => :static
+  $RNFirebaseAsStaticFramework = true
   config = use_native_modules!
 
   use_react_native!(

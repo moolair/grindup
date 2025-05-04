@@ -168,21 +168,13 @@ const TasksScreen = () => {
         console.log('생성된 루틴:', savedRoutine);
       }
 
-      // Main 화면으로 돌아간 후 Dashboard 탭으로 이동
-      // 변경: Main 대신 명시적으로 Dashboard 탭으로 이동
-      navigation.reset({
-        index: 0,
-        routes: [
-          {
-            name: 'Main',
-            params: { refreshRoutines: true },
-            state: {
-              routes: [{ name: 'Dashboard' }],
-              index: 0
-            }
-          }
-        ],
+      // navigation.reset 대신 navigation.navigate 사용
+      navigation.navigate({
+        name: 'Main',
+        params: { refreshRoutines: true },
+        merge: true
       });
+
     } catch (error) {
       console.error(`루틴 ${isEditMode ? '업데이트' : '생성'} 중 오류:`, error);
     }
@@ -209,19 +201,11 @@ const TasksScreen = () => {
               const success = await deleteRoutine(route.params?.routineId as string);
               if (success) {
                 // 삭제 성공 시 메인 화면으로 돌아가기
-                // Main 화면으로 돌아간 후 Dashboard 탭으로 이동
-                navigation.reset({
-                  index: 0,
-                  routes: [
-                    {
-                      name: 'Main',
-                      params: { refreshRoutines: true },
-                      state: {
-                        routes: [{ name: 'Dashboard' }],
-                        index: 0
-                      }
-                    }
-                  ],
+                // navigation.reset 대신 navigation.navigate 사용
+                navigation.navigate({
+                  name: 'Main',
+                  params: { refreshRoutines: true },
+                  merge: true
                 });
               } else {
                 console.error('루틴 삭제 실패');
