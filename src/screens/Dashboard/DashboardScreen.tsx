@@ -362,13 +362,13 @@ const DashboardScreen = () => {
     }
   };
 
-  // 새 루틴 생성 기능 - 루틴 설정 화면으로 이동 (추후 구현)
+  // 새 루틴 생성 기능 - 루틴 설정 화면으로 이동
   const handleCreateRoutine = () => {
-    // TODO: 루틴 설정 화면으로 이동
-    // 현재는 기존 Tasks 화면으로 이동
     navigation.navigate({
       name: 'Tasks',
-      params: {}
+      params: {
+        routineId: undefined // 명시적으로 routineId를 undefined로 설정하여 새 루틴 생성 모드임을 표시
+      }
     });
   };
 

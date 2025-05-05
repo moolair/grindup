@@ -82,13 +82,21 @@ const TasksScreen = () => {
           const routineToEdit = routines.find(r => r.id === route.params?.routineId);
 
           if (routineToEdit) {
+            // 저장된 요일 정보가 있는 경우 사용, 없으면 기본값 사용
+            let loadedDays = initialDays;
+
+            if (routineToEdit.days && routineToEdit.days.length > 0) {
+              // 저장된 요일 정보를 사용하여 초기화
+              loadedDays = routineToEdit.days;
+            }
+
             // 루틴 데이터로 폼 초기화
             setRoutine({
               id: routineToEdit.id,
               title: routineToEdit.title,
               description: routineToEdit.description || '',
-              days: initialDays, // 요일 정보가 없으면 기본값 사용
-              color: routineToEdit.category || colorOptions[0].value, // 기존 카테고리를 색상으로 사용하거나 기본값
+              days: loadedDays,
+              color: routineToEdit.color || routineToEdit.category || colorOptions[0].value, // 색상 필드 또는 카테고리 필드를 색상으로 사용하거나 기본값
             });
           }
         } catch (error) {
@@ -152,6 +160,7 @@ const TasksScreen = () => {
         completed: isEditMode ? Boolean((routine as any).completed) : false,
         category: routine.color, // 선택한 색상을 카테고리 필드에 저장
         color: routine.color, // 색상 필드에도 직접 저장
+        days: routine.days, // 요일 정보 저장
       };
 
       let savedRoutine;
@@ -216,7 +225,7 @@ const TasksScreen = () => {
           <ChevronLeftIcon color={theme.colors.content.primary} size={24} />
         </TouchableOpacity>
         <Text style={[styles.title, { color: theme.colors.content.primary }]}>
-          {isEditMode ? t('루틴 편집') : t('새 루틴 만들기')}
+          {isEditMode ? t('editRoutine') : t('createRoutine')}
         </Text>
         {isEditMode && (
           <TouchableOpacity onPress={handleDeleteRoutine} style={styles.deleteButton}>
@@ -317,7 +326,7 @@ const TasksScreen = () => {
         onPress={handleSaveRoutine}
       >
         <Text style={[styles.createButtonText, { color: theme.colors.content.inverse }]}>
-          {isEditMode ? t('편집 완료') : t('루틴 생성')}
+          {isEditMode ? t('editComplete') : t('createButton')}
         </Text>
       </TouchableOpacity>
     </SafeAreaView>
