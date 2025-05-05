@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { auth, firebase, initializeFirebase, getFirebaseApp } from '../services/firebase';
 import { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { migrateRoutinesOnLogin } from '../services/routineService';
 
 type AuthContextType = {
     user: FirebaseAuthTypes.User | null;
@@ -23,6 +24,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
     const [loading, setLoading] = useState(true);
     const [firebaseInitialized, setFirebaseInitialized] = useState(false);
+    const [prevUserState, setPrevUserState] = useState<string | null>(null);
 
     // Firebase 초기화 확인 및 필요시 초기화
     useEffect(() => {
@@ -56,7 +58,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 console.log('[AuthContext] 인증 상태 리스너 설정 중...');
                 const unsubscribe = auth().onAuthStateChanged((currentUser) => {
                     console.log('[AuthContext] 인증 상태 변경:', currentUser ? '로그인됨' : '로그아웃됨');
+
+                    // 이전 상태와 현재 상태를 비교하여 로그인 이벤트 감지
+                    const currentUserState = currentUser ? currentUser.uid : null;
+                    const wasLoggedOut = prevUserState === null;
+                    const justLoggedIn = currentUserState !== null && wasLoggedOut;
+
+                    // 로그인 시 데이터 마이그레이션 처리
+                    if (justLoggedIn && currentUser) {
+                        console.log('[AuthContext] 로그인 이벤트 감지, 데이터 마이그레이션 시작...');
+                        // 데이터 마이그레이션은 비동기로 실행하고 UI 업데이트는 기다리지 않음
+                        migrateRoutinesOnLogin().catch(err => {
+                            console.error('[AuthContext] 데이터 마이그레이션 실패:', err);
+                        });
+                    }
+
+                    // 상태 업데이트
                     setUser(currentUser);
+                    setPrevUserState(currentUserState);
                     setLoading(false);
                 });
 
@@ -71,7 +90,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
 
         initFirebase();
-    }, []);
+    }, [prevUserState]);
 
     // 로그아웃 기능
     const signOut = async () => {

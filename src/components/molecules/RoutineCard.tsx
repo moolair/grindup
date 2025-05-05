@@ -28,6 +28,7 @@ interface Task {
     priority?: 'low' | 'medium' | 'high' | 'urgent';
     order?: number;
     color?: string;
+    days?: Array<{ id: string; label: string; selected: boolean }>;
 }
 
 interface RoutineCardProps {

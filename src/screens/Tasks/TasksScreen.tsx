@@ -5,15 +5,8 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { useTheme } from '../../theme/ThemeProvider';
 import { ChevronLeftIcon, DeleteIcon } from '../../components/Icons';
 import useTranslation from '../../hooks/useTranslation';
-import { addRoutine, updateRoutine, getRoutines, deleteRoutine } from '../../services/routineService';
+import { addRoutine, updateRoutine, getRoutines, deleteRoutine, DayOption, Routine as RoutineType } from '../../services/routineService';
 import { RootStackParamList } from '../../navigation/AppNavigator';
-
-// 요일 선택을 위한 인터페이스
-interface DayOption {
-  id: string;
-  label: string;
-  selected: boolean;
-}
 
 // 색상 옵션 인터페이스
 interface ColorOption {
@@ -43,14 +36,14 @@ const TasksScreen = () => {
 
   // 색상 옵션
   const colorOptions: ColorOption[] = [
-    { id: 'default', name: '기본', value: theme.colors.ui.primary },
-    { id: 'red', name: '빨강', value: '#FF6B6B' },
-    { id: 'orange', name: '주황', value: '#FFA86B' },
-    { id: 'yellow', name: '노랑', value: '#FFDE6B' },
-    { id: 'green', name: '초록', value: '#6BFF8B' },
-    { id: 'blue', name: '파랑', value: '#6B9CFF' },
-    { id: 'purple', name: '보라', value: '#B96BFF' },
-    { id: 'pink', name: '분홍', value: '#FF6BC1' },
+    { id: 'default', name: t('colorOptions.default'), value: theme.colors.ui.primary },
+    { id: 'red', name: t('colorOptions.red'), value: '#FF6B6B' },
+    { id: 'orange', name: t('colorOptions.orange'), value: '#FFA86B' },
+    { id: 'yellow', name: t('colorOptions.yellow'), value: '#FFDE6B' },
+    { id: 'green', name: t('colorOptions.green'), value: '#6BFF8B' },
+    { id: 'blue', name: t('colorOptions.blue'), value: '#6B9CFF' },
+    { id: 'purple', name: t('colorOptions.purple'), value: '#B96BFF' },
+    { id: 'pink', name: t('colorOptions.pink'), value: '#FF6BC1' },
   ];
 
   // 초기 요일 선택 상태
@@ -175,9 +168,13 @@ const TasksScreen = () => {
         console.log('생성된 루틴:', savedRoutine);
       }
 
-      // 메인 화면으로 돌아가기 (홈 화면)
-      // refreshRoutines를 true로 설정하여 대시보드에서 루틴 목록을 새로고침하도록 함
-      navigation.navigate('Main', { refreshRoutines: true });
+      // navigation.reset 대신 navigation.navigate 사용
+      navigation.navigate({
+        name: 'Main',
+        params: { refreshRoutines: true },
+        merge: true
+      });
+
     } catch (error) {
       console.error(`루틴 ${isEditMode ? '업데이트' : '생성'} 중 오류:`, error);
     }
@@ -204,7 +201,12 @@ const TasksScreen = () => {
               const success = await deleteRoutine(route.params?.routineId as string);
               if (success) {
                 // 삭제 성공 시 메인 화면으로 돌아가기
-                navigation.navigate('Main', { refreshRoutines: true });
+                // navigation.reset 대신 navigation.navigate 사용
+                navigation.navigate({
+                  name: 'Main',
+                  params: { refreshRoutines: true },
+                  merge: true
+                });
               } else {
                 console.error('루틴 삭제 실패');
                 // 에러 메시지 표시 (추후 구현)
@@ -220,8 +222,11 @@ const TasksScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
+      <View style={[styles.header, { borderBottomColor: theme.colors.border.light }]}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={handleBackPress}
+        >
           <ChevronLeftIcon color={theme.colors.content.primary} size={24} />
         </TouchableOpacity>
         <Text style={[styles.title, { color: theme.colors.content.primary }]}>
@@ -232,6 +237,7 @@ const TasksScreen = () => {
             <DeleteIcon color={theme.colors.ui.error} size={24} />
           </TouchableOpacity>
         )}
+        {!isEditMode && <View style={styles.deleteButton} />}
       </View>
 
       <ScrollView style={styles.content}>
@@ -299,7 +305,7 @@ const TasksScreen = () => {
 
         {/* 카드 색상 선택 */}
         <View style={styles.inputContainer}>
-          <Text style={[styles.inputLabel, { color: theme.colors.content.primary }]}>카드 색상</Text>
+          <Text style={[styles.inputLabel, { color: theme.colors.content.primary }]}>{t('cardColor')}</Text>
           <View style={styles.colorContainer}>
             {colorOptions.map(color => (
               <TouchableOpacity
@@ -340,21 +346,19 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
   },
   backButton: {
-    padding: 8,
+    marginRight: 16,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
-    flex: 1,
-    textAlign: 'center',
+    fontSize: 20,
+    fontWeight: 'bold',
   },
   deleteButton: {
     padding: 8,
+    width: 40,
   },
   content: {
     flex: 1,

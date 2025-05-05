@@ -36,6 +36,11 @@ const getUserResetKey = (): string => {
     return `routines_last_reset_${userId}`;
 };
 
+// 'default' 키로 저장된 로컬 스토리지 키 가져오기
+const getDefaultStorageKey = (): string => {
+    return `app_routines_default`;
+};
+
 // 오늘 자정의 시간을 얻는 함수
 export const getMidnightTonight = (): Date => {
     const now = new Date();
@@ -126,6 +131,12 @@ export const resetRoutines = async (): Promise<void> => {
         await AsyncStorage.setItem(getUserStorageKey(), JSON.stringify(resetRoutines));
         await AsyncStorage.setItem(getUserResetKey(), new Date().toISOString());
 
+        // 로그인된 사용자의 경우 Firestore에도 업데이트
+        const user = auth().currentUser;
+        if (user) {
+            await syncRoutinesToFirestore(resetRoutines);
+        }
+
         console.log('루틴 리셋 완료:', new Date().toISOString());
 
         // 리셋 이벤트 알림
@@ -135,11 +146,187 @@ export const resetRoutines = async (): Promise<void> => {
     }
 };
 
-// 모든 루틴 가져오기
+// Firestore에서 루틴 가져오기
+export const getRoutinesFromFirestore = async (): Promise<Routine[]> => {
+    try {
+        const user = auth().currentUser;
+        if (!user) {
+            console.log('인증된 사용자가 없습니다. Firestore에서 가져올 수 없습니다.');
+            return [];
+        }
+
+        const routinesCollection = firestore().collection('routines');
+        const snapshot = await routinesCollection
+            .where('userId', '==', user.uid)
+            .orderBy('order', 'asc')
+            .get();
+
+        if (snapshot.empty) {
+            console.log('Firestore에 저장된 루틴이 없습니다.');
+            return [];
+        }
+
+        return snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                title: data.title,
+                description: data.description,
+                completed: data.completed,
+                category: data.category,
+                color: data.color,
+                order: data.order,
+                days: data.days,
+                createdAt: data.createdAt,
+                lastResetAt: data.lastResetAt,
+            };
+        });
+    } catch (error) {
+        console.error('Firestore에서 루틴 가져오기 실패:', error);
+        return [];
+    }
+};
+
+// 로컬 AsyncStorage에서 루틴 가져오기
+export const getRoutinesFromLocalStorage = async (key?: string): Promise<Routine[]> => {
+    try {
+        const storageKey = key || getUserStorageKey();
+        const data = await AsyncStorage.getItem(storageKey);
+        return data ? JSON.parse(data) : [];
+    } catch (error) {
+        console.error('로컬 스토리지에서 루틴 가져오기 실패:', error);
+        return [];
+    }
+};
+
+// 루틴을 Firestore에 동기화
+export const syncRoutinesToFirestore = async (routines: Routine[]): Promise<void> => {
+    try {
+        const user = auth().currentUser;
+        if (!user) {
+            console.log('인증된 사용자가 없습니다. Firestore에 저장할 수 없습니다.');
+            return;
+        }
+
+        const batch = firestore().batch();
+        const routinesCollection = firestore().collection('routines');
+
+        // 기존 사용자 루틴 삭제
+        const existingRoutines = await routinesCollection
+            .where('userId', '==', user.uid)
+            .get();
+
+        existingRoutines.docs.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+
+        // 새 루틴 저장
+        for (const routine of routines) {
+            const docRef = routinesCollection.doc(routine.id);
+
+            // undefined 값을 필터링한 객체 생성
+            const firestoreData: Record<string, any> = {
+                userId: user.uid,
+                updatedAt: firestore.FieldValue.serverTimestamp()
+            };
+
+            // routine의 각 필드를 검사하여 undefined가 아닌 값만 추가
+            Object.entries(routine).forEach(([key, value]) => {
+                if (value !== undefined) {
+                    firestoreData[key] = value;
+                }
+            });
+
+            batch.set(docRef, firestoreData);
+        }
+
+        await batch.commit();
+        console.log(`${routines.length}개의 루틴을 Firestore에 동기화 완료`);
+    } catch (error) {
+        console.error('Firestore에 루틴 동기화 실패:', error);
+        throw error;
+    }
+};
+
+// 로그인 후 로컬 데이터와 Firestore 데이터 통합
+export const migrateRoutinesOnLogin = async (): Promise<void> => {
+    const user = auth().currentUser;
+    if (!user) {
+        console.log('인증된 사용자가 없습니다. 마이그레이션을 수행할 수 없습니다.');
+        return;
+    }
+
+    try {
+        console.log('로그인 후 루틴 데이터 마이그레이션 시작...');
+
+        // 1. 로그인 하기 전 로컬에 저장된 'default' 루틴 가져오기
+        const defaultRoutines = await getRoutinesFromLocalStorage(getDefaultStorageKey());
+
+        // 2. Firestore에서 사용자의 기존 루틴 가져오기
+        const firestoreRoutines = await getRoutinesFromFirestore();
+
+        // 3. 병합 (ID 기준으로 중복 제거, Firestore 데이터 우선)
+        const routineMap = new Map<string, Routine>();
+
+        // 먼저 Firestore 데이터 추가 (우선순위 높음)
+        firestoreRoutines.forEach(routine => {
+            routineMap.set(routine.id, routine);
+        });
+
+        // 로컬 'default' 데이터 추가 (중복되지 않는 경우만)
+        defaultRoutines.forEach(routine => {
+            if (!routineMap.has(routine.id)) {
+                routineMap.set(routine.id, routine);
+            }
+        });
+
+        // 병합된 루틴 배열 생성 (순서 유지)
+        const mergedRoutines = Array.from(routineMap.values())
+            .sort((a, b) => a.order - b.order);
+
+        // 4. 병합된 데이터를 로컬 스토리지와 Firestore에 저장
+        if (mergedRoutines.length > 0) {
+            await AsyncStorage.setItem(getUserStorageKey(), JSON.stringify(mergedRoutines));
+            await syncRoutinesToFirestore(mergedRoutines);
+            console.log(`${mergedRoutines.length}개의 병합된 루틴 저장 완료`);
+        } else if (defaultRoutines.length > 0) {
+            // Firestore에 데이터가 없지만 로컬에는 있는 경우
+            await AsyncStorage.setItem(getUserStorageKey(), JSON.stringify(defaultRoutines));
+            await syncRoutinesToFirestore(defaultRoutines);
+            console.log(`${defaultRoutines.length}개의 로컬 루틴을 Firestore로 마이그레이션 완료`);
+        } else {
+            // 둘 다 없는 경우 기본 루틴 생성
+            await createDefaultRoutines();
+            console.log('기본 루틴 생성 완료');
+        }
+
+        // 5. 더 이상 필요없는 'default' 키 데이터 정리 (선택적)
+        // await AsyncStorage.removeItem(getDefaultStorageKey());
+
+        console.log('데이터 마이그레이션 완료!');
+    } catch (error) {
+        console.error('루틴 데이터 마이그레이션 중 오류:', error);
+    }
+};
+
+// 모든 루틴 가져오기 (로컬 우선, 로그인 시 Firestore와 동기화)
 export const getRoutines = async (): Promise<Routine[]> => {
     try {
+        // 로컬 스토리지에서 먼저 확인
         const data = await AsyncStorage.getItem(getUserStorageKey());
-        return data ? JSON.parse(data) : [];
+        const localRoutines = data ? JSON.parse(data) : [];
+
+        // 로그인된 사용자이지만 로컬에 데이터가 없는 경우 Firestore에서 가져오기 시도
+        const user = auth().currentUser;
+        if (user && localRoutines.length === 0) {
+            const firestoreRoutines = await getRoutinesFromFirestore();
+            if (firestoreRoutines.length > 0) {
+                await AsyncStorage.setItem(getUserStorageKey(), JSON.stringify(firestoreRoutines));
+                return firestoreRoutines;
+            }
+        }
+
+        return localRoutines;
     } catch (error) {
         console.error('루틴 조회 중 오류:', error);
         return [];
@@ -161,6 +348,37 @@ export const addRoutine = async (routine: Omit<Routine, 'id' | 'createdAt' | 'la
         const updatedRoutines = [...routines, newRoutine];
         await AsyncStorage.setItem(getUserStorageKey(), JSON.stringify(updatedRoutines));
 
+        // 로그인된 사용자의 경우 Firestore에도 추가
+        const user = auth().currentUser;
+        if (user) {
+            try {
+                // undefined 값을 필터링한 객체 생성
+                const firestoreData: Record<string, any> = {
+                    userId: user.uid,
+                    updatedAt: firestore.FieldValue.serverTimestamp()
+                };
+
+                // newRoutine의 각 필드를 검사하여 undefined가 아닌 값만 추가
+                Object.entries(newRoutine).forEach(([key, value]) => {
+                    if (value !== undefined) {
+                        firestoreData[key] = value;
+                    }
+                });
+
+                // Firebase v22 모듈러 SDK API 패턴으로 완전히 수정
+                // 이전: const docRef = routinesCollection.doc(newRoutine.id);
+                // 이후: addDoc 또는 setDoc 사용
+                const routinesCollection = firestore().collection('routines');
+
+                // 명시적 ID 사용을 위해 setDoc 사용
+                await routinesCollection.doc(newRoutine.id).set(firestoreData);
+                console.log('Firestore에 새 루틴 추가 완료:', newRoutine.id);
+            } catch (firestoreError) {
+                console.error('Firestore에 루틴 추가 실패:', firestoreError);
+                // 로컬 저장은 이미 완료됨, Firestore 실패는 무시
+            }
+        }
+
         return newRoutine;
     } catch (error) {
         console.error('루틴 추가 중 오류:', error);
@@ -180,6 +398,33 @@ export const updateRoutine = async (id: string, updates: Partial<Routine>): Prom
         routines[index] = updatedRoutine;
 
         await AsyncStorage.setItem(getUserStorageKey(), JSON.stringify(routines));
+
+        // 로그인된 사용자의 경우 Firestore에도 업데이트
+        const user = auth().currentUser;
+        if (user) {
+            try {
+                // undefined 값을 필터링한 객체 생성
+                const firestoreData: Record<string, any> = {
+                    userId: user.uid,
+                    updatedAt: firestore.FieldValue.serverTimestamp()
+                };
+
+                // updatedRoutine의 각 필드를 검사하여 undefined가 아닌 값만 추가
+                Object.entries(updatedRoutine).forEach(([key, value]) => {
+                    if (value !== undefined) {
+                        firestoreData[key] = value;
+                    }
+                });
+
+                // Firebase v22 모듈러 SDK API 패턴으로 완전히 수정
+                const routinesCollection = firestore().collection('routines');
+                await routinesCollection.doc(id).update(firestoreData);
+                console.log('Firestore 루틴 업데이트 완료:', id);
+            } catch (firestoreError) {
+                console.error('Firestore 루틴 업데이트 실패:', firestoreError);
+                // 로컬 저장은 이미 완료됨, Firestore 실패는 무시
+            }
+        }
 
         // 업데이트 이벤트 알림
         notifyRoutineStateChange('update');
@@ -219,6 +464,26 @@ export const toggleRoutineCompletion = async (id: string): Promise<Routine | nul
         routines[index] = updatedRoutine;
         await AsyncStorage.setItem(getUserStorageKey(), JSON.stringify(routines));
         console.log(`루틴 상태 저장 완료: ${updatedRoutine.completed}`);
+
+        // 로그인된 사용자의 경우 Firestore에도 업데이트
+        const user = auth().currentUser;
+        if (user) {
+            try {
+                const firestoreData = {
+                    completed: newState,
+                    updatedAt: firestore.FieldValue.serverTimestamp(),
+                    userId: user.uid
+                };
+
+                // Firebase v22 모듈러 SDK API 패턴으로 완전히 수정
+                const routinesCollection = firestore().collection('routines');
+                await routinesCollection.doc(id).update(firestoreData);
+                console.log('Firestore 루틴 상태 업데이트 완료:', id);
+            } catch (firestoreError) {
+                console.error('Firestore 루틴 상태 업데이트 실패:', firestoreError);
+                // 로컬 저장은 이미 완료됨, Firestore 실패는 무시
+            }
+        }
 
         // 완료 상태 변경 이벤트 알림 (로컬 상태 업데이트는 완료됨)
         notifyRoutineStateChange('complete');
@@ -285,8 +550,8 @@ const updateFirebaseContribution = async (): Promise<void> => {
         try {
             // 모듈러 API 방식으로 컬렉션과 문서 참조 생성
             const tasksCollection = firestore().collection('tasks');
-            const docRef = tasksCollection.doc(); // 자동 ID 생성
-            await docRef.set(taskDocData);
+            // 자동 ID 생성하여 새 문서 추가
+            const docRef = await tasksCollection.add(taskDocData);
             console.log(`Firebase 기여 데이터 저장 성공: 문서 ID ${docRef.id}`);
 
             // 기여도 레벨 업데이트 (색상 강도 계산)
@@ -307,6 +572,21 @@ export const deleteRoutine = async (id: string): Promise<boolean> => {
         const updatedRoutines = routines.filter(r => r.id !== id);
 
         await AsyncStorage.setItem(getUserStorageKey(), JSON.stringify(updatedRoutines));
+
+        // 로그인된 사용자의 경우 Firestore에서도 삭제
+        const user = auth().currentUser;
+        if (user) {
+            try {
+                // Firebase v22 모듈러 SDK API 패턴으로 완전히 수정
+                const routinesCollection = firestore().collection('routines');
+                await routinesCollection.doc(id).delete();
+                console.log('Firestore에서 루틴 삭제 완료:', id);
+            } catch (firestoreError) {
+                console.error('Firestore에서 루틴 삭제 실패:', firestoreError);
+                // 로컬 삭제는 이미 완료됨, Firestore 실패는 무시
+            }
+        }
+
         return true;
     } catch (error) {
         console.error('루틴 삭제 중 오류:', error);

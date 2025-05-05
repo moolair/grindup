@@ -20,6 +20,7 @@ export interface Task {
   status: 'pending' | 'completed';
   category?: string;
   color?: string;
+  days?: Array<{ id: string; label: string; selected: boolean }>;
 }
 
 // Stack Navigator 타입 정의
