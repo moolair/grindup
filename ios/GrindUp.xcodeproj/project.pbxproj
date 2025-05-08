@@ -7,12 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0D56EA10175852E22DC96001 /* Pods_GrindUp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E080A68476E764F747152CBE /* Pods_GrindUp.framework */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		32AB3BC8FA340DE47FC69286 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		DFF0C9A82D9E1D5F00356EB6 /* Algorithms in Frameworks */ = {isa = PBXBuildFile; productRef = DFF0C9A72D9E1D5F00356EB6 /* Algorithms */; };
+		E28634E9070EBCE251468FA8 /* Pods_GrindUp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 143E6782A2E15FD560C0BAE1 /* Pods_GrindUp.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -20,12 +20,12 @@
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = GrindUp/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = GrindUp/Info.plist; sourceTree = "<group>"; };
 		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = GrindUp/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		314D4229F5C65D238715D5DB /* Pods-GrindUp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GrindUp.debug.xcconfig"; path = "Target Support Files/Pods-GrindUp/Pods-GrindUp.debug.xcconfig"; sourceTree = "<group>"; };
+		143E6782A2E15FD560C0BAE1 /* Pods_GrindUp.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_GrindUp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = GrindUp/AppDelegate.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = GrindUp/LaunchScreen.storyboard; sourceTree = "<group>"; };
-		CEFCF1ADB4C10CF3D8353D32 /* Pods-GrindUp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GrindUp.release.xcconfig"; path = "Target Support Files/Pods-GrindUp/Pods-GrindUp.release.xcconfig"; sourceTree = "<group>"; };
+		878E4EE227B74C5B4ED481BF /* Pods-GrindUp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GrindUp.debug.xcconfig"; path = "Target Support Files/Pods-GrindUp/Pods-GrindUp.debug.xcconfig"; sourceTree = "<group>"; };
 		DF954E692D9E1BE0006BCD8A /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
-		E080A68476E764F747152CBE /* Pods_GrindUp.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_GrindUp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		E40A61CCEB0A840DF95F923F /* Pods-GrindUp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GrindUp.release.xcconfig"; path = "Target Support Files/Pods-GrindUp/Pods-GrindUp.release.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
@@ -35,7 +35,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				DFF0C9A82D9E1D5F00356EB6 /* Algorithms in Frameworks */,
-				0D56EA10175852E22DC96001 /* Pods_GrindUp.framework in Frameworks */,
+				E28634E9070EBCE251468FA8 /* Pods_GrindUp.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -59,7 +59,7 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				E080A68476E764F747152CBE /* Pods_GrindUp.framework */,
+				143E6782A2E15FD560C0BAE1 /* Pods_GrindUp.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -96,8 +96,8 @@
 		BBD78D7AC51CEA395F1C20DB /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				314D4229F5C65D238715D5DB /* Pods-GrindUp.debug.xcconfig */,
-				CEFCF1ADB4C10CF3D8353D32 /* Pods-GrindUp.release.xcconfig */,
+				878E4EE227B74C5B4ED481BF /* Pods-GrindUp.debug.xcconfig */,
+				E40A61CCEB0A840DF95F923F /* Pods-GrindUp.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -109,13 +109,13 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "GrindUp" */;
 			buildPhases = (
-				0385C23BC2242EE05B66BABD /* [CP] Check Pods Manifest.lock */,
+				5F9B7125B4BC9BBDDC6D4658 /* [CP] Check Pods Manifest.lock */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
-				02DABF0E9C6C815F18DAAAA6 /* [CP] Copy Pods Resources */,
-				F54653D41D178E611B760755 /* [CP-User] [RNFB] Core Configuration */,
+				54616343293C7D46ACC32D01 /* [CP] Copy Pods Resources */,
+				C2D468577487AB82533CCDBE /* [CP-User] [RNFB] Core Configuration */,
 			);
 			buildRules = (
 			);
@@ -190,7 +190,7 @@
 			shellPath = /bin/sh;
 			shellScript = "set -e\n\nWITH_ENVIRONMENT=\"$REACT_NATIVE_PATH/scripts/xcode/with-environment.sh\"\nREACT_NATIVE_XCODE=\"$REACT_NATIVE_PATH/scripts/react-native-xcode.sh\"\n\n/bin/sh -c \"$WITH_ENVIRONMENT $REACT_NATIVE_XCODE\"\n";
 		};
-		02DABF0E9C6C815F18DAAAA6 /* [CP] Copy Pods Resources */ = {
+		54616343293C7D46ACC32D01 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -207,7 +207,7 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-GrindUp/Pods-GrindUp-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		0385C23BC2242EE05B66BABD /* [CP] Check Pods Manifest.lock */ = {
+		5F9B7125B4BC9BBDDC6D4658 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -229,7 +229,7 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		F54653D41D178E611B760755 /* [CP-User] [RNFB] Core Configuration */ = {
+		C2D468577487AB82533CCDBE /* [CP-User] [RNFB] Core Configuration */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -258,7 +258,7 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 314D4229F5C65D238715D5DB /* Pods-GrindUp.debug.xcconfig */;
+			baseConfigurationReference = 878E4EE227B74C5B4ED481BF /* Pods-GrindUp.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -287,7 +287,7 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = CEFCF1ADB4C10CF3D8353D32 /* Pods-GrindUp.release.xcconfig */;
+			baseConfigurationReference = E40A61CCEB0A840DF95F923F /* Pods-GrindUp.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
