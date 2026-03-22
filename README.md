@@ -170,9 +170,13 @@ npm run lint
 
 ## Firebase Setup
 
+Firebase config files are **not included in the repository** for security reasons. You must add them manually after cloning.
+
 1. Create a project in the [Firebase Console](https://console.firebase.google.com/).
-2. Add an Android app and place the `android/app/google-services.json` file.
-3. Add an iOS app and place the `ios/GoogleService-Info.plist` file.
+2. Add an Android app (package: `com.grindup`) and download `google-services.json`.
+   - Place it at `android/app/google-services.json`
+3. Add an iOS app (bundle ID: `com.grindup`) and download `GoogleService-Info.plist`.
+   - Place it at `ios/GrindUp/GoogleService-Info.plist`
 4. Go to Authentication > Sign-in method and enable Email/Password, Google, and Apple.
 5. Create a Cloud Firestore database.
 
