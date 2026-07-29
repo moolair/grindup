@@ -128,18 +128,21 @@ const LoginScreen = () => {
 
                 // 구글 로그인 진행
                 console.log('Google 로그인 시작...');
-                const userInfo = await GoogleSignin.signIn();
-                console.log('Google 로그인 완료, 응답:', JSON.stringify(userInfo));
+                const response = await GoogleSignin.signIn();
+                console.log('Google 로그인 완료, 응답 type:', response.type);
 
-                // ID 토큰 가져오기
+                // ID 토큰 가져오기 (v13 API: response.data.idToken)
                 let idToken = null;
 
-                // userInfo에서 직접 토큰 확인
-                if (userInfo.idToken) {
-                    idToken = userInfo.idToken;
-                    console.log('idToken 획득 성공!');
+                if (response.type === 'success' && response.data?.idToken) {
+                    idToken = response.data.idToken;
+                    console.log('idToken 획득 성공! (v13 API)');
+                } else if ((response as any).idToken) {
+                    // v12 이하 호환성
+                    idToken = (response as any).idToken;
+                    console.log('idToken 획득 성공! (legacy API)');
                 } else {
-                    console.error('Google 로그인 성공했으나 idToken이 없음');
+                    console.error('Google 로그인 성공했으나 idToken이 없음, response:', JSON.stringify(response));
 
                     // 토큰 재획득 시도
                     try {
@@ -151,20 +154,6 @@ const LoginScreen = () => {
                         }
                     } catch (tokenError) {
                         console.error('토큰 획득 시도 오류:', tokenError);
-                    }
-
-                    // 토큰이 아직도 없으면 현재 사용자 정보 다시 가져오기
-                    if (!idToken) {
-                        try {
-                            console.log('현재 사용자 정보 다시 가져오기 시도');
-                            const currentUser = await GoogleSignin.getCurrentUser();
-                            if (currentUser && currentUser.idToken) {
-                                idToken = currentUser.idToken;
-                                console.log('getCurrentUser()로 idToken 획득 성공!');
-                            }
-                        } catch (currentUserError) {
-                            console.error('현재 사용자 정보 가져오기 오류:', currentUserError);
-                        }
                     }
                 }
 
