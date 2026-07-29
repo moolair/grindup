@@ -105,6 +105,10 @@
         "changeDueDate": "Change Due Date"
     },
     "createRoutine": "Create Routine",
+    "editRoutine": "Edit Routine",
+    "createNewRoutine": "Create New Routine",
+    "editComplete": "Save Changes",
+    "cardColor": "Card Color",
     "title": "Title",
     "titlePlaceholder": "Enter routine title",
     "description": "Description",

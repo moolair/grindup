@@ -216,7 +216,7 @@ const TasksScreen = () => {
           <ChevronLeftIcon color={theme.colors.content.primary} size={24} />
         </TouchableOpacity>
         <Text style={[styles.title, { color: theme.colors.content.primary }]}>
-          {isEditMode ? t('루틴 편집') : t('새 루틴 만들기')}
+          {isEditMode ? t('editRoutine') : t('createNewRoutine')}
         </Text>
         {isEditMode && (
           <TouchableOpacity onPress={handleDeleteRoutine} style={styles.deleteButton}>
@@ -290,7 +290,7 @@ const TasksScreen = () => {
 
         {/* 카드 색상 선택 */}
         <View style={styles.inputContainer}>
-          <Text style={[styles.inputLabel, { color: theme.colors.content.primary }]}>카드 색상</Text>
+          <Text style={[styles.inputLabel, { color: theme.colors.content.primary }]}>{t('cardColor')}</Text>
           <View style={styles.colorContainer}>
             {colorOptions.map(color => (
               <TouchableOpacity
@@ -317,7 +317,7 @@ const TasksScreen = () => {
         onPress={handleSaveRoutine}
       >
         <Text style={[styles.createButtonText, { color: theme.colors.content.inverse }]}>
-          {isEditMode ? t('편집 완료') : t('루틴 생성')}
+          {isEditMode ? t('editComplete') : t('createRoutine')}
         </Text>
       </TouchableOpacity>
     </SafeAreaView>
