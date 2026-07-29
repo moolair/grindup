@@ -2,6 +2,9 @@
  * @format
  */
 
+// React Native Firebase modular deprecation 경고 비활성화
+globalThis.RNFB_SILENCE_MODULAR_DEPRECATION_WARNINGS = true;
+
 // Firebase 초기화는 앱 시작 시 가장 먼저 수행
 import firebase from '@react-native-firebase/app';
 
@@ -19,10 +22,16 @@ LogBox.ignoreLogs([
     'Sending `onAnimatedValueUpdate` with no listeners registered',
     // Firebase 관련 경고 무시
     'deprecated property provided will be removed in the next major release',
+    'This method is deprecated',
     'AsyncStorage has been extracted from react-native core',
     'Method "batch" is deprecated',
     // Reanimated 관련 경고 무시
     "[Reanimated] Trying to access the 'value' property",
+    '[Reanimated] Reading from `value` during',
+    'you might be using shared value',
+    'using shared value\'s .value',
+    // React key 경고 무시
+    'Encountered two children with the same key',
     // 탭 제스처 오류 무시
     "{}"
 ]);
