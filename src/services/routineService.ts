@@ -269,7 +269,7 @@ const updateFirebaseContribution = async (): Promise<void> => {
         today.setHours(0, 0, 0, 0);
 
         // 오늘 날짜의 기여 데이터 가져오기
-        const todayFormatted = today.toISOString().split('T')[0]; // YYYY-MM-DD 형식
+        const todayFormatted = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`; // YYYY-MM-DD 로컬 시간
 
         console.log('Firestore 문서 생성 시작');
         // Firebase 데이터 저장 (간소화된 방식)

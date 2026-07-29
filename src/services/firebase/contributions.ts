@@ -1,6 +1,14 @@
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
 
+// 로컬 날짜를 YYYY-MM-DD 형식으로 변환 (UTC 대신 로컬 시간 사용)
+const toLocalDateString = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
 // 스트릭 정보 인터페이스
 export interface StreakInfo {
     currentStreak: number;
@@ -133,7 +141,7 @@ export const getWeeklyContributions = async (weeks: number = 8): Promise<{ date:
                 completedDate = new Date();
             }
 
-            const dateString = completedDate.toISOString().split('T')[0]; // YYYY-MM-DD 형식
+            const dateString = toLocalDateString(completedDate); // YYYY-MM-DD 형식
 
             const currentCount = contributionMap.get(dateString) || 0;
             contributionMap.set(dateString, currentCount + 1);
@@ -172,7 +180,7 @@ export const removeCompletionData = async (routineId: string, date: Date): Promi
         const tomorrowDate = new Date(todayDate);
         tomorrowDate.setDate(todayDate.getDate() + 1);
 
-        const todayFormatted = todayDate.toISOString().split('T')[0];
+        const todayFormatted = toLocalDateString(todayDate);
         console.log(`삭제할 데이터 날짜: ${todayFormatted}`);
 
         try {
@@ -258,7 +266,7 @@ export const updateContributionLevel = async (date: Date = new Date()): Promise<
         }
 
         // 날짜 형식 변환 (YYYY-MM-DD)
-        const dateString = date.toISOString().split('T')[0];
+        const dateString = toLocalDateString(date);
         console.log(`날짜 ${dateString}의 기여도 레벨 업데이트 시작`);
 
         // 해당 날짜의 완료된 작업 수 가져오기
@@ -348,8 +356,8 @@ export const getContributionLevels = async (
         }
 
         // 날짜 형식 변환
-        const startDateString = startDate.toISOString().split('T')[0];
-        const endDateString = endDate.toISOString().split('T')[0];
+        const startDateString = toLocalDateString(startDate);
+        const endDateString = toLocalDateString(endDate);
 
         console.log(`${startDateString}부터 ${endDateString}까지의 기여도 데이터 조회 중`);
 
@@ -408,8 +416,8 @@ export const subscribeToContributionLevels = (
         }
 
         // 날짜 형식 변환
-        const startDateString = startDate.toISOString().split('T')[0];
-        const endDateString = endDate.toISOString().split('T')[0];
+        const startDateString = toLocalDateString(startDate);
+        const endDateString = toLocalDateString(endDate);
 
         console.log(`${startDateString}부터 ${endDateString}까지의 기여도 변경 구독 시작`);
 
@@ -467,7 +475,7 @@ export const subscribeToContributionUpdates = (
         }
 
         // 날짜 형식 변환 (YYYY-MM-DD)
-        const dateString = date.toISOString().split('T')[0];
+        const dateString = toLocalDateString(date);
         console.log(`날짜 ${dateString}의 기여도 변경 구독 시작`);
 
         // userContributions/{userId}/dates/{dateString} 문서 리스너 설정

@@ -17,6 +17,14 @@ export interface ContributionGraphHandle {
     updateTodayCount: (increase: boolean) => void;
 }
 
+// 로컬 날짜를 YYYY-MM-DD 형식으로 변환 (UTC 대신 로컬 시간 사용)
+const toLocalDateString = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
 // 박스 크기 및 마진 상수 정의 - 더 명확한 정렬을 위해 조정
 const BOX_SIZE = 10;
 const BOX_MARGIN = 2;
@@ -131,7 +139,7 @@ const ContributionGraph = forwardRef<ContributionGraphHandle, ContributionGraphP
 
             // 오늘 날짜 문자열 (YYYY-MM-DD)
             const today = new Date();
-            const todayString = today.toISOString().split('T')[0];
+            const todayString = toLocalDateString(today);
 
             // 주별 데이터 복사
             const newWeekData = [...weekData];
@@ -143,7 +151,7 @@ const ContributionGraph = forwardRef<ContributionGraphHandle, ContributionGraphP
                 const week = newWeekData[weekIndex];
                 for (let dayIndex = 0; dayIndex < week.length; dayIndex++) {
                     const day = week[dayIndex];
-                    const dateString = day.date.toISOString().split('T')[0];
+                    const dateString = toLocalDateString(day.date);
 
                     if (dateString === todayString) {
                         // 오늘 날짜 데이터 발견
@@ -260,7 +268,7 @@ const ContributionGraph = forwardRef<ContributionGraphHandle, ContributionGraphP
                 date.setDate(endDate.getDate() - daysAgo);
 
                 // 날짜 문자열로 변환 (YYYY-MM-DD)
-                const dateString = date.toISOString().split('T')[0];
+                const dateString = toLocalDateString(date);
 
                 // 해당 날짜의 기여도 카운트 가져오기
                 const count = contributionMap.get(dateString) || 0;
