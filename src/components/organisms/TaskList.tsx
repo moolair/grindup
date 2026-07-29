@@ -54,11 +54,18 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, o
     // 낙관적 UI 업데이트를 위한 로컬 태스크 상태 추가
     const [localTasks, setLocalTasks] = useState<Task[]>(tasks);
 
+    // 리오더 직후 useEffect가 localTasks를 덮어쓰는 것을 방지하기 위한 플래그
+    const reorderInProgressRef = useRef(false);
+
     // 외부에서 전달된 tasks가 변경되면 localTasks 업데이트
     useEffect(() => {
-        // 드래그 중에는 localTasks 업데이트 방지 (중요: 드래그 중 서버 응답이 와도 무시)
-        if (!draggingTaskId) {
+        // 드래그 중이거나 리오더 처리 직후에는 localTasks 업데이트 방지
+        if (!draggingTaskId && !reorderInProgressRef.current) {
             setLocalTasks(tasks);
+        }
+        // 리오더 플래그가 설정된 상태에서 tasks prop이 업데이트되면 플래그 해제
+        if (reorderInProgressRef.current && !draggingTaskId) {
+            reorderInProgressRef.current = false;
         }
     }, [tasks, draggingTaskId]);
 
@@ -697,17 +704,18 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, o
                 // 3. 순서 업데이트 완료 후 진동 피드백
                 Vibration.vibrate(50);
 
-                // 4. 낙관적 UI 업데이트: 로컬 상태에서 순서 변경
+                // 4. 리오더 플래그 설정 (useEffect가 localTasks를 덮어쓰지 않도록)
+                reorderInProgressRef.current = true;
+
+                // 5. 낙관적 UI 업데이트: 로컬 상태에서 순서 변경
                 const updatedTasks = [...localTasks];
                 const movedTask = updatedTasks.splice(currentIndex, 1)[0];
                 updatedTasks.splice(newPosition, 0, movedTask);
                 setLocalTasks(updatedTasks);
 
-                // 5. 실제 데이터 업데이트는 약간 지연시켜 수행
+                // 6. 부모 컴포넌트에 순서 변경 즉시 알림
                 if (onReorder) {
-                    setTimeout(() => {
-                        onReorder(taskId, newPosition);
-                    }, 50);
+                    onReorder(taskId, newPosition);
                 }
             } else {
                 // 위치 변경이 없어도 상태와 애니메이션 초기화
@@ -1161,7 +1169,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskPress, onTaskDelete, o
             <View style={styles.listContainer}>
                 <FlatList
                     data={localTasks}
-                    keyExtractor={(item) => item.id}
+                    keyExtractor={(item, index) => `${item.id}-${index}`}
                     scrollEnabled={scrollEnabled.current}
                     nestedScrollEnabled={true}
                     contentContainerStyle={styles.flatListContent}
