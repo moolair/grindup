@@ -202,19 +202,11 @@ export const removeCompletionData = async (routineId: string, date: Date): Promi
                 return true; // 삭제할 문서가 없는 경우도 성공으로 처리
             }
 
-            // 문서가 있으면 삭제
-            const writeBatch = firestore().batch();
-            let count = 0;
-
-            querySnapshot.forEach((doc) => {
-                console.log(`삭제할 문서 ID: ${doc.id}`);
-                writeBatch.delete(doc.ref);
-                count++;
-            });
-
-            // 일괄 삭제 실행
-            await writeBatch.commit();
-            console.log(`${count}개의 문서 삭제 완료`);
+            // 문서 1개만 삭제 (루틴 1개 토글 해제 시 1개만 제거)
+            const firstDoc = querySnapshot.docs[0];
+            console.log(`삭제할 문서 ID: ${firstDoc.id}`);
+            await firstDoc.ref.delete();
+            console.log(`1개의 문서 삭제 완료 (전체 ${querySnapshot.size}개 중)`);
 
             // 문서 삭제 후 기여도 레벨 업데이트
             try {
