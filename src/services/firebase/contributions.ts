@@ -496,4 +496,72 @@ export const subscribeToContributionUpdates = (
         console.error('기여도 구독 설정 중 오류:', error);
         return () => { };
     }
-}; 
+};
+
+/**
+ * 루틴 완료 시 userStats 문서의 streak/completion 정보를 업데이트합니다.
+ * - totalCompletions: 전체 완료 횟수 +1
+ * - currentStreak: 어제도 완료한 적 있으면 +1, 아니면 1로 리셋
+ * - longestStreak: currentStreak이 기존 최고 기록 초과 시 업데이트
+ */
+export const updateStreakInfo = async (): Promise<void> => {
+    try {
+        const user = auth().currentUser;
+        if (!user) return;
+
+        const userStatsRef = firestore().collection('userStats').doc(user.uid);
+        const statsDoc = await userStatsRef.get();
+
+        const currentData = statsDoc.exists ? statsDoc.data() : null;
+        const prevTotalCompletions = currentData?.totalCompletions || 0;
+        const prevCurrentStreak = currentData?.currentStreak || 0;
+        const prevLongestStreak = currentData?.longestStreak || 0;
+        const lastCompletionDate = currentData?.lastCompletionDate || '';
+
+        // 오늘 날짜
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayStr = toLocalDateString(today);
+
+        // 어제 날짜
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = toLocalDateString(yesterday);
+
+        // 스트릭 계산
+        let newStreak = 1;
+        if (lastCompletionDate === todayStr) {
+            // 오늘 이미 완료한 적 있으면 streak 유지
+            newStreak = prevCurrentStreak;
+        } else if (lastCompletionDate === yesterdayStr) {
+            // 어제 완료했으면 streak +1
+            newStreak = prevCurrentStreak + 1;
+        }
+        // 그 외: streak 1로 리셋
+
+        const newLongestStreak = Math.max(prevLongestStreak, newStreak);
+
+        // totalCompletions은 오늘 처음 완료하는 경우에만 +1
+        const newTotalCompletions = lastCompletionDate === todayStr
+            ? prevTotalCompletions
+            : prevTotalCompletions + 1;
+
+        const updateData = {
+            totalCompletions: newTotalCompletions,
+            currentStreak: newStreak,
+            longestStreak: newLongestStreak,
+            lastCompletionDate: todayStr,
+            lastUpdated: firestore.FieldValue.serverTimestamp(),
+        };
+
+        if (statsDoc.exists) {
+            await userStatsRef.update(updateData);
+        } else {
+            await userStatsRef.set(updateData);
+        }
+
+        console.log(`스트릭 정보 업데이트: total=${newTotalCompletions}, streak=${newStreak}, longest=${newLongestStreak}`);
+    } catch (error) {
+        console.error('스트릭 정보 업데이트 중 오류:', error);
+    }
+};

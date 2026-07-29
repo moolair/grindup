@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
-import { removeCompletionData, updateContributionLevel } from './firebase/contributions';
+import { removeCompletionData, updateContributionLevel, updateStreakInfo } from './firebase/contributions';
 
 export interface DayOption {
     id: string;
@@ -294,6 +294,10 @@ const updateFirebaseContribution = async (): Promise<void> => {
             // 기여도 레벨 업데이트 (색상 강도 계산)
             await updateContributionLevel(today);
             console.log('기여도 색상 레벨 업데이트 완료');
+
+            // 스트릭/완료 통계 업데이트
+            await updateStreakInfo();
+            console.log('스트릭 정보 업데이트 완료');
         } catch (innerError) {
             console.error('Firebase 문서 저장 실패:', innerError);
         }

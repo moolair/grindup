@@ -5,7 +5,8 @@
     "stats": {
         "totalTasks": "Total Tasks",
         "completed": "Completed",
-        "inProgress": "In Progress"
+        "inProgress": "In Progress",
+        "streakDays": "Streak"
     },
     "weeklyReport": "Weekly Report",
     "weeklyTaskChart": "Weekly Task Chart"

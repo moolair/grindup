@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, Image, TouchableOpacity, TextInput, Modal, Alert } from 'react-native';
 import { useTheme } from '../../theme/ThemeProvider';
 import useTranslation from '../../hooks/useTranslation';
 import { useAuth } from '../../context/AuthContext';
 import { Avatar } from '../../components/atoms/Avatar';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { getStreakInfo } from '../../services/firebase/contributions';
 
 const ProfileScreen = () => {
   const { theme } = useTheme();
@@ -19,6 +20,26 @@ const ProfileScreen = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isUpdatingName, setIsUpdatingName] = useState(false);
+
+  // Firebase에서 가져오는 통계 데이터
+  const [completedTasks, setCompletedTasks] = useState(0);
+  const [streakDays, setStreakDays] = useState(0);
+
+  // 화면 포커스 시 데이터 갱신
+  useFocusEffect(
+    useCallback(() => {
+      const loadStats = async () => {
+        try {
+          const streakInfo = await getStreakInfo();
+          setCompletedTasks(streakInfo.totalCompletions);
+          setStreakDays(streakInfo.currentStreak);
+        } catch (error) {
+          console.error('프로필 통계 로드 오류:', error);
+        }
+      };
+      loadStats();
+    }, [])
+  );
 
   // 사용자의 인증 방식 확인 (이메일/비밀번호 또는 소셜 로그인)
   const isPasswordAuthProvider = user?.providerData?.some(
@@ -96,12 +117,12 @@ const ProfileScreen = () => {
         borderBottomColor: theme.colors.border.light
       }]}>
         <View style={styles.statItem}>
-          <Text style={[styles.statNumber, { color: theme.colors.ui.primary }]}>42</Text>
+          <Text style={[styles.statNumber, { color: theme.colors.ui.primary }]}>{completedTasks}</Text>
           <Text style={[styles.statLabel, { color: theme.colors.content.secondary }]}>{t('stats.completedTasks')}</Text>
         </View>
         <View style={[styles.statDivider, { backgroundColor: theme.colors.border.light }]} />
         <View style={styles.statItem}>
-          <Text style={[styles.statNumber, { color: theme.colors.ui.primary }]}>28</Text>
+          <Text style={[styles.statNumber, { color: theme.colors.ui.primary }]}>{streakDays}</Text>
           <Text style={[styles.statLabel, { color: theme.colors.content.secondary }]}>{t('stats.streakDays')}</Text>
         </View>
       </View>

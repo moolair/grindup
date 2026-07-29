@@ -5,7 +5,8 @@
     "stats": {
         "totalTasks": "총 작업",
         "completed": "완료",
-        "inProgress": "진행 중"
+        "inProgress": "진행 중",
+        "streakDays": "연속"
     },
     "weeklyReport": "주간 리포트",
     "weeklyTaskChart": "주간 작업 차트"
