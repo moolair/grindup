@@ -11,6 +11,7 @@
 		32AB3BC8FA340DE47FC69286 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
+		DF954E6A2D9E1BE0006BCD8A /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = DF954E692D9E1BE0006BCD8A /* GoogleService-Info.plist */; };
 		DFF0C9A82D9E1D5F00356EB6 /* Algorithms in Frameworks */ = {isa = PBXBuildFile; productRef = DFF0C9A72D9E1D5F00356EB6 /* Algorithms */; };
 		E28634E9070EBCE251468FA8 /* Pods_GrindUp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 143E6782A2E15FD560C0BAE1 /* Pods_GrindUp.framework */; };
 /* End PBXBuildFile section */
@@ -24,7 +25,7 @@
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = GrindUp/AppDelegate.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = GrindUp/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		878E4EE227B74C5B4ED481BF /* Pods-GrindUp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GrindUp.debug.xcconfig"; path = "Target Support Files/Pods-GrindUp/Pods-GrindUp.debug.xcconfig"; sourceTree = "<group>"; };
-		DF954E692D9E1BE0006BCD8A /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		DF954E692D9E1BE0006BCD8A /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "GrindUp/GoogleService-Info.plist"; sourceTree = "<group>"; };
 		E40A61CCEB0A840DF95F923F /* Pods-GrindUp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GrindUp.release.xcconfig"; path = "Target Support Files/Pods-GrindUp/Pods-GrindUp.release.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
@@ -168,6 +169,7 @@
 				81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				32AB3BC8FA340DE47FC69286 /* PrivacyInfo.xcprivacy in Resources */,
+				DF954E6A2D9E1BE0006BCD8A /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
