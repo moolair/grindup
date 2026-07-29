@@ -139,7 +139,9 @@ export const resetRoutines = async (): Promise<void> => {
 export const getRoutines = async (): Promise<Routine[]> => {
     try {
         const data = await AsyncStorage.getItem(getUserStorageKey());
-        return data ? JSON.parse(data) : [];
+        const routines: Routine[] = data ? JSON.parse(data) : [];
+        // order 필드 기준으로 정렬하여 반환
+        return routines.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
     } catch (error) {
         console.error('루틴 조회 중 오류:', error);
         return [];
@@ -153,7 +155,7 @@ export const addRoutine = async (routine: Omit<Routine, 'id' | 'createdAt' | 'la
 
         const newRoutine: Routine = {
             ...routine,
-            id: `routine-${Date.now()}`,
+            id: `routine-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
             createdAt: new Date().toISOString(),
             lastResetAt: new Date().toISOString()
         };
