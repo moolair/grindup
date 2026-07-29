@@ -13,7 +13,7 @@ const AnalyticsScreen = () => {
   const [totalTasks, setTotalTasks] = useState(0);
   const [completedCount, setCompletedCount] = useState(0);
   const [streakDays, setStreakDays] = useState(0);
-  const [weeklyData, setWeeklyData] = useState<{ date: string; count: number }[]>([]);
+  const [weeklyData, setWeeklyData] = useState<{ date: string; count: number; label: string }[]>([]);
   const [completionRate, setCompletionRate] = useState(0);
 
   useFocusEffect(
@@ -39,7 +39,7 @@ const AnalyticsScreen = () => {
 
           // 최근 7일 데이터 추출
           const today = new Date();
-          const last7Days: { date: string; count: number; label: string }[] = [];
+          const last7Days: typeof weeklyData = [];
           const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
           for (let i = 6; i >= 0; i--) {
@@ -91,7 +91,7 @@ const AnalyticsScreen = () => {
             <Text style={[styles.rateNumber, { color: theme.colors.ui.primary }]}>
               {completionRate}%
             </Text>
-            <View style={styles.rateBarBackground}>
+            <View style={[styles.rateBarBackground, { backgroundColor: theme.colors.border.light }]}>
               <View
                 style={[
                   styles.rateBarFill,
@@ -108,7 +108,7 @@ const AnalyticsScreen = () => {
             </View>
             <View style={styles.statItem}>
               <Text style={[styles.statNumber, { color: theme.colors.ui.primary }]}>{streakDays}</Text>
-              <Text style={[styles.statLabel, { color: theme.colors.content.secondary }]}>{t('stats.streakDays') || 'Streak'}</Text>
+              <Text style={[styles.statLabel, { color: theme.colors.content.secondary }]}>{t('stats.streakDays')}</Text>
             </View>
             <View style={styles.statItem}>
               <Text style={[styles.statNumber, { color: theme.colors.ui.primary }]}>{totalTasks}</Text>
@@ -141,7 +141,7 @@ const AnalyticsScreen = () => {
                     />
                   </View>
                   <Text style={[styles.barLabel, { color: theme.colors.content.secondary }]}>
-                    {(day as any).label}
+                    {day.label}
                   </Text>
                 </View>
               ))}
@@ -190,7 +190,6 @@ const styles = StyleSheet.create({
   rateBarBackground: {
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#E0E0E0',
     overflow: 'hidden',
   },
   rateBarFill: {
