@@ -31,7 +31,8 @@
         "broken": "연속이 끊어졌습니다",
         "newStreak": "오늘부터 새로운 연속을 시작하세요",
         "milestone": "새로운 연속 마일스톤!",
-        "continued": "연속이 이어졌습니다!"
+        "continued": "연속이 이어졌습니다!",
+        "summaryLabel": "일 연속 · 습관 {{habits}}개"
     },
     "contributionGraph": {
         "title": "생산성 그래프",

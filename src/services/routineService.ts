@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
 import { removeCompletionData, updateContributionLevel, updateStreakInfo } from './firebase/contributions';
+import { syncHabitsToFirestore } from './habitSync';
 
 export interface DayOption {
     id: string;
@@ -112,6 +113,25 @@ const notifyRoutineStateChange = (type: RoutineStateChange): void => {
     });
 };
 
+/**
+ * 루틴 변경을 Firestore 미러(habits/{uid}/items)에 반영합니다.
+ *
+ * 미러가 최신이 아니면 GraphQL 게이트웨이가 예전 습관 목록을 응답하므로
+ * 루틴이 추가/수정/삭제될 때마다 호출합니다. 로컬 저장은 이미 끝난 뒤에
+ * 실행되는 부수 작업이라, 실패해도 로그만 남기고 호출자에게 전파하지 않습니다.
+ *
+ * 완료 상태 토글에서는 호출하지 않습니다 — 미러는 name/order 만 담고 있어
+ * completed 가 바뀌어도 내용이 달라지지 않습니다.
+ *
+ * 참고: habitSync 가 이 모듈의 getRoutines 를 다시 import 하지만 양쪽 모두
+ * 함수 실행 시점에만 참조하므로 순환 참조가 문제되지 않습니다.
+ */
+const syncHabitMirror = (): void => {
+    syncHabitsToFirestore().catch(error => {
+        console.log('[routineService] 습관 미러 동기화 실패 (무시됨):', error);
+    });
+};
+
 // 루틴 상태 초기화 (모든 루틴을 미완료 상태로)
 export const resetRoutines = async (): Promise<void> => {
     try {
@@ -163,6 +183,8 @@ export const addRoutine = async (routine: Omit<Routine, 'id' | 'createdAt' | 'la
         const updatedRoutines = [...routines, newRoutine];
         await AsyncStorage.setItem(getUserStorageKey(), JSON.stringify(updatedRoutines));
 
+        syncHabitMirror();
+
         return newRoutine;
     } catch (error) {
         console.error('루틴 추가 중 오류:', error);
@@ -185,6 +207,8 @@ export const updateRoutine = async (id: string, updates: Partial<Routine>): Prom
 
         // 업데이트 이벤트 알림
         notifyRoutineStateChange('update');
+
+        syncHabitMirror();
 
         return updatedRoutine;
     } catch (error) {
@@ -313,6 +337,9 @@ export const deleteRoutine = async (id: string): Promise<boolean> => {
         const updatedRoutines = routines.filter(r => r.id !== id);
 
         await AsyncStorage.setItem(getUserStorageKey(), JSON.stringify(updatedRoutines));
+
+        syncHabitMirror();
+
         return true;
     } catch (error) {
         console.error('루틴 삭제 중 오류:', error);

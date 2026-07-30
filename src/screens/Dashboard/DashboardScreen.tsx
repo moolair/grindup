@@ -4,6 +4,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useTheme } from '../../theme/ThemeProvider';
 import ContributionGraph, { ContributionGraphHandle } from '../../components/organisms/ContributionGraph';
+import StreakSummary from '../../components/molecules/StreakSummary';
 import TaskList from '../../components/organisms/TaskList';
 import { FloatingActionButton } from '../../components/atoms/Buttons';
 import { RootStackParamList, Task } from '../../navigation/AppNavigator';
@@ -404,6 +405,8 @@ const DashboardScreen = () => {
 
       <View style={[styles.content, styles.contentContainer]}>
         <Text style={[styles.title, { color: theme.colors.content.primary }]}>{t('todayStatus')}</Text>
+        {/* GraphQL 게이트웨이 기반 습관 요약 (서버가 없으면 스스로 숨겨짐) */}
+        <StreakSummary />
         {/* 기여도 그래프 컴포넌트 */}
         <ContributionGraph
           ref={contributionGraphRef}

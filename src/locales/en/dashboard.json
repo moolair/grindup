@@ -31,7 +31,8 @@
         "broken": "Streak broken",
         "newStreak": "Start a new streak today",
         "milestone": "New streak milestone!",
-        "continued": "Streak continued!"
+        "continued": "Streak continued!",
+        "summaryLabel": "day streak · {{habits}} habits"
     },
     "contributionGraph": {
         "title": "Productivity Graph",
