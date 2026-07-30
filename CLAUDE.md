@@ -41,6 +41,8 @@ USE (live code paths):
 | Theming | `src/theme/` (ThemeProvider, `useTheme`) |
 | Translations | `src/hooks/useTranslation.ts` |
 | Signup screen | `src/screens/Auth/SignupScreen.tsx`, rendered through the thin wrapper `src/screens/Auth/Register.js` (the navigator registers `Register`) |
+| GraphQL gateway (server) | `server/` — separate npm package, see the GraphQL section below |
+| GraphQL client (app) | `src/graphql/client.ts` (Apollo Client + ID-token auth link), `src/graphql/queries.ts` |
 
 DO NOT USE, EXTEND, IMPORT, OR "FIX" (dead or legacy code, kept in tree):
 
@@ -59,6 +61,33 @@ Already deleted (do not recreate, do not reference): `src/domain/**` (unwired "C
   - `userContributions/{uid}/dates/{dateString}` — one doc per day for the contribution graph.
 - Dates for contributions are computed in LOCAL time, never UTC (this was a fixed bug — commit e7f95c2). Preserve that.
 - Config files `android/app/google-services.json` and `ios/GrindUp/GoogleService-Info.plist` exist locally but are gitignored. Never commit them, never print their contents.
+
+## GraphQL
+
+An optional thin gateway lives in `server/` (its own npm package — NOT part of the RN bundle, never `import` it from `src/`). It exposes exactly one query:
+
+```graphql
+query { habits { id name streak } }
+```
+
+- Run it with `cd server && npm install && npm run dev`. Needs `server/.env` with `FIREBASE_PROJECT_ID` (gitignored; the value is the `PROJECT_ID` from the gitignored Firebase config files). Default port 4000.
+- Its own typecheck is `cd server && npm run typecheck`. The app root's `npx tsc --noEmit` does NOT cover `server/`.
+- **No service account key.** The gateway takes the app's Firebase ID token from the `Authorization` header and passes it straight to the Firestore REST API, so Firestore's own security rules apply as that user. `server/src/auth.ts` deliberately does not verify the token signature — the uid is only used to build a document path, and Firestore rejects a forged uid. If the gateway ever makes its own authorization decision, switch to `firebase-admin`'s `verifyIdToken`.
+- The app talks to it at `http://localhost:4000` (iOS sim) / `http://10.0.2.2:4000` (Android emulator), chosen in `src/graphql/client.ts`. For a physical device, change `GRAPHQL_HOST` there to the Mac's LAN IP.
+- `ApolloProvider` wraps `AppNavigator` inside `AuthProvider` in `App.tsx` (that order matters — the auth link reads `auth().currentUser`).
+- Apollo Client is pinned to **v3**, not v4. v4 requires subpath imports (`@apollo/client/react`), which need Metro's `unstable_enablePackageExports` — off by default in RN 0.78. Do not upgrade to v4 without enabling and testing that resolver flag.
+- Demo screen: `src/screens/Habits/HabitsGraphQLScreen.tsx`, registered as route `HabitsGraphQL`, reachable from SettingsScreen's "Developer" section.
+- `src/components/molecules/StreakSummary.tsx` renders the same query as a one-line strip on the Dashboard. It uses `errorPolicy: 'ignore'` and returns `null` when there is no data, so the Dashboard stays intact when the gateway is not running. Keep that property if you touch it.
+
+### habits data flow (important)
+
+Routine definitions live in **AsyncStorage**, not Firestore — `getRoutines()` reads local storage, and the Firestore `tasks` collection only holds completion-event docs (all with `title: '루틴 완료'`, no routine id). So the server cannot see routine names directly.
+
+`src/services/habitSync.ts` bridges this by mirroring routines into `habits/{uid}/items/{routineId}` (`{ name, order, updatedAt }`, written with `merge: true`). AsyncStorage stays the source of truth; the Firestore copy is read-only for the gateway.
+
+The sync runs from two places: `HabitsGraphQLScreen` on mount, and `routineService.ts`'s `syncHabitMirror()` after `addRoutine`/`updateRoutine`/`deleteRoutine`. It is deliberately NOT called on completion toggle — the mirror only holds `name`/`order`, which a `completed` change does not affect. `syncHabitMirror()` is fire-and-forget: it never propagates failure to the caller, so a down gateway or denied write cannot break routine CRUD.
+
+`streak` is a **per-user** value (`userStats/{uid}.currentStreak`), not per-habit, because GrindUp stores no per-routine completion history. The resolver prefers a habit doc's own `currentStreak` if one exists, so adding per-routine streaks later needs no resolver change.
 
 ## i18n
 
