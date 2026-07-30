@@ -154,5 +154,9 @@
         "period": "Period",
         "am": "AM",
         "pm": "PM"
+    },
+    "developer": {
+        "title": "Developer",
+        "graphqlHabits": "Habits via GraphQL"
     }
 }

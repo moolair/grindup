@@ -124,5 +124,16 @@
         "sun": "Sun"
     },
     "reminderSettings": "Reminder Settings",
-    "createButton": "Create Routine"
+    "createButton": "Create Routine",
+    "graphqlHabits": {
+        "title": "Habits via GraphQL",
+        "subtitle": "Fetched through the Apollo gateway",
+        "syncing": "Syncing habits…",
+        "loading": "Loading habits…",
+        "empty": "No habits yet. Create a routine first.",
+        "errorTitle": "Could not load habits",
+        "retry": "Retry",
+        "streak": "{{days}} day streak",
+        "endpoint": "Endpoint: {{uri}}"
+    }
 }

@@ -154,5 +154,9 @@
         "period": "오전/오후",
         "am": "오전",
         "pm": "오후"
+    },
+    "developer": {
+        "title": "개발자",
+        "graphqlHabits": "GraphQL 습관 목록"
     }
 }

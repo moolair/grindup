@@ -20,6 +20,8 @@ import i18next, { initI18n } from './src/i18n';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { I18nextProvider } from 'react-i18next';
 import { AuthProvider } from './src/context/AuthContext';
+import { ApolloProvider } from '@apollo/client';
+import { apolloClient } from './src/graphql/client';
 import { LogBox } from 'react-native';
 import { Platform } from 'react-native';
 // 알림 라이브러리 직접 사용
@@ -170,7 +172,9 @@ function App(): React.JSX.Element {
           <AppPaperProvider>
             <SafeAreaProvider>
               <AuthProvider>
-                <AppNavigator />
+                <ApolloProvider client={apolloClient}>
+                  <AppNavigator />
+                </ApolloProvider>
               </AuthProvider>
             </SafeAreaProvider>
           </AppPaperProvider>

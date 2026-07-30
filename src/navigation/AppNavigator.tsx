@@ -4,6 +4,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import TabNavigator from './TabNavigator';
 import TasksScreen from '../screens/Tasks/TasksScreen';
 import LanguageSettingsScreen from '../screens/Settings/LanguageSettingsScreen';
+import HabitsGraphQLScreen from '../screens/Habits/HabitsGraphQLScreen';
 import LoginScreen from '../screens/Auth/LoginScreen';
 import Register from '../screens/Auth/Register';
 import { useTheme } from '../theme/ThemeProvider';
@@ -34,6 +35,7 @@ type RootStackParamList = {
   };
   TaskDetail: { taskId: string };
   LanguageSettings: undefined;
+  HabitsGraphQL: undefined;
   Register: undefined;
   Signup: undefined;
   // 추가 화면을 여기에 타입 정의
@@ -139,6 +141,15 @@ const AppNavigator = () => {
             <Stack.Screen
               name="LanguageSettings"
               component={LanguageSettingsScreen}
+              options={{
+                cardStyleInterpolator: forSlideOverFromRight,
+                gestureDirection: 'horizontal',
+                detachPreviousScreen: false
+              }}
+            />
+            <Stack.Screen
+              name="HabitsGraphQL"
+              component={HabitsGraphQLScreen}
               options={{
                 cardStyleInterpolator: forSlideOverFromRight,
                 gestureDirection: 'horizontal',

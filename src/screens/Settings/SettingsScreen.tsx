@@ -103,6 +103,14 @@ const SettingsScreen = () => {
     );
   };
 
+  const navigateToGraphQLHabits = () => {
+    navigation.dispatch(
+      CommonActions.navigate({
+        name: 'HabitsGraphQL',
+      })
+    );
+  };
+
   const onStartTimeChange = async (event: any, selectedDate?: Date) => {
     setShowStartTimePicker(false); // 항상 피커를 닫습니다
     if (selectedDate) {
@@ -370,6 +378,15 @@ const SettingsScreen = () => {
               <Text style={[styles.settingValue, { color: theme.colors.content.secondary }]}>{currentLanguageNativeName}</Text>
               <ChevronRightIcon size={24} color={theme.colors.content.secondary} />
             </View>
+          </TouchableOpacity>
+        </View>
+
+        <View style={[styles.section, { borderBottomColor: theme.colors.border.light }]}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.content.primary }]}>{t('developer.title')}</Text>
+
+          <TouchableOpacity style={styles.settingItem} onPress={navigateToGraphQLHabits}>
+            <Text style={[styles.settingLabel, { color: theme.colors.content.primary }]}>{t('developer.graphqlHabits')}</Text>
+            <ChevronRightIcon size={24} color={theme.colors.content.secondary} />
           </TouchableOpacity>
         </View>
 
