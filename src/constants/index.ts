@@ -9,7 +9,6 @@ import { SPACING, getResponsiveSpacing } from './spacing';
 import RADIUS from './radius';
 import SHADOWS from './shadows';
 import ANIMATION from './animation';
-import ROUTES from './routes';
 import { ICON_NAME, ICON_SIZE, ICON_MAPPING } from './icons';
 import CONFIG from './config';
 
@@ -35,9 +34,6 @@ export {
     // 애니메이션
     ANIMATION,
 
-    // 라우트
-    ROUTES,
-
     // 아이콘
     ICON_NAME,
     ICON_SIZE,
@@ -57,7 +53,6 @@ export default {
     RADIUS,
     SHADOWS,
     ANIMATION,
-    ROUTES,
     ICON_NAME,
     ICON_SIZE,
     ICON_MAPPING,
