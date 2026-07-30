@@ -20,7 +20,7 @@ iOS native deps: `bundle install && bundle exec pod install` (run inside `ios/`)
 The repo's checks have a broken baseline. Do not try to make them pass globally, and do not use their failure as evidence your change is wrong:
 
 - `npm test` fails entirely: the only test (`__tests__/App.test.tsx`) crashes because `@react-native-firebase/*` native modules are not mocked. There is no working test infrastructure. Do not add tests unless asked; if asked, you must first add jest mocks for `@react-native-firebase/app|auth|firestore|storage`.
-- `npx tsc --noEmit` has 15 pre-existing errors (mostly `err is of type 'unknown'` in `LoginScreen.tsx`, and TS2306 for the empty `notificationService.ts`). Rule: run it before and after your change; the error count in files you touched must not increase. Do not fix pre-existing errors unless asked.
+- `npx tsc --noEmit` has 16 pre-existing errors (mostly `err is of type 'unknown'` in `LoginScreen.tsx`, and TS2306 for the empty `notificationService.ts`). Rule: run it before and after your change; the error count in files you touched must not increase. Do not fix pre-existing errors unless asked.
 - `npm run lint` has 80 pre-existing errors and 417 warnings. Same rule: no new errors in files you touch. Never run `eslint --fix` or Prettier across whole files — it would bury the real diff in formatting noise.
 
 The only reliable verification is building and running the app (`npm run ios`).
